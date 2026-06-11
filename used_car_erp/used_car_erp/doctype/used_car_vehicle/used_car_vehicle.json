@@ -103,7 +103,7 @@
  "fields": [
   {"fieldname": "overview_tab", "fieldtype": "Tab Break", "label": "總覽"},
   {"fieldname": "vehicle_identity_section", "fieldtype": "Section Break", "label": "車輛識別"},
-  {"description": "系統自動產生的內部車輛編號，例如 VH-202606-0001。", "fieldname": "stock_no", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "車輛編號", "reqd": 1, "unique": 1},
+  {"description": "系統儲存時自動產生，使用者不可手動填寫或修改。例如 VH-202606-0001。", "fieldname": "stock_no", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "車輛編號", "no_copy": 1, "read_only": 1, "unique": 1},
   {"default": "草稿", "fieldname": "status", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "車輛狀態", "options": "草稿\n庫存中\n整備中\n上架中\n保留中\n已售出\n封存", "reqd": 1},
   {"description": "車輛目前所在分店、車場、倉庫或整備廠。", "fieldname": "branch_location", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "分店 / 車輛位置"},
   {"fieldname": "vehicle_identity_column", "fieldtype": "Column Break"},
