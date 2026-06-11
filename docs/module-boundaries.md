@@ -7,6 +7,7 @@
 * Used Car Vehicle List UX
 * Used Car ERP Workspace
 * Vehicle Item Service Foundation
+* Vehicle Stock In Service Foundation
 
 ## Boundaries
 
@@ -43,8 +44,9 @@
 vehicle_item_service.py 只負責 Used Car Vehicle 與 ERPNext Item 的建立 / 綁定。
 不得建立 Serial No、Stock Entry、Purchase Invoice、Sales Invoice、Payment Entry。
 
-Serial No / VIN 與庫存入庫必須等正式入庫流程一起處理，避免出現 Serial No 已建立但沒有 Stock Ledger 數量的不一致狀態。
-未來應拆成獨立 service，例如 vehicle_stock_service.py。
+vehicle_stock_service.py 只負責 Used Car Vehicle 正式入庫、Stock Entry、Serial No / VIN 綁定、回寫 stock_entry / serial_no / status。
+不得建立 Purchase Invoice、Sales Invoice、Payment Entry、會計分錄。
+不得處理售出、出庫、交車。
 
 未來若要做 Serial No / Purchase Invoice / Sales Invoice / Payment Entry 自動化，請建立獨立 service 檔案，例如：
 
@@ -54,6 +56,7 @@ used_car_erp/used_car_erp/services/vehicle_purchase_service.py
 used_car_erp/used_car_erp/services/vehicle_sales_service.py
 
 表單 JS 只能呼叫 whitelisted service endpoint，不直接承擔業務邏輯。
+任何會產生 Stock Ledger 的服務，都必須獨立於 Form JS 和 DocType controller，並提供 bench execute 驗證。
 
 ## Rule
 

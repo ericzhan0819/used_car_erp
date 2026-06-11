@@ -15,6 +15,7 @@ const SYSTEM_READ_ONLY_FIELDS = [
   "gross_margin",
   "item",
   "serial_no",
+  "stock_entry",
   "purchase_invoice",
   "sales_invoice",
 ];
@@ -36,6 +37,7 @@ function apply_vehicle_form_mode(frm) {
   }
 
   add_create_item_button(frm);
+  add_stock_in_button(frm);
 
   if (frm._vehicle_edit_mode) {
     set_vehicle_fields_read_only(frm, false);
@@ -76,7 +78,7 @@ function set_vehicle_fields_read_only(frm, read_only) {
 }
 
 function clear_vehicle_action_buttons(frm) {
-  ["編輯資料", "取消編輯", "建立 ERPNext 商品"].forEach((label) => {
+  ["編輯資料", "取消編輯", "建立 ERPNext 商品", "正式入庫"].forEach((label) => {
     frm.remove_custom_button(label);
   });
 }
@@ -107,5 +109,41 @@ function add_create_item_button(frm) {
         },
       });
     });
+  });
+}
+
+function add_stock_in_button(frm) {
+  if (
+    frm.is_new() ||
+    !frm.doc.item ||
+    frm.doc.serial_no ||
+    frm.doc.stock_entry ||
+    !frm.doc.stock_no
+  ) {
+    return;
+  }
+
+  frm.add_custom_button("正式入庫", () => {
+    frappe.confirm(
+      "正式入庫會建立並提交 ERPNext Stock Entry，產生庫存紀錄。確定繼續？",
+      () => {
+        frappe.call({
+          method:
+            "used_car_erp.used_car_erp.services.vehicle_stock_service.stock_in_vehicle",
+          args: {
+            vehicle_name: frm.doc.name,
+          },
+          freeze: true,
+          callback(response) {
+            const result = response.message || {};
+            frappe.show_alert({
+              message: result.message || (result.created ? "已正式入庫" : "此車輛已入庫"),
+              indicator: result.created ? "green" : "blue",
+            });
+            frm.reload_doc();
+          },
+        });
+      }
+    );
   });
 }
