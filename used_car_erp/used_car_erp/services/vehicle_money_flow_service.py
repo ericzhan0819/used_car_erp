@@ -179,53 +179,63 @@ def verify_vehicle_money_flow_voucher_service():
 			"cleaned_up": False,
 		}
 	finally:
+		cleanup_errors = verification.setdefault("cleanup_errors", [])
+		stock_entry_cancelled = False
+		_safe_cleanup_journal_entry(journal_entry_name, verification)
+		_safe_clear_accounting_links(
+			vehicle.name if vehicle else None,
+			reservation_name,
+			money_flow_name,
+			voucher_draft_name,
+			journal_entry_name,
+			verification,
+		)
+		verification["voucher_draft_deleted"] = _safe_delete_voucher_draft(voucher_draft_name, verification)
+		verification["money_flow_deleted"] = _safe_delete_money_flow(money_flow_name, verification)
+		verification["reservation_deleted"] = _safe_delete_reservation(reservation_name, verification)
 		try:
-			stock_entry_cancelled = False
-			if journal_entry_name and frappe.db.exists("Journal Entry", journal_entry_name):
-				journal_entry = frappe.get_doc("Journal Entry", journal_entry_name)
-				if journal_entry.docstatus == 1:
-					journal_entry.cancel()
-				elif journal_entry.docstatus == 0:
-					frappe.delete_doc("Journal Entry", journal_entry_name, force=True)
-			if voucher_draft_name and frappe.db.exists("Used Car Voucher Draft", voucher_draft_name):
-				frappe.delete_doc("Used Car Voucher Draft", voucher_draft_name, force=True)
-			if money_flow_name and frappe.db.exists("Used Car Money Flow", money_flow_name):
-				frappe.delete_doc("Used Car Money Flow", money_flow_name, force=True)
-			if reservation_name and frappe.db.exists("Used Car Reservation", reservation_name):
-				frappe.delete_doc("Used Car Reservation", reservation_name, force=True)
 			if stock_entry_name and frappe.db.exists("Stock Entry", stock_entry_name):
 				stock_entry = frappe.get_doc("Stock Entry", stock_entry_name)
 				if stock_entry.docstatus == 1:
 					stock_entry.cancel()
 					stock_entry_cancelled = True
 				elif stock_entry.docstatus == 0:
-					frappe.delete_doc("Stock Entry", stock_entry_name, force=True)
+					frappe.delete_doc("Stock Entry", stock_entry_name, force=True, ignore_permissions=True)
 					stock_entry_cancelled = True
+		except Exception as exc:
+			cleanup_errors.append(f"stock_entry_cleanup_error: {exc}")
+		try:
 			if vehicle and frappe.db.exists("Used Car Vehicle", vehicle.name):
 				frappe.db.set_value("Used Car Vehicle", vehicle.name, {"serial_no": None, "stock_entry": None, "item": None})
-				frappe.delete_doc("Used Car Vehicle", vehicle.name, force=True)
-			if stock_entry_cancelled and not serial_existed_before and serial_no and frappe.db.exists("Serial No", serial_no):
-				try:
-					frappe.delete_doc("Serial No", serial_no, force=True)
-				except Exception:
-					# ERPNext 庫存歷史可能限制序號刪除，清理不得繞過標準保護。
-					verification["serial_no_cleanup_skipped"] = True
-			if stock_entry_cancelled and not item_existed_before and item_name and frappe.db.exists("Item", item_name):
-				try:
-					frappe.delete_doc("Item", item_name, force=True)
-				except Exception:
-					# Item 若已被庫存歷史引用，保留標準限制並回報。
-					verification["item_cleanup_skipped"] = True
-			if not customer_existed_before and customer_name and frappe.db.exists("Customer", customer_name):
-				try:
-					frappe.delete_doc("Customer", customer_name, force=True)
-				except Exception:
-					verification["customer_cleanup_skipped"] = True
-			frappe.db.commit()
-			verification["cleaned_up"] = True
+				frappe.delete_doc("Used Car Vehicle", vehicle.name, force=True, ignore_permissions=True)
 		except Exception as exc:
-			frappe.db.rollback()
-			frappe.throw(f"Money Flow Voucher verification cleanup failed: {exc}")
+			cleanup_errors.append(f"vehicle_cleanup_error: {exc}")
+		verification["vehicle_deleted"] = not vehicle or not frappe.db.exists("Used Car Vehicle", vehicle.name)
+		if stock_entry_cancelled and not serial_existed_before and serial_no and frappe.db.exists("Serial No", serial_no):
+			try:
+				frappe.delete_doc("Serial No", serial_no, force=True, ignore_permissions=True)
+			except Exception:
+				# ERPNext 庫存歷史可能限制序號刪除，清理不得繞過標準保護。
+				verification["serial_no_cleanup_skipped"] = True
+		if stock_entry_cancelled and not item_existed_before and item_name and frappe.db.exists("Item", item_name):
+			try:
+				frappe.delete_doc("Item", item_name, force=True, ignore_permissions=True)
+			except Exception:
+				# Item 若已被庫存歷史引用，保留標準限制並回報。
+				verification["item_cleanup_skipped"] = True
+		if not customer_existed_before and customer_name and frappe.db.exists("Customer", customer_name):
+			try:
+				frappe.delete_doc("Customer", customer_name, force=True, ignore_permissions=True)
+			except Exception:
+				verification["customer_cleanup_skipped"] = True
+		verification["cleaned_up"] = _money_flow_verification_cleanup_complete(
+			voucher_draft_name,
+			money_flow_name,
+			reservation_name,
+			vehicle.name if vehicle else None,
+			cleanup_errors,
+		)
+		frappe.db.commit()
 
 	return verification
 
@@ -235,3 +245,83 @@ def _money_flow_verification_doc_counts():
 	counts["Used Car Money Flow"] = frappe.db.count("Used Car Money Flow")
 	counts["Used Car Voucher Draft"] = frappe.db.count("Used Car Voucher Draft")
 	return counts
+
+
+def _safe_cleanup_journal_entry(journal_entry_name, verification):
+	if not journal_entry_name or not frappe.db.exists("Journal Entry", journal_entry_name):
+		return
+	try:
+		journal_entry = frappe.get_doc("Journal Entry", journal_entry_name)
+		if journal_entry.docstatus == 1:
+			journal_entry.cancel()
+		elif journal_entry.docstatus == 0:
+			frappe.delete_doc("Journal Entry", journal_entry_name, force=True, ignore_permissions=True)
+	except Exception as exc:
+		verification.setdefault("cleanup_errors", []).append(f"journal_entry_cleanup_error: {exc}")
+
+
+def _safe_clear_accounting_links(vehicle_name, reservation_name, money_flow_name, voucher_draft_name, journal_entry_name, verification):
+	try:
+		_safe_clear_doc_links("Used Car Money Flow", money_flow_name, ("voucher_draft", "journal_entry"))
+		_safe_clear_doc_links("Used Car Reservation", reservation_name, ("money_flow", "voucher_draft", "journal_entry"))
+		_safe_clear_doc_links("Used Car Vehicle", vehicle_name, ("money_flow", "voucher_draft", "reservation", "journal_entry"))
+		if voucher_draft_name and frappe.db.exists("Used Car Voucher Draft", voucher_draft_name):
+			# 驗證工具只清自己建立的草稿；正式傳票若仍存在，避免硬刪造成會計資料風險。
+			draft_journal_entry = frappe.db.get_value("Used Car Voucher Draft", voucher_draft_name, "journal_entry")
+			if draft_journal_entry and draft_journal_entry != journal_entry_name and frappe.db.exists("Journal Entry", draft_journal_entry):
+				verification.setdefault("cleanup_errors", []).append("voucher_draft_cleanup_skipped: linked to unexpected Journal Entry")
+			else:
+				_safe_clear_doc_links("Used Car Voucher Draft", voucher_draft_name, ("journal_entry",))
+	except Exception as exc:
+		verification.setdefault("cleanup_errors", []).append(f"clear_accounting_links_error: {exc}")
+
+
+def _safe_clear_doc_links(doctype, name, fields):
+	if not name or not frappe.db.exists(doctype, name):
+		return
+	meta = frappe.get_meta(doctype)
+	values = {field: None for field in fields if meta.has_field(field)}
+	if values:
+		frappe.db.set_value(doctype, name, values)
+
+
+def _safe_delete_voucher_draft(voucher_draft_name, verification):
+	if not voucher_draft_name or not frappe.db.exists("Used Car Voucher Draft", voucher_draft_name):
+		return True
+	try:
+		frappe.delete_doc("Used Car Voucher Draft", voucher_draft_name, force=True, ignore_permissions=True)
+	except Exception as exc:
+		verification.setdefault("cleanup_errors", []).append(f"voucher_draft_cleanup_error: {exc}")
+	return not frappe.db.exists("Used Car Voucher Draft", voucher_draft_name)
+
+
+def _safe_delete_money_flow(money_flow_name, verification):
+	if not money_flow_name or not frappe.db.exists("Used Car Money Flow", money_flow_name):
+		return True
+	try:
+		frappe.delete_doc("Used Car Money Flow", money_flow_name, force=True, ignore_permissions=True)
+	except Exception as exc:
+		verification.setdefault("cleanup_errors", []).append(f"money_flow_cleanup_error: {exc}")
+	return not frappe.db.exists("Used Car Money Flow", money_flow_name)
+
+
+def _safe_delete_reservation(reservation_name, verification):
+	if not reservation_name or not frappe.db.exists("Used Car Reservation", reservation_name):
+		return True
+	try:
+		frappe.delete_doc("Used Car Reservation", reservation_name, force=True, ignore_permissions=True)
+	except Exception as exc:
+		verification.setdefault("cleanup_errors", []).append(f"reservation_cleanup_error: {exc}")
+	return not frappe.db.exists("Used Car Reservation", reservation_name)
+
+
+def _money_flow_verification_cleanup_complete(voucher_draft_name, money_flow_name, reservation_name, vehicle_name, cleanup_errors):
+	return not cleanup_errors and all(
+		not name or not frappe.db.exists(doctype, name)
+		for doctype, name in (
+			("Used Car Voucher Draft", voucher_draft_name),
+			("Used Car Money Flow", money_flow_name),
+			("Used Car Reservation", reservation_name),
+			("Used Car Vehicle", vehicle_name),
+		)
+	)

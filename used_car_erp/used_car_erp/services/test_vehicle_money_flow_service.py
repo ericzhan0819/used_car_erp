@@ -4,6 +4,7 @@ from frappe.tests.utils import FrappeTestCase
 from used_car_erp.used_car_erp.services.vehicle_intake_service import VehicleIntakeService
 from used_car_erp.used_car_erp.services.vehicle_listing_service import VehicleListingService
 from used_car_erp.used_car_erp.services.vehicle_reservation_service import VehicleReservationService
+from used_car_erp.used_car_erp.services.vehicle_money_flow_service import verify_vehicle_money_flow_voucher_service
 from used_car_erp.used_car_erp.services.vehicle_voucher_service import VehicleVoucherService
 
 
@@ -146,6 +147,18 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		draft = frappe.get_doc("Used Car Voucher Draft", result.get("voucher_draft"))
 		draft.lines[0].debit = 1
 		self.assertRaises(frappe.ValidationError, self.voucher_service._validate_draft_ready_for_confirm, draft)
+
+	def test_verify_service_cleans_core_test_documents(self):
+		result = verify_vehicle_money_flow_voucher_service()
+		self.assertTrue(result.get("voucher_draft_deleted"))
+		self.assertTrue(result.get("money_flow_deleted"))
+		self.assertTrue(result.get("reservation_deleted"))
+		self.assertTrue(result.get("vehicle_deleted"))
+		self.assertTrue(result.get("cleaned_up"))
+		self.assertFalse(frappe.db.exists("Used Car Voucher Draft", result.get("voucher_draft")))
+		self.assertFalse(frappe.db.exists("Used Car Money Flow", result.get("money_flow")))
+		self.assertFalse(frappe.db.exists("Used Car Reservation", result.get("reservation")))
+		self.assertFalse(frappe.db.exists("Used Car Vehicle", result.get("vehicle_name")))
 
 	def _create_reservation_for_listed_vehicle(self):
 		vehicle = self._make_listed_vehicle()
