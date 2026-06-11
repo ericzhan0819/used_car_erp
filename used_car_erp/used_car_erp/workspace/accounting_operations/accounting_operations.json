@@ -1,0 +1,55 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"uco_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>會計作業</b></span>\",\"col\":12}},{\"id\":\"uco_todo_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>會計待辦</b></span>\",\"col\":12}},{\"id\":\"uco_pending_voucher_drafts\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"待審核傳票草稿\",\"col\":3}},{\"id\":\"uco_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"uco_data_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>會計資料</b></span>\",\"col\":12}},{\"id\":\"uco_money_flows\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"金流紀錄\",\"col\":3}},{\"id\":\"uco_voucher_drafts\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"傳票草稿\",\"col\":3}},{\"id\":\"uco_journal_entries\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"正式會計傳票\",\"col\":3}}]",
+ "creation": "2026-06-12 02:55:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "file-text",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "會計作業",
+ "links": [],
+ "modified": "2026-06-12 02:55:00.000000",
+ "modified_by": "Administrator",
+ "module": "Used Car ERP",
+ "name": "會計作業",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 2.0,
+ "shortcuts": [
+  {
+   "doc_view": "List",
+   "label": "待審核傳票草稿",
+   "link_to": "Used Car Voucher Draft",
+   "stats_filter": "[[\"Used Car Voucher Draft\",\"status\",\"=\",\"待審核\",false]]",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "List",
+   "label": "金流紀錄",
+   "link_to": "Used Car Money Flow",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "List",
+   "label": "傳票草稿",
+   "link_to": "Used Car Voucher Draft",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "List",
+   "label": "正式會計傳票",
+   "link_to": "Journal Entry",
+   "type": "DocType"
+  }
+ ],
+ "title": "會計作業"
+}
