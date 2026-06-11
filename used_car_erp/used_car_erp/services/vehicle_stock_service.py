@@ -141,6 +141,8 @@ def verify_vehicle_stock_service():
 	item_name = None
 	stock_entry_name = None
 	serial_no = None
+	item_existed_before = False
+	serial_existed_before = False
 	verification = {"cleaned_up": False}
 
 	purchase_invoice_count = frappe.db.count("Purchase Invoice")
@@ -164,6 +166,8 @@ def verify_vehicle_stock_service():
 			}
 		).insert()
 		stock_no = vehicle.stock_no
+		item_existed_before = bool(frappe.db.exists("Item", stock_no))
+		serial_existed_before = bool(frappe.db.exists("Serial No", vehicle.vin))
 
 		item_result = item_service.create_item_for_vehicle(vehicle.name)
 		item_name = item_result.get("item")
@@ -227,13 +231,13 @@ def verify_vehicle_stock_service():
 					{"serial_no": None, "stock_entry": None, "item": None},
 				)
 				frappe.delete_doc("Used Car Vehicle", vehicle.name, force=True)
-			if stock_entry_cancelled and serial_no and frappe.db.exists("Serial No", serial_no):
+			if stock_entry_cancelled and not serial_existed_before and serial_no and frappe.db.exists("Serial No", serial_no):
 				try:
 					frappe.delete_doc("Serial No", serial_no, force=True)
 				except Exception:
 					# 已取消 Stock Ledger 仍可能保留序號歷史，避免為清理而破壞 ERPNext 資料完整性。
 					pass
-			if stock_entry_cancelled and item_name and frappe.db.exists("Item", item_name):
+			if stock_entry_cancelled and not item_existed_before and item_name and frappe.db.exists("Item", item_name):
 				frappe.delete_doc("Item", item_name, force=True)
 			frappe.db.commit()
 			verification["cleaned_up"] = True

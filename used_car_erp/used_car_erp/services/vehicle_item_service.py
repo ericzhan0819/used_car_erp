@@ -108,6 +108,8 @@ def verify_vehicle_item_service():
 	vehicle = None
 	item_name = None
 	stock_no = None
+	item_existed_before = False
+	item_created_by_verify = False
 	verification = {}
 
 	try:
@@ -122,15 +124,23 @@ def verify_vehicle_item_service():
 			}
 		).insert()
 		stock_no = vehicle.stock_no
+		item_existed_before = bool(frappe.db.exists("Item", stock_no))
+		serial_nos_before = set(
+			frappe.get_all("Serial No", filters={"item_code": stock_no}, pluck="name")
+		)
 
 		purchase_invoice_count = frappe.db.count("Purchase Invoice")
 		sales_invoice_count = frappe.db.count("Sales Invoice")
 
 		result = service.create_item_for_vehicle(vehicle.name)
 		item_name = result.get("item")
+		item_created_by_verify = bool(result.get("created")) and not item_existed_before
 
 		vehicle.reload()
-		serial_no_created = bool(frappe.db.exists("Serial No", {"item_code": item_name}))
+		serial_nos_after = set(
+			frappe.get_all("Serial No", filters={"item_code": item_name}, pluck="name")
+		)
+		newly_created_serial_nos = serial_nos_after - serial_nos_before
 
 		if not item_name:
 			frappe.throw("Vehicle Item Service did not return an Item.")
@@ -142,8 +152,8 @@ def verify_vehicle_item_service():
 			frappe.throw("Used Car Vehicle.stock_no was changed unexpectedly.")
 		if vehicle.serial_no:
 			frappe.throw("Used Car Vehicle.serial_no should remain empty in this foundation step.")
-		if serial_no_created:
-			frappe.throw("Serial No should not be created by Vehicle Item Service.")
+		if newly_created_serial_nos:
+			frappe.throw("Vehicle Item Service should not create new Serial No records.")
 		if frappe.db.count("Purchase Invoice") != purchase_invoice_count:
 			frappe.throw("Purchase Invoice should not be created by Vehicle Item Service.")
 		if frappe.db.count("Sales Invoice") != sales_invoice_count:
@@ -155,14 +165,16 @@ def verify_vehicle_item_service():
 			"item": item_name,
 			"item_created": result.get("created"),
 			"vehicle_item_linked": vehicle.item == item_name,
-			"serial_no_created": False,
+			"serial_no_created": bool(newly_created_serial_nos),
+			"preexisting_serial_no_count": len(serial_nos_before),
+			"new_serial_no_count": len(newly_created_serial_nos),
 		}
 	finally:
 		try:
 			if vehicle and frappe.db.exists("Used Car Vehicle", vehicle.name):
 				frappe.db.set_value("Used Car Vehicle", vehicle.name, "item", None)
 				frappe.delete_doc("Used Car Vehicle", vehicle.name, force=True)
-			if item_name and frappe.db.exists("Item", item_name):
+			if item_created_by_verify and item_name and frappe.db.exists("Item", item_name):
 				frappe.delete_doc("Item", item_name, force=True)
 			frappe.db.commit()
 		except Exception as exc:

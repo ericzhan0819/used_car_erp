@@ -41,6 +41,7 @@ Used Car Vehicle
 * 按「編輯資料」才進入可編輯狀態。
 * 系統欄位保持唯讀。
 * 表單 JS 只呼叫 whitelisted service，不承擔跨 DocType 業務邏輯。
+* 一般 UI 以「完成入庫」作為主要 action，不要求使用者分別操作 ERPNext `Item` / `Stock Entry`。
 
 ### Vehicle Item Service Foundation
 
@@ -75,6 +76,16 @@ Used Car Vehicle
 * 不建立 `Purchase Invoice` / `Sales Invoice` / `Payment Entry`。
 * `bench execute` 驗證已通過。
 * 瀏覽器手動驗證已通過。
+
+### Vehicle Intake Service UX Orchestration
+
+* 檔案：`used_car_erp/used_car_erp/services/vehicle_intake_service.py`
+* 負責一鍵編排 `Used Car Vehicle` 入庫流程。
+* 呼叫 `VehicleItemService` 建立 / 綁定 ERPNext `Item`。
+* 缺少 `stock_warehouse` 時，自動套用已綁定庫存科目的預設 Warehouse。
+* 呼叫 `VehicleStockService` 建立 / 提交 `Stock Entry` 並建立 / 綁定 `Serial No`。
+* 不重寫 `VehicleItemService` / `VehicleStockService` 底層驗證。
+* 不建立 `Purchase Invoice` / `Sales Invoice` / `Payment Entry`。
 
 ### Workspace / List View
 
@@ -139,28 +150,18 @@ Please set Account in Warehouse 商店 - O or Default Inventory Account in Compa
 
 ## 7. 目前已知問題：操作流程太麻煩
 
-目前流程雖然技術上可行，但使用者操作偏繁瑣：
+已識別問題：舊流程需要多次操作，使用者必須分別建立 ERPNext 商品、選擇入庫倉庫、再正式入庫。
 
-1. 先建立車輛。
-2. 再按建立 ERPNext 商品。
-3. 再進入編輯模式。
-4. 再選入庫倉庫。
-5. 再儲存。
-6. 再按正式入庫。
-7. 再確認結果。
+本次已新增 `VehicleIntakeService` 與「完成入庫」按鈕，將 ERPNext 底層入庫細節收斂到同一個 service 入口。
 
-這對實際員工使用不夠直覺。
+新流程目標：
 
-下一輪應討論：
+1. 新增車輛。
+2. 填 VIN / 採購車價。
+3. 儲存。
+4. 按「完成入庫」。
 
-* 是否要把「建立 Item + 正式入庫」合併成單一流程。
-* 是否要建立「車輛入庫精靈 / Stock In Wizard」。
-* 是否讓 `stock_warehouse` 有預設值。
-* 是否在新車儲存後自動提示下一步。
-* 是否把 `Used Car Vehicle` 做成真正的工作台，而不是單純資料表單。
-* 是否把常用操作集中到頁面上方的主要 action。
-
-本文件只記錄問題，不實作解法。
+ERPNext `Item` / `Serial No` / `Stock Entry` 由系統背後處理。
 
 ## 8. 下一步候選方向
 
@@ -221,6 +222,8 @@ bench --site erpnext.localhost clear-cache
 bench --site erpnext.localhost execute used_car_erp.used_car_erp.services.vehicle_item_service.verify_vehicle_item_service
 
 bench --site erpnext.localhost execute used_car_erp.used_car_erp.services.vehicle_stock_service.verify_vehicle_stock_service
+
+bench --site erpnext.localhost execute used_car_erp.used_car_erp.services.vehicle_intake_service.verify_vehicle_intake_service
 ```
 
 如果 `run-tests` 顯示 `Testing is disabled for the site`，不要為了本次文件修改而更動站台測試設定。
