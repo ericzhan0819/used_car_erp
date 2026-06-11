@@ -28,12 +28,14 @@ const LAYOUT_FIELD_TYPES = [
 ];
 
 function apply_vehicle_form_mode(frm) {
-  clear_vehicle_mode_buttons(frm);
+  clear_vehicle_action_buttons(frm);
 
   if (frm.is_new()) {
     set_vehicle_fields_read_only(frm, false);
     return;
   }
+
+  add_create_item_button(frm);
 
   if (frm._vehicle_edit_mode) {
     set_vehicle_fields_read_only(frm, false);
@@ -73,8 +75,37 @@ function set_vehicle_fields_read_only(frm, read_only) {
   frm.refresh_fields();
 }
 
-function clear_vehicle_mode_buttons(frm) {
-  ["編輯資料", "取消編輯"].forEach((label) => {
+function clear_vehicle_action_buttons(frm) {
+  ["編輯資料", "取消編輯", "建立 ERPNext 商品"].forEach((label) => {
     frm.remove_custom_button(label);
+  });
+}
+
+function add_create_item_button(frm) {
+  if (frm.is_new() || frm.doc.item || !frm.doc.stock_no) {
+    return;
+  }
+
+  frm.add_custom_button("建立 ERPNext 商品", () => {
+    frappe.confirm("確定要為此車輛建立 ERPNext 商品？", () => {
+      frappe.call({
+        method:
+          "used_car_erp.used_car_erp.services.vehicle_item_service.create_item_for_vehicle",
+        args: {
+          vehicle_name: frm.doc.name,
+        },
+        freeze: true,
+        callback(response) {
+          const result = response.message || {};
+          frappe.show_alert({
+            message: result.created
+              ? "已建立 ERPNext 商品"
+              : "已連結既有 ERPNext 商品",
+            indicator: result.created ? "green" : "blue",
+          });
+          frm.reload_doc();
+        },
+      });
+    });
   });
 }
