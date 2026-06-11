@@ -1,0 +1,234 @@
+# Used Car ERP Current State
+
+## 1. 專案定位
+
+本 app 是 ERPNext custom app：`used_car_erp`。
+
+目標是建立中古車買賣用的內部 ERP 工作流，不修改 ERPNext / Frappe core。
+
+`used_car_erp` 自訂 app 只負責中古車業務主檔、工作流 service、表單操作入口。ERPNext 原生 `Item` / `Serial No` / `Stock Entry` / `Warehouse` / `Account` 負責庫存與會計底層。
+
+## 2. 目前穩定流程
+
+目前已打通的基礎流程：
+
+```text
+Used Car Vehicle
+  -> create ERPNext Item
+  -> select stock warehouse
+  -> stock in vehicle
+  -> submit Stock Entry
+  -> create/link Serial No
+  -> write back stock_entry / serial_no
+  -> status = 庫存中
+```
+
+流程涵蓋：`Used Car Vehicle` → ERPNext `Item` → `Stock Entry` 正式入庫 → `Serial No` / VIN → 車輛狀態變成「庫存中」。
+
+## 3. 已完成模組
+
+### Used Car Vehicle DocType
+
+* 中古車主檔。
+* `stock_no` / 車輛編號由系統自動產生。
+* `stock_no` 不允許手動修改。
+* `status` 目前包含：草稿、庫存中、整備中、上架中、保留中、已售出、封存。
+* 包含車輛規格、採購資料、稅務與證件、ERPNext 連結等 tab。
+
+### Vehicle Form UX
+
+* 已存在車輛預設檢視模式。
+* 按「編輯資料」才進入可編輯狀態。
+* 系統欄位保持唯讀。
+* 表單 JS 只呼叫 whitelisted service，不承擔跨 DocType 業務邏輯。
+
+### Vehicle Item Service Foundation
+
+* 檔案：`used_car_erp/used_car_erp/services/vehicle_item_service.py`
+* 負責 `Used Car Vehicle` → ERPNext `Item` 建立 / 綁定。
+* `Item Code` 使用 `vehicle.stock_no`。
+* `Item Name` 由廠牌、車型、年式、車牌組合。
+* 不建立 `Stock Entry`。
+* 不建立 `Serial No` document。
+* 不建立 `Purchase Invoice` / `Sales Invoice` / `Payment Entry`。
+* 驗證已通過。
+
+### Vehicle Stock In Service Foundation
+
+* 檔案：`used_car_erp/used_car_erp/services/vehicle_stock_service.py`
+* 負責正式入庫。
+* 需要 `vehicle.item`。
+* 需要 VIN / 車身號碼。
+* 需要 `stock_warehouse`。
+* 需要 `purchase_price > 0`。
+* 使用 `Material Receipt Stock Entry`。
+* `Stock Entry Detail`：
+* `item_code = vehicle.item`
+* `qty = 1`
+* `t_warehouse = vehicle.stock_warehouse`
+* `basic_rate = vehicle.purchase_price`
+* `serial_no = vehicle.vin`
+* `submit` 成功後回寫：
+* `serial_no`
+* `stock_entry`
+* `status = 庫存中`
+* 不建立 `Purchase Invoice` / `Sales Invoice` / `Payment Entry`。
+* `bench execute` 驗證已通過。
+* 瀏覽器手動驗證已通過。
+
+### Workspace / List View
+
+* Workspace「中古車管理」作為導航入口。
+* List View 只負責列表顯示與狀態辨識。
+* 不做資料寫入。
+
+## 4. ERPNext 基礎設定
+
+目前已設定：
+
+* Warehouse：`商店 - O`。
+* 新增 / 使用庫存資產科目：`1211 - 中古車庫存 - O`。
+* `1211 - 中古車庫存 - O`：
+* `account_type = Stock`
+* `root_type = Asset`
+* `parent_account = 121~122 - 存貨 - O`
+* Warehouse `商店 - O` 已綁定 account：`1211 - 中古車庫存 - O`。
+
+原因：ERPNext `Stock Entry submit` 需要 Warehouse Account 或 Company Default Inventory Account。沒有設定時，`Stock Entry` 會出現：
+
+```text
+Please set Account in Warehouse 商店 - O or Default Inventory Account in Company OO
+```
+
+## 5. 已清理的測試事故
+
+本次測試中曾發生：
+
+* 遺留 `Stock Entry`：`MAT-STE-2026-00001`。
+* 原因：ERPNext 庫存帳戶設定缺漏，導致測試入庫流程中斷。
+* 修復方式：
+* 建立 / 綁定庫存科目。
+* 補回缺失的測試 `Item`。
+* 以 ERPNext 允許的方式補回 `Serial No`。
+* 使用標準 cancel 流程取消 `Stock Entry`。
+* 最終狀態：
+* `MAT-STE-2026-00001 docstatus = 2`。
+* `Stock Ledger` 已有反向沖銷。
+* `qty_after_transaction` 回到 0。
+* 沒有殘留庫存數量。
+
+此段是本機測試資料修復紀錄，不代表正式業務流程。
+
+## 6. 目前不要做的事
+
+暫時不要做：
+
+* 不做銷售 / 出庫。
+* 不做收款。
+* 不做 `Sales Invoice`。
+* 不做 `Purchase Invoice`。
+* 不做 `Payment Entry`。
+* 不做會計自動分錄。
+* 不做成本分攤。
+* 不做毛利計算。
+* 不做報表。
+* 不做圖片上傳。
+* 不做租賃模組。
+* 不做完整權限系統。
+* 不做 UI 大重構，直到工作流方向討論清楚。
+
+## 7. 目前已知問題：操作流程太麻煩
+
+目前流程雖然技術上可行，但使用者操作偏繁瑣：
+
+1. 先建立車輛。
+2. 再按建立 ERPNext 商品。
+3. 再進入編輯模式。
+4. 再選入庫倉庫。
+5. 再儲存。
+6. 再按正式入庫。
+7. 再確認結果。
+
+這對實際員工使用不夠直覺。
+
+下一輪應討論：
+
+* 是否要把「建立 Item + 正式入庫」合併成單一流程。
+* 是否要建立「車輛入庫精靈 / Stock In Wizard」。
+* 是否讓 `stock_warehouse` 有預設值。
+* 是否在新車儲存後自動提示下一步。
+* 是否把 `Used Car Vehicle` 做成真正的工作台，而不是單純資料表單。
+* 是否把常用操作集中到頁面上方的主要 action。
+
+本文件只記錄問題，不實作解法。
+
+## 8. 下一步候選方向
+
+以下為候選方向，不在本文件直接決定。
+
+### A. 操作流程簡化
+
+目標：
+
+* 減少建立車輛到正式入庫的點擊數。
+* 將 ERPNext 底層 `Item` / `Stock Entry` 複雜度隱藏在 service 後面。
+* 讓員工只理解「建立車輛」與「正式入庫」。
+
+### B. Vehicle Intake Workflow
+
+可能建立一個更清楚的入庫流程：
+
+```text
+草稿
+→ 建立商品
+→ 待入庫
+→ 庫存中
+```
+
+### C. UI Polish
+
+改善：
+
+* 主要 action 位置。
+* 狀態提示。
+* 下一步提示。
+* 已完成 / 未完成 checklist。
+* 不同 status 顯示不同操作。
+
+### D. Sales / Reservation 暫緩
+
+等入庫操作簡化後，再做：
+
+* 保留中。
+* 已售出。
+* 出庫。
+* `Sales Invoice`。
+* `Payment Entry`。
+* 會計分錄。
+
+## 9. 驗證指令
+
+目前常用驗證指令：
+
+```bash
+cd ~/frappe/frappe-bench
+
+bench --site erpnext.localhost migrate
+bench --site erpnext.localhost clear-cache
+bench build --app used_car_erp
+bench --site erpnext.localhost clear-cache
+
+bench --site erpnext.localhost execute used_car_erp.used_car_erp.services.vehicle_item_service.verify_vehicle_item_service
+
+bench --site erpnext.localhost execute used_car_erp.used_car_erp.services.vehicle_stock_service.verify_vehicle_stock_service
+```
+
+如果 `run-tests` 顯示 `Testing is disabled for the site`，不要為了本次文件修改而更動站台測試設定。
+
+## 10. Commit 歷史參考
+
+最近穩定 commits：
+
+* `6b2ddb0` `feat: add vehicle item service foundation`
+* `204909c` `feat: add vehicle stock in service foundation`
+* `12ae683` `polish: update vehicle ERPNext link descriptions`
