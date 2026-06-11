@@ -17,6 +17,7 @@ class UsedCarReservation(Document):
 
 	def validate(self):
 		self._prevent_reservation_no_change()
+		self._prevent_accounting_link_change()
 		self._validate_required_fields()
 		self._validate_status()
 		self._validate_deposit_amount()
@@ -28,6 +29,20 @@ class UsedCarReservation(Document):
 		old_reservation_no = frappe.db.get_value("Used Car Reservation", self.name, "reservation_no")
 		if old_reservation_no and self.reservation_no != old_reservation_no:
 			frappe.throw("保留單號由系統自動產生，不可手動修改。")
+
+	def _prevent_accounting_link_change(self):
+		if self.is_new():
+			return
+
+		old_values = frappe.db.get_value(
+			"Used Car Reservation",
+			self.name,
+			("money_flow", "voucher_draft", "journal_entry"),
+			as_dict=True,
+		)
+		for fieldname in ("money_flow", "voucher_draft", "journal_entry"):
+			if old_values and (self.get(fieldname) or "") != (old_values.get(fieldname) or "") and not getattr(self.flags, "ignore_accounting_link_validation", False):
+				frappe.throw("金流紀錄、傳票草稿與正式會計傳票欄位只能由系統服務回寫。")
 
 	def _validate_required_fields(self):
 		if not self.vehicle:

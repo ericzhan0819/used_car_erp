@@ -51,21 +51,31 @@ Vehicle Reservation Foundation：
 ```text
 上架中
 → 建立訂金保留
+→ 建立金流紀錄
+→ 建立傳票草稿
 → 保留中
+→ 會計確認入帳
+→ 建立正式會計傳票
 → 取消保留
 → 上架中
 ```
 
 訂金保留會建立 `Used Car Reservation`。
 訂金保留可以建立 / 連結 ERPNext `Customer`。
+訂金保留會建立 `Used Car Money Flow`。
+訂金保留會建立 `Used Car Voucher Draft`。
 車輛會從「上架中」改為「保留中」。
 取消保留會讓車輛回到「上架中」。
-訂金金額目前是業務紀錄，不是 `Payment Entry`。
+訂金金流會先產生傳票草稿。
+傳票草稿必須由會計人工確認。
+確認前不會正式入帳。
+確認後才建立正式 `Journal Entry`。
+訂金先視為預收款 / 暫收款，不直接認列賣車收入。
+訂金金額不是 `Payment Entry`。
 不建立 `Sales Invoice`。
 不建立 `Delivery Note`。
 不出庫。
 不認列收入。
-不建立會計分錄。
 
 ## 3. 已完成模組
 
@@ -149,10 +159,33 @@ Vehicle Reservation Foundation：
 * 允許取消保留時 `保留中` → `上架中`。
 * 建立 `Used Car Reservation`。
 * 可建立 / 連結 ERPNext `Customer`。
-* 訂金金額目前只是業務保留紀錄，不是 `Payment Entry`。
-* 不建立 `Sales Invoice` / `Payment Entry` / `Delivery Note` / `Journal Entry`。
+* 建立 `Used Car Money Flow` 記錄訂金收款。
+* 建立 `Used Car Voucher Draft` 作為會計草稿。
+* 業務建立訂金時不建立正式 `Journal Entry`。
+* 不建立 `Sales Invoice` / `Payment Entry` / `Delivery Note`。
 * 不建立新的 `Stock Entry`。
-* 不出庫、不認列收入、不建立會計分錄。
+* 不出庫、不認列收入。
+
+### Vehicle Money Flow Service Foundation
+
+* 檔案：`used_car_erp/used_car_erp/services/vehicle_money_flow_service.py`
+* 負責從有效訂金保留建立 `Used Car Money Flow`。
+* 本次只支援 `flow_type = 訂金收款`。
+* 建立後呼叫 voucher service 產生傳票草稿。
+* 不建立 `Payment Entry` / `Sales Invoice` / `Delivery Note` / `Stock Entry`。
+* 不建立正式 `Journal Entry`。
+* 不修改 `Stock Ledger` / `Serial No` / 車輛狀態。
+
+### Vehicle Voucher Draft Service Foundation
+
+* 檔案：`used_car_erp/used_car_erp/services/vehicle_voucher_service.py`
+* 負責根據金流紀錄建立 `Used Car Voucher Draft`。
+* 訂金草稿分錄：借方為銀行 / 現金科目，貸方為預收款 / 暫收款或負債科目。
+* 草稿借貸必須平衡。
+* 只有會計在傳票草稿按「確認入帳」後，才建立並提交 ERPNext `Journal Entry`。
+* 可退回草稿。
+* 可作廢尚未入帳草稿。
+* 已入帳草稿不可直接作廢；反向傳票本次不做。
 
 ### Workspace / List View
 
@@ -204,12 +237,12 @@ Please set Account in Warehouse 商店 - O or Default Inventory Account in Compa
 * 不做尾款。
 * 不做銷售 / 出庫。
 * 不做出售 / 已售出。
-* 不做收款。
+* 不做尾款、貸款撥款、退款。
 * 不做 `Sales Invoice`。
 * 不做 `Purchase Invoice`。
 * 不做 `Payment Entry`。
-* 不做 `Journal Entry`。
-* 不做會計自動分錄。
+* 不做業務端自動正式入帳。
+* 不做自動確認入帳。
 * 不做成本分攤。
 * 不做毛利計算。
 * 不做報表。

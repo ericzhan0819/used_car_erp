@@ -3,6 +3,7 @@ from frappe.utils import flt, now, nowdate
 
 from used_car_erp.used_car_erp.services.vehicle_intake_service import VehicleIntakeService
 from used_car_erp.used_car_erp.services.vehicle_listing_service import VehicleListingService
+from used_car_erp.used_car_erp.services.vehicle_money_flow_service import VehicleMoneyFlowService
 
 
 VALID_PAYMENT_METHODS = ("現金", "匯款", "信用卡", "其他")
@@ -63,7 +64,9 @@ class VehicleReservationService:
 				}
 			).insert()
 
-			# 訂金保留只切換中古車業務狀態，避免觸發 ERPNext 庫存、出庫或會計文件。
+			money_flow_result = VehicleMoneyFlowService().create_deposit_money_flow_from_reservation(reservation.name)
+
+			# 訂金保留只切換中古車業務狀態；正式會計傳票必須由傳票草稿人工確認後才建立。
 			frappe.db.set_value("Used Car Vehicle", vehicle.name, "status", "保留中")
 			frappe.db.commit()
 		except Exception:
@@ -72,6 +75,8 @@ class VehicleReservationService:
 
 		return {
 			"reservation": reservation.name,
+			"money_flow": money_flow_result.get("money_flow"),
+			"voucher_draft": money_flow_result.get("voucher_draft"),
 			"vehicle_name": vehicle.name,
 			"stock_no": vehicle.stock_no,
 			"previous_status": previous_status,
@@ -82,7 +87,7 @@ class VehicleReservationService:
 			"deposit_amount": flt(deposit_amount),
 			"payment_method": payment_method,
 			"changed": True,
-			"message": "已建立訂金保留，車輛已改為保留中。",
+			"message": "已建立訂金保留、金流紀錄與傳票草稿，車輛已改為保留中。",
 		}
 
 	def cancel_reservation(self, reservation_name: str, reason: str):

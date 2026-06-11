@@ -363,7 +363,7 @@ function set_vehicle_intake_intro(frm) {
   }
 
   if (frm.doc.status === "保留中") {
-    frm.set_intro("此車輛已保留。若訂單取消，可取消保留並回到上架中。尾款與出售流程尚未開放。", "orange");
+    frm.set_intro("此車輛已保留。訂金金流紀錄與傳票草稿已由系統建立，等待會計審核入帳。尾款與出售流程尚未開放。", "orange");
     return;
   }
 
