@@ -45,7 +45,27 @@ Vehicle Preparation / Listing Foundation：
 整備 / 上架 / 下架回庫存都只改 `Used Car Vehicle.status`。
 不產生 ERPNext `Stock Entry`。
 不產生 `Sales Invoice` / `Payment Entry` / `Delivery Note` / `Journal Entry`。
-訂金保留、客戶、銷售、出庫、收款仍暫緩。
+
+Vehicle Reservation Foundation：
+
+```text
+上架中
+→ 建立訂金保留
+→ 保留中
+→ 取消保留
+→ 上架中
+```
+
+訂金保留會建立 `Used Car Reservation`。
+訂金保留可以建立 / 連結 ERPNext `Customer`。
+車輛會從「上架中」改為「保留中」。
+取消保留會讓車輛回到「上架中」。
+訂金金額目前是業務紀錄，不是 `Payment Entry`。
+不建立 `Sales Invoice`。
+不建立 `Delivery Note`。
+不出庫。
+不認列收入。
+不建立會計分錄。
 
 ## 3. 已完成模組
 
@@ -121,6 +141,19 @@ Vehicle Preparation / Listing Foundation：
 * 不建立 `Stock Entry` / `Sales Invoice` / `Payment Entry` / `Delivery Note` / `Journal Entry`。
 * 不修改 `Item` / `Serial No` / `Stock Ledger`。
 
+### Vehicle Reservation Service Foundation
+
+* 檔案：`used_car_erp/used_car_erp/services/vehicle_reservation_service.py`
+* 負責上架車輛的訂金保留業務流程。
+* 允許 `上架中` → `保留中`。
+* 允許取消保留時 `保留中` → `上架中`。
+* 建立 `Used Car Reservation`。
+* 可建立 / 連結 ERPNext `Customer`。
+* 訂金金額目前只是業務保留紀錄，不是 `Payment Entry`。
+* 不建立 `Sales Invoice` / `Payment Entry` / `Delivery Note` / `Journal Entry`。
+* 不建立新的 `Stock Entry`。
+* 不出庫、不認列收入、不建立會計分錄。
+
 ### Workspace / List View
 
 * Workspace「中古車管理」作為導航入口。
@@ -168,11 +201,14 @@ Please set Account in Warehouse 商店 - O or Default Inventory Account in Compa
 
 暫時不要做：
 
+* 不做尾款。
 * 不做銷售 / 出庫。
+* 不做出售 / 已售出。
 * 不做收款。
 * 不做 `Sales Invoice`。
 * 不做 `Purchase Invoice`。
 * 不做 `Payment Entry`。
+* 不做 `Journal Entry`。
 * 不做會計自動分錄。
 * 不做成本分攤。
 * 不做毛利計算。
@@ -234,12 +270,14 @@ ERPNext `Item` / `Serial No` / `Stock Entry` 由系統背後處理。
 
 等入庫操作簡化後，再做：
 
-* 保留中。
+* 尾款。
 * 已售出。
 * 出庫。
 * `Sales Invoice`。
 * `Payment Entry`。
+* `Journal Entry`。
 * 會計分錄。
+* 報表。
 
 ## 9. 驗證指令
 

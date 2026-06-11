@@ -89,6 +89,8 @@ function clear_vehicle_action_buttons(frm) {
     "直接上架",
     "整備完成並上架",
     "下架回庫存",
+    "建立訂金保留",
+    "取消保留",
   ].forEach((label) => {
     frm.remove_custom_button(label);
   });
@@ -133,7 +135,7 @@ function add_complete_intake_button(frm) {
 }
 
 function add_listing_workflow_buttons(frm) {
-  if (frm.is_new() || ["草稿", "保留中", "已售出", "封存"].includes(frm.doc.status)) {
+  if (frm.is_new() || ["草稿", "已售出", "封存"].includes(frm.doc.status)) {
     return;
   }
 
@@ -167,6 +169,10 @@ function add_listing_workflow_buttons(frm) {
   }
 
   if (frm.doc.status === "上架中") {
+    if (is_vehicle_stocked(frm)) {
+      add_create_reservation_button(frm);
+    }
+
     add_listing_action_button(
       frm,
       "下架回庫存",
@@ -174,7 +180,137 @@ function add_listing_workflow_buttons(frm) {
       "used_car_erp.used_car_erp.services.vehicle_listing_service.unlist_vehicle",
       "已下架回庫存"
     );
+    return;
   }
+
+  if (frm.doc.status === "保留中") {
+    add_cancel_reservation_button(frm);
+  }
+}
+
+function add_create_reservation_button(frm) {
+  frm.add_custom_button("建立訂金保留", () => {
+    frappe.prompt(
+      [
+        {
+          fieldname: "existing_customer",
+          label: "既有客戶",
+          fieldtype: "Link",
+          options: "Customer",
+          reqd: 0,
+        },
+        {
+          fieldname: "customer_name",
+          label: "客戶姓名",
+          fieldtype: "Data",
+          reqd: 1,
+        },
+        {
+          fieldname: "customer_phone",
+          label: "客戶電話",
+          fieldtype: "Data",
+          reqd: 1,
+        },
+        {
+          fieldname: "deposit_amount",
+          label: "訂金金額",
+          fieldtype: "Currency",
+          reqd: 1,
+        },
+        {
+          fieldname: "payment_method",
+          label: "付款方式",
+          fieldtype: "Select",
+          options: "現金\n匯款\n信用卡\n其他",
+          default: "現金",
+          reqd: 1,
+        },
+        {
+          fieldname: "deposit_date",
+          label: "訂金日期",
+          fieldtype: "Date",
+          default: frappe.datetime.get_today(),
+          reqd: 1,
+        },
+        {
+          fieldname: "payment_reference",
+          label: "付款備註 / 末五碼",
+          fieldtype: "Data",
+          reqd: 0,
+        },
+        {
+          fieldname: "notes",
+          label: "備註",
+          fieldtype: "Small Text",
+          reqd: 0,
+        },
+      ],
+      (values) => {
+        frappe.call({
+          method:
+            "used_car_erp.used_car_erp.services.vehicle_reservation_service.create_reservation",
+          args: {
+            vehicle_name: frm.doc.name,
+            customer: values.existing_customer,
+            customer_name: values.customer_name,
+            customer_phone: values.customer_phone,
+            deposit_amount: values.deposit_amount,
+            payment_method: values.payment_method,
+            deposit_date: values.deposit_date,
+            payment_reference: values.payment_reference,
+            notes: values.notes,
+          },
+          freeze: true,
+          freeze_message: "正在建立保留...",
+          callback() {
+            frappe.show_alert({
+              message: "已建立訂金保留",
+              indicator: "green",
+            });
+            frm.reload_doc();
+          },
+        });
+      },
+      "建立訂金保留",
+      "建立保留"
+    );
+  });
+}
+
+function add_cancel_reservation_button(frm) {
+  frm.add_custom_button("取消保留", () => {
+    frappe.prompt(
+      [
+        {
+          fieldname: "reason",
+          label: "取消原因",
+          fieldtype: "Small Text",
+          reqd: 1,
+        },
+      ],
+      (values) => {
+        frappe.call({
+          method:
+            "used_car_erp.used_car_erp.services.vehicle_reservation_service.cancel_active_reservation_for_vehicle",
+          args: {
+            vehicle_name: frm.doc.name,
+            reason: values.reason,
+          },
+          freeze: true,
+          freeze_message: "正在取消保留...",
+          callback() {
+            frappe.show_alert({
+              message: "已取消保留，車輛已回到上架中",
+              indicator: "green",
+            });
+            frm.reload_doc();
+          },
+        });
+      },
+      "取消保留",
+      "取消保留"
+    );
+  });
 }
 
 function add_listing_action_button(frm, label, confirm_message, method, success_message) {
@@ -222,12 +358,12 @@ function set_vehicle_intake_intro(frm) {
   }
 
   if (frm.doc.status === "上架中") {
-    frm.set_intro("此車輛已上架，可準備銷售。訂金保留與銷售流程尚未開放。", "green");
+    frm.set_intro("此車輛已上架。若客戶已下訂金，可建立訂金保留，車輛將改為保留中。", "green");
     return;
   }
 
   if (frm.doc.status === "保留中") {
-    frm.set_intro("此車輛已保留。保留 / 訂金流程將在後續階段處理。", "orange");
+    frm.set_intro("此車輛已保留。若訂單取消，可取消保留並回到上架中。尾款與出售流程尚未開放。", "orange");
     return;
   }
 
