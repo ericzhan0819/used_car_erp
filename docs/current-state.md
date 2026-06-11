@@ -25,6 +25,28 @@ Used Car Vehicle
 
 流程涵蓋：`Used Car Vehicle` → ERPNext `Item` → `Stock Entry` 正式入庫 → `Serial No` / VIN → 車輛狀態變成「庫存中」。
 
+Vehicle Intake Foundation Stable：
+
+```text
+草稿
+→ 完成入庫
+→ 庫存中
+```
+
+Vehicle Preparation / Listing Foundation：
+
+```text
+庫存中
+→ 整備中
+→ 上架中
+→ 下架回庫存中
+```
+
+整備 / 上架 / 下架回庫存都只改 `Used Car Vehicle.status`。
+不產生 ERPNext `Stock Entry`。
+不產生 `Sales Invoice` / `Payment Entry` / `Delivery Note` / `Journal Entry`。
+訂金保留、客戶、銷售、出庫、收款仍暫緩。
+
 ## 3. 已完成模組
 
 ### Used Car Vehicle DocType
@@ -86,6 +108,18 @@ Used Car Vehicle
 * 呼叫 `VehicleStockService` 建立 / 提交 `Stock Entry` 並建立 / 綁定 `Serial No`。
 * 不重寫 `VehicleItemService` / `VehicleStockService` 底層驗證。
 * 不建立 `Purchase Invoice` / `Sales Invoice` / `Payment Entry`。
+
+### Vehicle Preparation / Listing Service Foundation
+
+* 檔案：`used_car_erp/used_car_erp/services/vehicle_listing_service.py`
+* 負責入庫後、銷售前的業務狀態轉換。
+* 允許 `庫存中` → `整備中`。
+* 允許 `庫存中` → `上架中`。
+* 允許 `整備中` → `上架中`。
+* 允許 `上架中` → `庫存中`。
+* 只更新 `Used Car Vehicle.status`。
+* 不建立 `Stock Entry` / `Sales Invoice` / `Payment Entry` / `Delivery Note` / `Journal Entry`。
+* 不修改 `Item` / `Serial No` / `Stock Ledger`。
 
 ### Workspace / List View
 

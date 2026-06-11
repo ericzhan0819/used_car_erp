@@ -38,6 +38,7 @@ function apply_vehicle_form_mode(frm) {
   }
 
   add_complete_intake_button(frm);
+  add_listing_workflow_buttons(frm);
 
   if (frm._vehicle_edit_mode) {
     set_vehicle_fields_read_only(frm, false);
@@ -78,7 +79,17 @@ function set_vehicle_fields_read_only(frm, read_only) {
 }
 
 function clear_vehicle_action_buttons(frm) {
-  ["編輯資料", "取消編輯", "建立 ERPNext 商品", "正式入庫", "完成入庫"].forEach((label) => {
+  [
+    "編輯資料",
+    "取消編輯",
+    "建立 ERPNext 商品",
+    "正式入庫",
+    "完成入庫",
+    "開始整備",
+    "直接上架",
+    "整備完成並上架",
+    "下架回庫存",
+  ].forEach((label) => {
     frm.remove_custom_button(label);
   });
 }
@@ -121,10 +132,112 @@ function add_complete_intake_button(frm) {
   });
 }
 
+function add_listing_workflow_buttons(frm) {
+  if (frm.is_new() || ["草稿", "保留中", "已售出", "封存"].includes(frm.doc.status)) {
+    return;
+  }
+
+  if (frm.doc.status === "庫存中" && is_vehicle_stocked(frm)) {
+    add_listing_action_button(
+      frm,
+      "開始整備",
+      "確定將此車輛狀態改為「整備中」？此操作不會異動 ERPNext 庫存。",
+      "used_car_erp.used_car_erp.services.vehicle_listing_service.start_preparation",
+      "已開始整備"
+    );
+    add_listing_action_button(
+      frm,
+      "直接上架",
+      "確定將此車輛狀態改為「上架中」？此操作不會異動 ERPNext 庫存。",
+      "used_car_erp.used_car_erp.services.vehicle_listing_service.list_vehicle",
+      "已上架"
+    );
+    return;
+  }
+
+  if (frm.doc.status === "整備中" && is_vehicle_stocked(frm)) {
+    add_listing_action_button(
+      frm,
+      "整備完成並上架",
+      "確定將此車輛狀態改為「上架中」？此操作不會異動 ERPNext 庫存。",
+      "used_car_erp.used_car_erp.services.vehicle_listing_service.list_vehicle",
+      "已上架"
+    );
+    return;
+  }
+
+  if (frm.doc.status === "上架中") {
+    add_listing_action_button(
+      frm,
+      "下架回庫存",
+      "確定將此車輛從「上架中」改回「庫存中」？此操作不會異動 ERPNext 庫存。",
+      "used_car_erp.used_car_erp.services.vehicle_listing_service.unlist_vehicle",
+      "已下架回庫存"
+    );
+  }
+}
+
+function add_listing_action_button(frm, label, confirm_message, method, success_message) {
+  frm.add_custom_button(label, () => {
+    frappe.confirm(confirm_message, () => {
+      frappe.call({
+        method,
+        args: {
+          vehicle_name: frm.doc.name,
+        },
+        freeze: true,
+        freeze_message: "正在更新車輛狀態...",
+        callback(response) {
+          const result = response.message || {};
+          frappe.show_alert({
+            message: result.message || success_message,
+            indicator: result.changed === false ? "blue" : "green",
+          });
+          frm.reload_doc();
+        },
+      });
+    });
+  });
+}
+
+function is_vehicle_stocked(frm) {
+  return Boolean(frm.doc.item && frm.doc.serial_no && frm.doc.stock_entry);
+}
+
 function set_vehicle_intake_intro(frm) {
   frm.set_intro("");
 
   if (frm.is_new()) {
+    return;
+  }
+
+  if (frm.doc.status === "庫存中" && is_vehicle_stocked(frm)) {
+    frm.set_intro("此車輛已完成入庫。下一步可開始整備，或直接上架銷售。", "green");
+    return;
+  }
+
+  if (frm.doc.status === "整備中") {
+    frm.set_intro("此車輛正在整備中。整備完成後可上架銷售。", "blue");
+    return;
+  }
+
+  if (frm.doc.status === "上架中") {
+    frm.set_intro("此車輛已上架，可準備銷售。訂金保留與銷售流程尚未開放。", "green");
+    return;
+  }
+
+  if (frm.doc.status === "保留中") {
+    frm.set_intro("此車輛已保留。保留 / 訂金流程將在後續階段處理。", "orange");
+    return;
+  }
+
+  if (frm.doc.status === "已售出") {
+    frm.set_intro("此車輛已售出，不可再進行整備或上架操作。", "green");
+    return;
+  }
+
+  if (frm.doc.status === "封存") {
+    frm.set_intro("此車輛已封存，不可進行一般業務操作。", "orange");
     return;
   }
 

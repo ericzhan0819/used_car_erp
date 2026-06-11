@@ -9,6 +9,7 @@
 * Vehicle Item Service Foundation
 * Vehicle Stock In Service Foundation
 * Vehicle Intake Service UX Orchestration
+* Vehicle Preparation / Listing Service Foundation
 
 ## Boundaries
 
@@ -33,6 +34,7 @@
 不得放 Item / Serial No / Invoice / Payment 建立邏輯。
 表單 JS 只能呼叫 whitelisted service endpoint，不承擔跨 DocType 業務邏輯。
 表單 UI 應盡量提供業務語意 action，例如「完成入庫」，不要讓一般使用者直接操作 ERPNext 底層概念，例如「建立 Item」或「建立 Stock Entry」。
+Used Car Vehicle Form 可以顯示業務 action，例如「開始整備」、「直接上架」、「整備完成並上架」、「下架回庫存」，但 JS 不得直接修改 status，必須呼叫 whitelisted service。
 
 ### Python Controller
 
@@ -55,11 +57,32 @@ vehicle_intake_service.py 只負責編排 Used Car Vehicle 入庫流程，呼叫
 不得建立 Purchase Invoice、Sales Invoice、Payment Entry、會計分錄。
 不得處理銷售、保留、出庫、交車。
 
+vehicle_listing_service.py 只負責入庫後、銷售前的 Used Car Vehicle 業務狀態轉換。
+允許：
+
+* 庫存中 → 整備中
+* 庫存中 → 上架中
+* 整備中 → 上架中
+* 上架中 → 庫存中
+
+不允許：
+
+* 建立 Stock Entry
+* 建立 Sales Invoice
+* 建立 Purchase Invoice
+* 建立 Payment Entry
+* 建立 Delivery Note
+* 建立 Journal Entry
+* 修改 Stock Ledger
+* 修改 Serial No
+* 處理訂金 / 客戶 / 銷售 / 出庫 / 收款 / 會計
+
 未來若要做 Serial No / Purchase Invoice / Sales Invoice / Payment Entry 自動化，請建立獨立 service 檔案，例如：
 
 used_car_erp/used_car_erp/services/vehicle_item_service.py
 used_car_erp/used_car_erp/services/vehicle_stock_service.py
 used_car_erp/used_car_erp/services/vehicle_intake_service.py
+used_car_erp/used_car_erp/services/vehicle_listing_service.py
 used_car_erp/used_car_erp/services/vehicle_purchase_service.py
 used_car_erp/used_car_erp/services/vehicle_sales_service.py
 
