@@ -90,6 +90,7 @@ function clear_vehicle_action_buttons(frm) {
     "整備完成並上架",
     "下架回庫存",
     "建立訂金保留",
+    "建立尾款收款",
     "取消保留",
   ].forEach((label) => {
     frm.remove_custom_button(label);
@@ -184,6 +185,7 @@ function add_listing_workflow_buttons(frm) {
   }
 
   if (frm.doc.status === "保留中") {
+    add_final_payment_button(frm);
     add_cancel_reservation_button(frm);
   }
 }
@@ -277,6 +279,78 @@ function add_create_reservation_button(frm) {
   });
 }
 
+function add_final_payment_button(frm) {
+  frm.add_custom_button("建立尾款收款", () => {
+    frappe.prompt(
+      [
+        {
+          fieldname: "amount",
+          label: "尾款金額",
+          fieldtype: "Currency",
+          reqd: 1,
+        },
+        {
+          fieldname: "payment_method",
+          label: "付款方式",
+          fieldtype: "Select",
+          options: "現金\n匯款\n信用卡\n其他",
+          default: "現金",
+          reqd: 1,
+        },
+        {
+          fieldname: "payment_date",
+          label: "尾款日期",
+          fieldtype: "Date",
+          default: frappe.datetime.get_today(),
+          reqd: 1,
+        },
+        {
+          fieldname: "payment_reference",
+          label: "付款備註 / 末五碼",
+          fieldtype: "Data",
+          reqd: 0,
+        },
+        {
+          fieldname: "notes",
+          label: "備註",
+          fieldtype: "Small Text",
+          reqd: 0,
+        },
+      ],
+      (values) => {
+        frappe.confirm(
+          "建立尾款收款後，系統只會建立金流紀錄與傳票草稿，不會交車、出庫、開銷售發票或建立收款單。是否繼續？",
+          () => {
+            frappe.call({
+              method:
+                "used_car_erp.used_car_erp.services.vehicle_reservation_service.create_final_payment_for_active_reservation",
+              args: {
+                vehicle_name: frm.doc.name,
+                amount: values.amount,
+                payment_method: values.payment_method,
+                payment_date: values.payment_date,
+                payment_reference: values.payment_reference,
+                notes: values.notes,
+              },
+              freeze: true,
+              freeze_message: "正在建立尾款金流...",
+              callback() {
+                frappe.show_alert({
+                  message: "已建立尾款金流與傳票草稿",
+                  indicator: "green",
+                });
+                frm.reload_doc();
+              },
+            });
+          }
+        );
+      },
+      "建立尾款收款",
+      "建立尾款"
+    );
+  });
+}
+
 function add_cancel_reservation_button(frm) {
   frm.add_custom_button("取消保留", () => {
     frappe.prompt(
@@ -363,7 +437,7 @@ function set_vehicle_intake_intro(frm) {
   }
 
   if (frm.doc.status === "保留中") {
-    frm.set_intro("此車輛已保留。訂金金流紀錄與傳票草稿已由系統建立，等待會計審核入帳。尾款與出售流程尚未開放。", "orange");
+    frm.set_intro("此車輛已保留。可建立尾款收款；系統只會建立金流紀錄與傳票草稿，正式入帳仍由會計在「會計作業」確認。交車與出庫流程尚未開放。", "orange");
     return;
   }
 
