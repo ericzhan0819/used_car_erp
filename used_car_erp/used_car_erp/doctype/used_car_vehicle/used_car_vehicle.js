@@ -48,6 +48,7 @@ function apply_vehicle_form_mode(frm) {
 
   add_complete_intake_button(frm);
   add_listing_workflow_buttons(frm);
+  add_create_vehicle_cost_button(frm);
   add_recalculate_cost_summary_button(frm);
 
   if (frm.doc.status === "已售出") {
@@ -113,9 +114,27 @@ function clear_vehicle_action_buttons(frm) {
     "正式交車入帳前檢查",
     "建立 Sales Invoice 草稿",
     "開啟 Sales Invoice 草稿",
+    "新增單車成本",
     "重新計算成本摘要",
   ].forEach((label) => {
     frm.remove_custom_button(label);
+  });
+}
+
+function add_create_vehicle_cost_button(frm) {
+  if (frm.is_new() || !frm.doc.name || frm.doc.status === "封存") {
+    return;
+  }
+
+  frm.add_custom_button("新增單車成本", () => {
+    frappe.new_doc("Used Car Vehicle Cost", {
+      vehicle: frm.doc.name,
+      cost_date: frappe.datetime.get_today(),
+      capitalization_mode: "單車成本",
+      document_type: "無憑證",
+      tax_deductibility: "待確認",
+      review_status: "待確認",
+    });
   });
 }
 
@@ -599,6 +618,7 @@ function add_vehicle_cost_summary_comment(frm) {
     `單車直接成本：${format_vehicle_currency(capitalized_cost_total)}`,
     `成交價：${format_vehicle_currency(sold_price)}`,
     `預估毛利：${format_vehicle_currency(gross_margin)}`,
+    "可使用「新增單車成本」記錄整備、維修、美容、拍場費等直接成本。",
     "此摘要只作管理估算，不是正式會計成本。",
   ];
 
