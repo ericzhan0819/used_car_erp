@@ -455,7 +455,8 @@ def _money_flow_verification_cleanup_complete(voucher_draft_name, money_flow_nam
 def create_final_payment_money_flow_from_reservation(
 	reservation_name: str,
 	amount,
-	payment_method: str,\tpayment_date=None,
+	payment_method: str,
+	payment_date=None,
 	payment_reference: str | None = None,
 	notes: str | None = None,
 ):
