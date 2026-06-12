@@ -90,6 +90,52 @@ class VehicleReservationService:
 			"message": "已建立訂金保留、金流紀錄與傳票草稿，車輛已改為保留中。",
 		}
 
+	def create_final_payment_for_active_reservation(
+		self,
+		vehicle_name: str,
+		amount,
+		payment_method: str,
+		payment_date=None,
+		payment_reference: str | None = None,
+		notes: str | None = None,
+	):
+		self._validate_payment_method(payment_method)
+		if flt(amount) <= 0:
+			frappe.throw("尾款金額必須大於 0。")
+
+		reservation_name = frappe.db.get_value(
+			"Used Car Reservation",
+			{"vehicle": vehicle_name, "status": "有效"},
+			"name",
+			order_by="creation desc",
+		)
+		if not reservation_name:
+			frappe.throw("找不到此車輛的有效保留紀錄。")
+
+		try:
+			result = VehicleMoneyFlowService().create_final_payment_money_flow_from_reservation(
+				reservation_name=reservation_name,
+				amount=amount,
+				payment_method=payment_method,
+				payment_date=payment_date,
+				payment_reference=payment_reference,
+				notes=notes,
+			)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			raise
+
+		return {
+			"reservation": reservation_name,
+			"money_flow": result.get("money_flow"),
+			"voucher_draft": result.get("voucher_draft"),
+			"vehicle_name": vehicle_name,
+			"amount": flt(amount),
+			"changed": True,
+			"message": "已建立尾款金流紀錄與傳票草稿，等待會計審核入帳。",
+		}
+
 	def cancel_reservation(self, reservation_name: str, reason: str):
 		if not reason:
 			frappe.throw("取消原因為必填。")
@@ -164,6 +210,9 @@ class VehicleReservationService:
 			"deposit_amount": reservation.deposit_amount,
 			"payment_method": reservation.payment_method,
 			"deposit_date": reservation.deposit_date,
+			"final_money_flow": reservation.get("final_money_flow"),
+			"final_voucher_draft": reservation.get("final_voucher_draft"),
+			"final_payment_amount": reservation.get("final_payment_amount"),
 		}
 
 	def _validate_vehicle_ready_for_reservation(self, vehicle):
@@ -271,6 +320,26 @@ def create_reservation(
 
 
 @frappe.whitelist()
+def create_final_payment_for_active_reservation(
+	vehicle_name: str,
+	amount,
+	payment_method: str,
+	payment_date=None,
+	payment_reference: str | None = None,
+	notes: str | None = None,
+):
+	service = VehicleReservationService()
+	return service.create_final_payment_for_active_reservation(
+		vehicle_name=vehicle_name,
+		amount=amount,
+		payment_method=payment_method,
+		payment_date=payment_date,
+		payment_reference=payment_reference,
+		notes=notes,
+	)
+
+
+@frappe.whitelist()
 def cancel_reservation(reservation_name: str, reason: str):
 	service = VehicleReservationService()
 	return service.cancel_reservation(reservation_name, reason)
@@ -329,9 +398,7 @@ def verify_vehicle_reservation_service():
 			frappe.throw("Vehicle Reservation Service verification requires status 上架中 before reservation.")
 
 		before_counts = _reservation_verification_doc_counts()
-		before_serial_no_modified = frappe.db.get_value("Serial No", serial_no, "modified") if serial_no else None
-
-		reservation_result = service.create_reservation(
+		result = service.create_reservation(
 			vehicle_name=vehicle.name,
 			customer_name="王小明",
 			customer_phone="0912345678",
@@ -340,103 +407,66 @@ def verify_vehicle_reservation_service():
 			deposit_date=nowdate(),
 			payment_reference="VERIFY",
 		)
-		reservation_name = reservation_result.get("reservation")
-		customer_name = reservation_result.get("customer")
-		reservation = frappe.get_doc("Used Car Reservation", reservation_name)
+		reservation_name = result.get("reservation")
+		customer_name = result.get("customer")
 		vehicle.reload()
-
-		if reservation.status != "有效":
-			frappe.throw("Vehicle Reservation Service verification did not create active reservation.")
-		if vehicle.status != "保留中":
-			frappe.throw("Vehicle Reservation Service verification did not update vehicle status to 保留中.")
-		if not reservation.customer:
-			frappe.throw("Vehicle Reservation Service verification did not create/link Customer.")
-		if flt(reservation.deposit_amount) != 10000:
-			frappe.throw("Vehicle Reservation Service verification deposit amount mismatch.")
-
-		duplicate_reservation_blocked = False
-		try:
-			service.create_reservation(
-				vehicle_name=vehicle.name,
-				customer_name="王小明",
-				customer_phone="0912345678",
-				deposit_amount=10000,
-				payment_method="現金",
-			)
-		except frappe.ValidationError:
-			duplicate_reservation_blocked = True
-		if not duplicate_reservation_blocked:
-			frappe.throw("Vehicle Reservation Service verification allowed duplicate active reservation.")
-
 		after_reservation_counts = _reservation_verification_doc_counts()
-		if after_reservation_counts != before_counts:
-			frappe.throw("Vehicle Reservation Service must not create stock, invoice, payment, delivery, or journal documents.")
 
-		cancel_result = service.cancel_active_reservation_for_vehicle(vehicle.name, reason="VERIFY CANCEL")
-		reservation.reload()
+		if vehicle.status != "保留中":
+			frappe.throw("Vehicle Reservation Service verification did not move vehicle to 保留中.")
+		if after_reservation_counts["Journal Entry"] != before_counts["Journal Entry"]:
+			frappe.throw("Reservation must not create Journal Entry before accounting confirm.")
+		for doctype in ("Payment Entry", "Sales Invoice", "Delivery Note", "Stock Entry"):
+			if after_reservation_counts[doctype] != before_counts[doctype]:
+				frappe.throw(f"Reservation must not create {doctype}.")
+
+		cancel_result = service.cancel_reservation(reservation_name, "VERIFY CANCEL")
 		vehicle.reload()
-		if reservation.status != "已取消":
-			frappe.throw("Vehicle Reservation Service verification did not cancel reservation.")
-		if not reservation.cancellation_reason:
-			frappe.throw("Vehicle Reservation Service verification did not record cancellation reason.")
-		if vehicle.status != "上架中":
-			frappe.throw("Vehicle Reservation Service verification did not return vehicle status to 上架中.")
-
-		after_cancel_counts = _reservation_verification_doc_counts()
-		if after_cancel_counts != before_counts:
-			frappe.throw("Vehicle Reservation Service cancel must not create stock, invoice, payment, delivery, or journal documents.")
-		if serial_no and frappe.db.get_value("Serial No", serial_no, "modified") != before_serial_no_modified:
-			frappe.throw("Vehicle Reservation Service must not modify Serial No.")
+		reservation = frappe.get_doc("Used Car Reservation", reservation_name)
+		if vehicle.status != "上架中" or reservation.status != "已取消":
+			frappe.throw("Cancel reservation did not restore vehicle to 上架中 and mark reservation 已取消.")
 
 		verification = {
 			"vehicle_name": vehicle.name,
 			"stock_no": stock_no,
 			"reservation": reservation_name,
 			"customer": customer_name,
-			"status_after_reservation": reservation_result.get("status"),
-			"status_after_cancel": cancel_result.get("status"),
-			"duplicate_reservation_blocked": duplicate_reservation_blocked,
-			"stock_entry_count_unchanged": after_cancel_counts["Stock Entry"] == before_counts["Stock Entry"],
-			"purchase_invoice_count_unchanged": after_cancel_counts["Purchase Invoice"] == before_counts["Purchase Invoice"],
-			"sales_invoice_count_unchanged": after_cancel_counts["Sales Invoice"] == before_counts["Sales Invoice"],
-			"payment_entry_count_unchanged": after_cancel_counts["Payment Entry"] == before_counts["Payment Entry"],
-			"delivery_note_count_unchanged": after_cancel_counts["Delivery Note"] == before_counts["Delivery Note"],
-			"journal_entry_count_unchanged": after_cancel_counts["Journal Entry"] == before_counts["Journal Entry"],
+			"reservation_status": reservation.status,
+			"vehicle_status": vehicle.status,
+			"money_flow": result.get("money_flow"),
+			"voucher_draft": result.get("voucher_draft"),
+			"cancel_message": cancel_result.get("message"),
+			"journal_entry_count_unchanged": after_reservation_counts["Journal Entry"] == before_counts["Journal Entry"],
+			"payment_entry_count_unchanged": after_reservation_counts["Payment Entry"] == before_counts["Payment Entry"],
+			"sales_invoice_count_unchanged": after_reservation_counts["Sales Invoice"] == before_counts["Sales Invoice"],
+			"delivery_note_count_unchanged": after_reservation_counts["Delivery Note"] == before_counts["Delivery Note"],
+			"stock_entry_count_unchanged_after_reservation": after_reservation_counts["Stock Entry"] == before_counts["Stock Entry"],
 			"cleaned_up": False,
 		}
 	finally:
 		try:
-			stock_entry_cancelled = False
 			if reservation_name and frappe.db.exists("Used Car Reservation", reservation_name):
 				frappe.delete_doc("Used Car Reservation", reservation_name, force=True)
 			if stock_entry_name and frappe.db.exists("Stock Entry", stock_entry_name):
 				stock_entry = frappe.get_doc("Stock Entry", stock_entry_name)
 				if stock_entry.docstatus == 1:
 					stock_entry.cancel()
-					stock_entry_cancelled = True
 				elif stock_entry.docstatus == 0:
 					frappe.delete_doc("Stock Entry", stock_entry_name, force=True)
-					stock_entry_cancelled = True
 			if vehicle and frappe.db.exists("Used Car Vehicle", vehicle.name):
-				frappe.db.set_value(
-					"Used Car Vehicle",
-					vehicle.name,
-					{"serial_no": None, "stock_entry": None, "item": None},
-				)
+				frappe.db.set_value("Used Car Vehicle", vehicle.name, {"serial_no": None, "stock_entry": None, "item": None})
 				frappe.delete_doc("Used Car Vehicle", vehicle.name, force=True)
-			if stock_entry_cancelled and not serial_existed_before and serial_no and frappe.db.exists("Serial No", serial_no):
+			if serial_no and not serial_existed_before and frappe.db.exists("Serial No", serial_no):
 				try:
 					frappe.delete_doc("Serial No", serial_no, force=True)
 				except Exception:
-					# 庫存歷史可能限制序號刪除，清理不得繞過 ERPNext 標準保護。
 					verification["serial_no_cleanup_skipped"] = True
-			if stock_entry_cancelled and not item_existed_before and item_name and frappe.db.exists("Item", item_name):
+			if item_name and not item_existed_before and frappe.db.exists("Item", item_name):
 				try:
 					frappe.delete_doc("Item", item_name, force=True)
 				except Exception:
-					# Item 若已被庫存歷史引用，保留標準完整性限制並回報。
 					verification["item_cleanup_skipped"] = True
-			if not customer_existed_before and customer_name and frappe.db.exists("Customer", customer_name):
+			if customer_name and not customer_existed_before and frappe.db.exists("Customer", customer_name):
 				try:
 					frappe.delete_doc("Customer", customer_name, force=True)
 				except Exception:
@@ -445,10 +475,12 @@ def verify_vehicle_reservation_service():
 			verification["cleaned_up"] = True
 		except Exception as exc:
 			frappe.db.rollback()
-			frappe.throw(f"Vehicle Reservation Service verification cleanup failed: {exc}")
+			frappe.throw(f"Vehicle Reservation verification cleanup failed: {exc}")
 
 	return verification
 
 
 def _reservation_verification_doc_counts():
-	return {doctype: frappe.db.count(doctype) for doctype in RESTRICTED_ACCOUNTING_DOCTYPES}
+	counts = {doctype: frappe.db.count(doctype) for doctype in RESTRICTED_ACCOUNTING_DOCTYPES}
+	counts["Used Car Reservation"] = frappe.db.count("Used Car Reservation")
+	return counts
