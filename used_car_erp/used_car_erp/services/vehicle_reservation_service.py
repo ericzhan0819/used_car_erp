@@ -260,6 +260,78 @@ class VehicleReservationService:
 			"message": "此車輛已具備正式交車入帳前置條件，可進入 Sales Invoice 草稿建立階段。",
 		}
 
+	def create_sales_invoice_draft_for_vehicle(
+		self,
+		vehicle_name: str,
+		posting_date=None,
+		note: str | None = None,
+	):
+		preflight = self.preflight_formal_delivery_for_vehicle(vehicle_name)
+		posting_date = posting_date or nowdate()
+
+		try:
+			vehicle = frappe.get_doc("Used Car Vehicle", vehicle_name)
+			vehicle.check_permission("write")
+			reservation = frappe.get_doc("Used Car Reservation", preflight.get("reservation"))
+			reservation.check_permission("read")
+
+			if vehicle.status != "已售出":
+				frappe.throw("車輛狀態不是已售出。")
+			if reservation.status != "已完成":
+				frappe.throw("保留單狀態不是已完成。")
+			if vehicle.get("sales_invoice"):
+				frappe.throw("此車輛已建立 Sales Invoice 草稿，不可重複建立。")
+			if vehicle.get("formal_delivery_status") == "已完成":
+				frappe.throw("此車輛已完成正式交車入帳，不可重複建立 Sales Invoice 草稿。")
+			if not reservation.customer:
+				frappe.throw("保留單缺少 Customer，無法建立 Sales Invoice 草稿。")
+
+			resolved_warehouse = self._resolve_vehicle_sales_warehouse(vehicle)
+			sales_amount = flt(preflight.get("sales_amount"))
+			sales_invoice = frappe.get_doc(
+				{
+					"doctype": "Sales Invoice",
+					"customer": reservation.customer,
+					"posting_date": posting_date,
+					"due_date": posting_date,
+					"update_stock": 1,
+					"remarks": self._build_sales_invoice_draft_remarks(vehicle, reservation),
+					"items": [
+						{
+							"item_code": vehicle.item,
+							"qty": 1,
+							"rate": sales_amount,
+							"serial_no": vehicle.serial_no,
+							"warehouse": resolved_warehouse,
+						}
+					],
+				}
+			).insert()
+
+			self._write_vehicle_formal_delivery_draft(
+				vehicle,
+				{
+					"formal_delivery_status": "銷售發票草稿",
+					"formal_delivery_posting_date": posting_date,
+					"sales_invoice": sales_invoice.name,
+					"formal_delivery_note": note,
+				},
+			)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			raise
+
+		return {
+			"vehicle_name": vehicle.name,
+			"reservation": reservation.name,
+			"sales_invoice": sales_invoice.name,
+			"sales_invoice_status": "Draft",
+			"formal_delivery_status": "銷售發票草稿",
+			"sales_amount": sales_amount,
+			"message": "已建立 Sales Invoice 草稿，請先人工檢查後再進入正式提交與沖轉階段。",
+		}
+
 	def complete_active_reservation(self, vehicle_name: str, completion_note: str | None = None):
 		preflight = self.preflight_delivery_for_active_reservation(vehicle_name)
 
@@ -591,6 +663,53 @@ class VehicleReservationService:
 			final_payment_amount = final_money_flow.amount
 		return flt(reservation.deposit_amount) + flt(final_payment_amount)
 
+	def _resolve_vehicle_sales_warehouse(self, vehicle):
+		meta = frappe.get_meta("Used Car Vehicle")
+		for fieldname in ("warehouse", "target_warehouse", "source_warehouse", "stock_warehouse"):
+			if meta.has_field(fieldname) and vehicle.get(fieldname):
+				return vehicle.get(fieldname)
+
+		if vehicle.get("stock_entry"):
+			warehouse = frappe.db.get_value(
+				"Stock Entry Detail",
+				{"parent": vehicle.stock_entry, "item_code": vehicle.item, "serial_no": ["like", f"%{vehicle.serial_no}%"]},
+				"t_warehouse",
+				order_by="idx asc",
+			)
+			if not warehouse:
+				warehouse = frappe.db.get_value(
+					"Stock Entry Detail",
+					{"parent": vehicle.stock_entry, "item_code": vehicle.item},
+					"t_warehouse",
+					order_by="idx asc",
+				)
+			if warehouse:
+				return warehouse
+
+		frappe.throw("找不到車輛庫存倉，無法建立 Sales Invoice 草稿。")
+
+	def _build_sales_invoice_draft_remarks(self, vehicle, reservation):
+		return "\n".join(
+			str(part)
+			for part in (
+				"中古車正式銷售草稿",
+				f"車輛：{vehicle.name}",
+				f"庫存編號：{vehicle.stock_no}",
+				f"保留單：{reservation.name}",
+				f"訂金金流：{vehicle.deposit_money_flow}",
+				f"尾款金流：{vehicle.final_money_flow}",
+			)
+			if part
+		)
+
+	def _write_vehicle_formal_delivery_draft(self, vehicle, values: dict):
+		meta = frappe.get_meta("Used Car Vehicle")
+		vehicle.flags.ignore_formal_delivery_validation = True
+		for fieldname, value in values.items():
+			if meta.has_field(fieldname):
+				vehicle.set(fieldname, value)
+		vehicle.save()
+
 	def _write_vehicle_sale_completion_summary(self, vehicle, values: dict):
 		meta = frappe.get_meta("Used Car Vehicle")
 		vehicle.flags.ignore_sale_completion_validation = True
@@ -733,6 +852,20 @@ def preflight_delivery_for_active_reservation(vehicle_name: str):
 def preflight_formal_delivery_for_vehicle(vehicle_name: str):
 	service = VehicleReservationService()
 	return service.preflight_formal_delivery_for_vehicle(vehicle_name)
+
+
+@frappe.whitelist()
+def create_sales_invoice_draft_for_vehicle(
+	vehicle_name: str,
+	posting_date=None,
+	note: str | None = None,
+):
+	service = VehicleReservationService()
+	return service.create_sales_invoice_draft_for_vehicle(
+		vehicle_name=vehicle_name,
+		posting_date=posting_date,
+		note=note,
+	)
 
 
 @frappe.whitelist()

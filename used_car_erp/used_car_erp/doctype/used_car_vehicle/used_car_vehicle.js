@@ -18,6 +18,12 @@ const SYSTEM_READ_ONLY_FIELDS = [
   "stock_entry",
   "purchase_invoice",
   "sales_invoice",
+  "formal_delivery_status",
+  "formal_delivery_posting_date",
+  "advance_settlement_journal_entry",
+  "formal_delivery_completed_at",
+  "formal_delivery_completed_by",
+  "formal_delivery_note",
 ];
 
 const LAYOUT_FIELD_TYPES = [
@@ -101,6 +107,7 @@ function clear_vehicle_action_buttons(frm) {
     "確認成交",
     "取消保留",
     "正式交車入帳前檢查",
+    "建立 Sales Invoice 草稿",
   ].forEach((label) => {
     frm.remove_custom_button(label);
   });
@@ -421,6 +428,10 @@ function add_delivery_preflight_button(frm) {
 }
 
 function add_formal_delivery_preflight_button(frm) {
+  if (frm.doc.sales_invoice) {
+    return;
+  }
+
   frm.add_custom_button("正式交車入帳前檢查", () => {
     frappe.call({
       method:
@@ -440,6 +451,56 @@ function add_formal_delivery_preflight_button(frm) {
         });
       },
     });
+  });
+
+  frm.add_custom_button("建立 Sales Invoice 草稿", () => {
+    frappe.confirm(
+      "系統會先執行正式交車入帳前檢查，通過後建立 Sales Invoice 草稿。此操作不會提交 Sales Invoice、不會出庫、不會建立沖轉傳票。是否繼續？",
+      () => {
+        frappe.prompt(
+          [
+            {
+              fieldname: "posting_date",
+              label: "入帳日期",
+              fieldtype: "Date",
+              default: frappe.datetime.get_today(),
+              reqd: 1,
+            },
+            {
+              fieldname: "note",
+              label: "備註",
+              fieldtype: "Small Text",
+              reqd: 0,
+            },
+          ],
+          (values) => {
+            frappe.call({
+              method:
+                "used_car_erp.used_car_erp.services.vehicle_reservation_service.create_sales_invoice_draft_for_vehicle",
+              args: {
+                vehicle_name: frm.doc.name,
+                posting_date: values.posting_date,
+                note: values.note,
+              },
+              freeze: true,
+              freeze_message: "正在建立 Sales Invoice 草稿...",
+              callback(response) {
+                const result = response.message || {};
+                frappe.show_alert({
+                  message:
+                    result.message ||
+                    "已建立 Sales Invoice 草稿，請先人工檢查後再進入正式提交與沖轉階段。",
+                  indicator: "green",
+                });
+                frm.reload_doc();
+              },
+            });
+          },
+          "建立 Sales Invoice 草稿",
+          "建立草稿"
+        );
+      }
+    );
   });
 }
 
@@ -540,6 +601,11 @@ function set_vehicle_intake_intro(frm) {
   }
 
   if (frm.doc.status === "已售出") {
+    if (frm.doc.sales_invoice) {
+      frm.set_intro("此車輛已建立 Sales Invoice 草稿，請先人工檢查銷售發票內容。正式提交與預收款沖轉尚未開放。", "blue");
+      return;
+    }
+
     if (frm.doc.completed_reservation) {
       frm.set_intro("此車輛已完成成交。可在「成交摘要」查看保留單、訂金、尾款與正式會計傳票連結。正式出庫、銷售發票與收入認列尚未開放。", "green");
       return;

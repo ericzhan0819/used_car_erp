@@ -26,6 +26,7 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		self.created_money_flows = []
 		self.created_voucher_drafts = []
 		self.created_journal_entries = []
+		self.created_sales_invoices = []
 		self.created_customers = []
 
 	def tearDown(self):
@@ -56,6 +57,13 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 					journal_entry.cancel()
 				elif journal_entry.docstatus == 0:
 					frappe.delete_doc("Journal Entry", journal_entry_name, force=True)
+		for sales_invoice_name in reversed(self.created_sales_invoices):
+			if frappe.db.exists("Sales Invoice", sales_invoice_name):
+				sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
+				if sales_invoice.docstatus == 1:
+					sales_invoice.cancel()
+				elif sales_invoice.docstatus == 0:
+					frappe.delete_doc("Sales Invoice", sales_invoice_name, force=True)
 		for draft_name in reversed(self.created_voucher_drafts):
 			if frappe.db.exists("Used Car Voucher Draft", draft_name):
 				frappe.delete_doc("Used Car Voucher Draft", draft_name, force=True)
@@ -90,6 +98,13 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 						"final_money_flow": None,
 						"final_voucher_draft": None,
 						"final_journal_entry": None,
+						"sales_invoice": None,
+						"formal_delivery_status": "未處理",
+						"formal_delivery_posting_date": None,
+						"advance_settlement_journal_entry": None,
+						"formal_delivery_completed_at": None,
+						"formal_delivery_completed_by": None,
+						"formal_delivery_note": None,
 					},
 				)
 				frappe.delete_doc("Used Car Vehicle", vehicle_name, force=True)
@@ -410,13 +425,15 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		self.assertEqual(preflight.get("serial_no"), result.get("serial_no"))
 		self.assertEqual(preflight.get("sales_amount"), 60000)
 
-	def test_formal_delivery_preflight_rejects_missing_completed_reservation(self):
+	def test_formal_delivery_preflight_backfills_missing_completed_reservation(self):
 		result = self._create_completed_reservation()
 		frappe.db.set_value("Used Car Vehicle", result.get("vehicle_name"), "completed_reservation", None)
 
-		with self.assertRaises(frappe.ValidationError) as failure:
-			self.reservation_service.preflight_formal_delivery_for_vehicle(result.get("vehicle_name"))
-		self.assertIn("車輛尚未回寫成交保留單", str(failure.exception))
+		preflight = self.reservation_service.preflight_formal_delivery_for_vehicle(result.get("vehicle_name"))
+		vehicle = frappe.get_doc("Used Car Vehicle", result.get("vehicle_name"))
+
+		self.assertTrue(preflight.get("passed"))
+		self.assertEqual(vehicle.completed_reservation, result.get("reservation"))
 
 	def test_formal_delivery_preflight_rejects_uncompleted_reservation(self):
 		result = self._create_completed_reservation()
@@ -493,6 +510,87 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 
 		self.assertEqual(vehicle.status, "已售出")
 		self.assertEqual(reservation.status, "已完成")
+
+	def test_create_sales_invoice_draft_rejects_failed_preflight(self):
+		result = self._create_fully_posted_reservation()
+		before_count = frappe.db.count("Sales Invoice")
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.reservation_service.create_sales_invoice_draft_for_vehicle(result.get("vehicle_name"))
+
+		self.assertIn("車輛狀態不是已售出", str(failure.exception))
+		self.assertEqual(frappe.db.count("Sales Invoice"), before_count)
+
+	def test_create_sales_invoice_draft_after_formal_delivery_preflight(self):
+		result = self._create_completed_reservation()
+		before_counts = self._restricted_doc_counts()
+		draft_result = self.reservation_service.create_sales_invoice_draft_for_vehicle(
+			result.get("vehicle_name"),
+			posting_date="2026-06-12",
+			note="TEST DRAFT",
+		)
+		self.created_sales_invoices.append(draft_result.get("sales_invoice"))
+		after_counts = self._restricted_doc_counts()
+		sales_invoice = frappe.get_doc("Sales Invoice", draft_result.get("sales_invoice"))
+		vehicle = frappe.get_doc("Used Car Vehicle", result.get("vehicle_name"))
+		reservation = frappe.get_doc("Used Car Reservation", result.get("reservation"))
+
+		self.assertEqual(after_counts["Sales Invoice"], before_counts["Sales Invoice"] + 1)
+		self.assertEqual(after_counts["Payment Entry"], before_counts["Payment Entry"])
+		self.assertEqual(after_counts["Delivery Note"], before_counts["Delivery Note"])
+		self.assertEqual(after_counts["Stock Entry"], before_counts["Stock Entry"])
+		self.assertEqual(after_counts["Journal Entry"], before_counts["Journal Entry"])
+		self.assertEqual(after_counts["Purchase Invoice"], before_counts["Purchase Invoice"])
+		self.assertEqual(sales_invoice.docstatus, 0)
+		self.assertEqual(sales_invoice.customer, reservation.customer)
+		self.assertEqual(str(sales_invoice.posting_date), "2026-06-12")
+		self.assertEqual(sales_invoice.update_stock, 1)
+		self.assertEqual(sales_invoice.items[0].item_code, vehicle.item)
+		self.assertEqual(sales_invoice.items[0].qty, 1)
+		self.assertIn(vehicle.serial_no, sales_invoice.items[0].serial_no)
+		self.assertEqual(sales_invoice.items[0].rate, 60000)
+		self.assertEqual(vehicle.sales_invoice, sales_invoice.name)
+		self.assertEqual(vehicle.formal_delivery_status, "銷售發票草稿")
+		self.assertEqual(str(vehicle.formal_delivery_posting_date), "2026-06-12")
+		self.assertEqual(vehicle.formal_delivery_note, "TEST DRAFT")
+		self.assertFalse(vehicle.advance_settlement_journal_entry)
+		self.assertFalse(vehicle.formal_delivery_completed_at)
+		self.assertFalse(vehicle.formal_delivery_completed_by)
+		self.assertEqual(vehicle.status, "已售出")
+		self.assertEqual(reservation.status, "已完成")
+		self.assertEqual(draft_result.get("sales_invoice_status"), "Draft")
+
+	def test_duplicate_sales_invoice_draft_is_rejected(self):
+		result = self._create_completed_reservation()
+		draft_result = self.reservation_service.create_sales_invoice_draft_for_vehicle(result.get("vehicle_name"))
+		self.created_sales_invoices.append(draft_result.get("sales_invoice"))
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.reservation_service.create_sales_invoice_draft_for_vehicle(result.get("vehicle_name"))
+
+		self.assertIn("已建立 Sales Invoice", str(failure.exception))
+
+	def test_manual_formal_delivery_field_change_is_rejected_but_service_flag_allowed(self):
+		vehicle = self._make_listed_vehicle()
+		vehicle.formal_delivery_status = "銷售發票草稿"
+		self.assertRaises(frappe.ValidationError, vehicle.save)
+
+		vehicle = frappe.get_doc("Used Car Vehicle", vehicle.name)
+		vehicle.flags.ignore_formal_delivery_validation = True
+		vehicle.formal_delivery_status = "銷售發票草稿"
+		vehicle.save()
+		vehicle.reload()
+		self.assertEqual(vehicle.formal_delivery_status, "銷售發票草稿")
+
+	def test_create_sales_invoice_draft_rejects_missing_warehouse(self):
+		result = self._create_completed_reservation()
+		frappe.db.set_value("Used Car Vehicle", result.get("vehicle_name"), "stock_warehouse", None)
+		frappe.db.set_value("Used Car Vehicle", result.get("vehicle_name"), "stock_entry", None)
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.reservation_service.create_sales_invoice_draft_for_vehicle(result.get("vehicle_name"))
+
+		self.assertIn("找不到車輛庫存倉", str(failure.exception))
 
 	def test_manual_reservation_status_change_is_rejected(self):
 		result = self._create_reservation_for_listed_vehicle()

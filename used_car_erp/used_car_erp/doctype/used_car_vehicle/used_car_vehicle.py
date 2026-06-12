@@ -16,6 +16,16 @@ SALE_COMPLETION_FIELDS = (
 	"final_journal_entry",
 )
 
+FORMAL_DELIVERY_FIELDS = (
+	"formal_delivery_status",
+	"formal_delivery_posting_date",
+	"sales_invoice",
+	"advance_settlement_journal_entry",
+	"formal_delivery_completed_at",
+	"formal_delivery_completed_by",
+	"formal_delivery_note",
+)
+
 
 class UsedCarVehicle(Document):
 	def before_insert(self):
@@ -24,6 +34,7 @@ class UsedCarVehicle(Document):
 	def validate(self):
 		self._prevent_stock_no_change()
 		self._prevent_manual_sale_completion_change()
+		self._prevent_manual_formal_delivery_change()
 
 	def _prevent_stock_no_change(self):
 		if self.is_new():
@@ -43,6 +54,17 @@ class UsedCarVehicle(Document):
 				continue
 			# 成交摘要必須由確認成交 service 回寫，避免人工竄改造成訂金、尾款與正式傳票連結失真。
 			frappe.throw("成交摘要欄位由確認成交流程維護，不可手動修改。")
+
+	def _prevent_manual_formal_delivery_change(self):
+		if self.is_new() or self.flags.ignore_formal_delivery_validation:
+			return
+
+		meta = frappe.get_meta("Used Car Vehicle")
+		for fieldname in FORMAL_DELIVERY_FIELDS:
+			if not meta.has_field(fieldname) or not self.has_value_changed(fieldname):
+				continue
+			# 正式交車入帳欄位只能由 service 寫入，避免人工建立銷售文件連結造成出庫與會計階段不一致。
+			frappe.throw("正式交車入帳欄位由正式交車流程維護，不可手動修改。")
 
 
 def _get_next_stock_no():

@@ -279,18 +279,20 @@ Sales Invoice posting_date 使用正式交車入帳日期
 
 ```text
 formal_delivery_section
+formal_delivery_status
+formal_delivery_posting_date
+sales_invoice
+advance_settlement_journal_entry
 formal_delivery_completed_at
 formal_delivery_completed_by
 formal_delivery_note
-sales_invoice
-advance_settlement_journal_entry
-formal_delivery_status
 ```
 
 建議 `formal_delivery_status` options：
 
 ```text
 未處理
+銷售發票草稿
 已完成
 ```
 
@@ -465,6 +467,12 @@ Phase 1 已實作正式交車入帳前檢查。
 ### Phase 2：Sales Invoice Draft Foundation
 
 只建立 Sales Invoice 草稿，不提交。
+
+Phase 2 已實作 Sales Invoice Draft Foundation。
+
+此階段只建立 Sales Invoice 草稿並回寫車輛連結。
+
+此階段不提交 Sales Invoice、不建立沖轉 Journal Entry、不建立 Payment Entry 或 Delivery Note。
 
 目標：
 
