@@ -204,15 +204,14 @@ class VehicleReservationService:
 
 		if vehicle.status != "已售出":
 			frappe.throw("車輛狀態不是已售出。")
-		if not vehicle.get("completed_reservation"):
-			frappe.throw("車輛尚未回寫成交保留單。")
-		if not frappe.db.exists("Used Car Reservation", vehicle.completed_reservation):
-			frappe.throw("找不到已完成保留單。")
 
-		reservation = frappe.get_doc("Used Car Reservation", vehicle.completed_reservation)
+		reservation = self._resolve_completed_reservation_for_vehicle(vehicle)
 		reservation.check_permission("read")
 		if reservation.status != "已完成":
 			frappe.throw("保留單狀態不是已完成。")
+
+		self._backfill_vehicle_completion_summary_from_reservation(vehicle, reservation)
+		vehicle.reload()
 
 		self._validate_formal_delivery_not_started(vehicle)
 		self._validate_vehicle_completion_summary(vehicle)
@@ -405,6 +404,71 @@ class VehicleReservationService:
 			"final_voucher_draft": reservation.get("final_voucher_draft"),
 			"final_payment_amount": reservation.get("final_payment_amount"),
 		}
+
+	def _resolve_completed_reservation_for_vehicle(self, vehicle):
+		reservation_name = vehicle.get("completed_reservation")
+		if reservation_name and frappe.db.exists("Used Car Reservation", reservation_name):
+			return frappe.get_doc("Used Car Reservation", reservation_name)
+
+		reservation_name = frappe.db.get_value(
+			"Used Car Reservation",
+			{"vehicle": vehicle.name, "status": "已完成"},
+			"name",
+			order_by="modified desc",
+		)
+		if not reservation_name:
+			frappe.throw("找不到已完成保留單。")
+		return frappe.get_doc("Used Car Reservation", reservation_name)
+
+	def _backfill_vehicle_completion_summary_from_reservation(self, vehicle, reservation):
+		meta = frappe.get_meta("Used Car Vehicle")
+		fields = (
+			"completed_reservation",
+			"completed_at",
+			"completed_by",
+			"completion_note",
+			"deposit_money_flow",
+			"deposit_voucher_draft",
+			"deposit_journal_entry",
+			"final_money_flow",
+			"final_voucher_draft",
+			"final_journal_entry",
+		)
+		if all(not meta.has_field(fieldname) or vehicle.get(fieldname) for fieldname in fields):
+			return
+
+		deposit_money_flow = self._resolve_money_flow(reservation, "money_flow", "訂金收款")
+		if not deposit_money_flow:
+			frappe.throw("缺少訂金金流紀錄。")
+		deposit_voucher_draft = self._resolve_voucher_draft(reservation, "voucher_draft", deposit_money_flow)
+		if not deposit_voucher_draft:
+			frappe.throw("缺少訂金傳票草稿。")
+		deposit_journal_entry = self._validate_posted_accounting(deposit_money_flow, deposit_voucher_draft, "訂金")
+
+		final_money_flow = self._resolve_money_flow(reservation, "final_money_flow", "尾款收款")
+		if not final_money_flow:
+			frappe.throw("缺少尾款金流紀錄。")
+		final_voucher_draft = self._resolve_voucher_draft(reservation, "final_voucher_draft", final_money_flow)
+		if not final_voucher_draft:
+			frappe.throw("缺少尾款傳票草稿。")
+		final_journal_entry = self._validate_posted_accounting(final_money_flow, final_voucher_draft, "尾款")
+
+		self._write_vehicle_sale_completion_summary(
+			vehicle,
+			{
+				"completed_reservation": reservation.name,
+				"completed_at": reservation.get("completed_at"),
+				"completed_by": reservation.get("completed_by"),
+				"completion_note": reservation.get("completion_note"),
+				"deposit_money_flow": deposit_money_flow,
+				"deposit_voucher_draft": deposit_voucher_draft,
+				"deposit_journal_entry": deposit_journal_entry,
+				"final_money_flow": final_money_flow,
+				"final_voucher_draft": final_voucher_draft,
+				"final_journal_entry": final_journal_entry,
+			},
+		)
+		frappe.db.commit()
 
 	def _resolve_money_flow(self, reservation, link_field: str, flow_type: str):
 		linked_money_flow = reservation.get(link_field)
