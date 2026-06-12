@@ -4,6 +4,20 @@ from frappe.utils import flt, nowdate
 
 
 VALID_RESERVATION_STATUSES = ("有效", "已取消", "已完成")
+VALID_PAYMENT_METHODS = ("現金", "匯款", "信用卡", "其他")
+ACCOUNTING_SERVICE_FIELDS = (
+	"money_flow",
+	"voucher_draft",
+	"journal_entry",
+	"final_money_flow",
+	"final_voucher_draft",
+	"final_journal_entry",
+	"final_payment_amount",
+	"final_payment_date",
+	"final_payment_method",
+	"final_payment_reference",
+	"final_payment_notes",
+)
 
 
 class UsedCarReservation(Document):
@@ -21,6 +35,7 @@ class UsedCarReservation(Document):
 		self._validate_required_fields()
 		self._validate_status()
 		self._validate_deposit_amount()
+		self._validate_final_payment_fields()
 
 	def _prevent_reservation_no_change(self):
 		if self.is_new():
@@ -37,12 +52,12 @@ class UsedCarReservation(Document):
 		old_values = frappe.db.get_value(
 			"Used Car Reservation",
 			self.name,
-			("money_flow", "voucher_draft", "journal_entry"),
+			ACCOUNTING_SERVICE_FIELDS,
 			as_dict=True,
 		)
-		for fieldname in ("money_flow", "voucher_draft", "journal_entry"):
+		for fieldname in ACCOUNTING_SERVICE_FIELDS:
 			if old_values and (self.get(fieldname) or "") != (old_values.get(fieldname) or "") and not getattr(self.flags, "ignore_accounting_link_validation", False):
-				frappe.throw("金流紀錄、傳票草稿與正式會計傳票欄位只能由系統服務回寫。")
+				frappe.throw("金流紀錄、傳票草稿、正式會計傳票與尾款欄位只能由系統服務回寫。")
 
 	def _validate_required_fields(self):
 		if not self.vehicle:
@@ -59,6 +74,16 @@ class UsedCarReservation(Document):
 	def _validate_deposit_amount(self):
 		if flt(self.deposit_amount) <= 0:
 			frappe.throw("訂金金額必須大於 0。")
+
+	def _validate_final_payment_fields(self):
+		if not self.final_payment_amount:
+			return
+		if flt(self.final_payment_amount) <= 0:
+			frappe.throw("尾款金額必須大於 0。")
+		if not self.final_payment_date:
+			frappe.throw("尾款日期為必填。")
+		if self.final_payment_method not in VALID_PAYMENT_METHODS:
+			frappe.throw("尾款付款方式必須是：現金、匯款、信用卡、其他。")
 
 
 def _get_next_reservation_no():
