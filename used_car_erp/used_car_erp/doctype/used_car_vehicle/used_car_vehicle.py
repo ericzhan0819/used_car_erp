@@ -3,12 +3,27 @@ from frappe.model.document import Document
 from frappe.utils import nowdate
 
 
+SALE_COMPLETION_FIELDS = (
+	"completed_reservation",
+	"completed_at",
+	"completed_by",
+	"completion_note",
+	"deposit_money_flow",
+	"deposit_voucher_draft",
+	"deposit_journal_entry",
+	"final_money_flow",
+	"final_voucher_draft",
+	"final_journal_entry",
+)
+
+
 class UsedCarVehicle(Document):
 	def before_insert(self):
 		self.stock_no = _get_next_stock_no()
 
 	def validate(self):
 		self._prevent_stock_no_change()
+		self._prevent_manual_sale_completion_change()
 
 	def _prevent_stock_no_change(self):
 		if self.is_new():
@@ -17,6 +32,17 @@ class UsedCarVehicle(Document):
 		old_stock_no = frappe.db.get_value("Used Car Vehicle", self.name, "stock_no")
 		if old_stock_no and self.stock_no != old_stock_no:
 			frappe.throw("車輛編號由系統自動產生，不可手動修改。")
+
+	def _prevent_manual_sale_completion_change(self):
+		if self.is_new() or self.flags.ignore_sale_completion_validation:
+			return
+
+		meta = frappe.get_meta("Used Car Vehicle")
+		for fieldname in SALE_COMPLETION_FIELDS:
+			if not meta.has_field(fieldname) or not self.has_value_changed(fieldname):
+				continue
+			# 成交摘要必須由確認成交 service 回寫，避免人工竄改造成訂金、尾款與正式傳票連結失真。
+			frappe.throw("成交摘要欄位由確認成交流程維護，不可手動修改。")
 
 
 def _get_next_stock_no():

@@ -199,7 +199,7 @@ class VehicleReservationService:
 		}
 
 	def complete_active_reservation(self, vehicle_name: str, completion_note: str | None = None):
-		self.preflight_delivery_for_active_reservation(vehicle_name)
+		preflight = self.preflight_delivery_for_active_reservation(vehicle_name)
 
 		try:
 			vehicle = frappe.get_doc("Used Car Vehicle", vehicle_name)
@@ -222,12 +222,29 @@ class VehicleReservationService:
 				frappe.throw("保留紀錄不是有效狀態。")
 
 			previous_vehicle_status = vehicle.status
-			frappe.db.set_value("Used Car Vehicle", vehicle.name, "status", "已售出")
+			completed_at = now()
+			completed_by = frappe.session.user
+			self._write_vehicle_sale_completion_summary(
+				vehicle,
+				{
+					"status": "已售出",
+					"completed_reservation": reservation.name,
+					"completed_at": completed_at,
+					"completed_by": completed_by,
+					"completion_note": completion_note,
+					"deposit_money_flow": preflight.get("deposit_money_flow"),
+					"deposit_voucher_draft": preflight.get("deposit_voucher_draft"),
+					"deposit_journal_entry": preflight.get("deposit_journal_entry"),
+					"final_money_flow": preflight.get("final_money_flow"),
+					"final_voucher_draft": preflight.get("final_voucher_draft"),
+					"final_journal_entry": preflight.get("final_journal_entry"),
+				},
+			)
 			# 成交確認只回寫業務狀態，不建立或異動 ERPNext 會計、銷售與庫存文件。
 			reservation.flags.ignore_accounting_link_validation = True
 			reservation.status = "已完成"
-			reservation.completed_at = now()
-			reservation.completed_by = frappe.session.user
+			reservation.completed_at = completed_at
+			reservation.completed_by = completed_by
 			reservation.completion_note = completion_note
 			reservation.save()
 			frappe.db.commit()
@@ -403,6 +420,14 @@ class VehicleReservationService:
 		for fieldname, value in updates.items():
 			reservation.set(fieldname, value)
 		reservation.save()
+
+	def _write_vehicle_sale_completion_summary(self, vehicle, values: dict):
+		meta = frappe.get_meta("Used Car Vehicle")
+		vehicle.flags.ignore_sale_completion_validation = True
+		for fieldname, value in values.items():
+			if fieldname == "status" or (meta.has_field(fieldname) and value):
+				vehicle.set(fieldname, value)
+		vehicle.save()
 
 	def _validate_vehicle_ready_for_reservation(self, vehicle):
 		if not vehicle.item or not vehicle.serial_no or not vehicle.stock_entry:

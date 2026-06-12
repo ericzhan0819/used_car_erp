@@ -3,7 +3,7 @@ frappe.ui.form.on("Used Car Reservation", {
     frm.set_intro("訂金保留只作為中古車業務保留紀錄，不代表 ERPNext 會計收款憑證。", "blue");
 
     if (frm.doc.status === "已完成") {
-      frm.set_intro("此保留紀錄已完成成交。", "green");
+      frm.set_intro("此保留紀錄已完成成交。正式出庫、銷售發票與收入認列尚未開放。", "green");
       return;
     }
 

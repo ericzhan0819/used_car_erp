@@ -72,7 +72,26 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 					stock_entry.cancel()
 		for vehicle_name in reversed(self.created_vehicles):
 			if frappe.db.exists("Used Car Vehicle", vehicle_name):
-				frappe.db.set_value("Used Car Vehicle", vehicle_name, {"status": "草稿", "serial_no": None, "stock_entry": None, "item": None})
+				frappe.db.set_value(
+					"Used Car Vehicle",
+					vehicle_name,
+					{
+						"status": "草稿",
+						"serial_no": None,
+						"stock_entry": None,
+						"item": None,
+						"completed_reservation": None,
+						"completed_at": None,
+						"completed_by": None,
+						"completion_note": None,
+						"deposit_money_flow": None,
+						"deposit_voucher_draft": None,
+						"deposit_journal_entry": None,
+						"final_money_flow": None,
+						"final_voucher_draft": None,
+						"final_journal_entry": None,
+					},
+				)
 				frappe.delete_doc("Used Car Vehicle", vehicle_name, force=True)
 		for serial_no in reversed(self.created_serial_nos):
 			if frappe.db.exists("Serial No", serial_no):
@@ -295,6 +314,22 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		self.assertTrue(reservation.completed_at)
 		self.assertTrue(reservation.completed_by)
 
+	def test_complete_reservation_writes_vehicle_completion_summary(self):
+		result = self._create_fully_posted_reservation()
+		self.reservation_service.complete_active_reservation(result.get("vehicle_name"), "TEST COMPLETE")
+		vehicle = frappe.get_doc("Used Car Vehicle", result.get("vehicle_name"))
+
+		self.assertEqual(vehicle.completed_reservation, result.get("reservation"))
+		self.assertTrue(vehicle.completed_at)
+		self.assertTrue(vehicle.completed_by)
+		self.assertEqual(vehicle.completion_note, "TEST COMPLETE")
+		self.assertEqual(vehicle.deposit_money_flow, result.get("money_flow"))
+		self.assertEqual(vehicle.deposit_voucher_draft, result.get("voucher_draft"))
+		self.assertEqual(vehicle.deposit_journal_entry, result.get("deposit_journal_entry"))
+		self.assertEqual(vehicle.final_money_flow, result.get("final_money_flow"))
+		self.assertEqual(vehicle.final_voucher_draft, result.get("final_voucher_draft"))
+		self.assertEqual(vehicle.final_journal_entry, result.get("final_journal_entry"))
+
 	def test_complete_reservation_does_not_create_restricted_documents(self):
 		result = self._create_fully_posted_reservation()
 		before_counts = self._restricted_doc_counts()
@@ -323,6 +358,40 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 			self.reservation_service.complete_active_reservation(result.get("vehicle_name"), "TEST COMPLETE")
 		self.assertIn("車輛狀態不是保留中", str(failure.exception))
 
+	def test_sold_vehicle_cannot_create_reservation(self):
+		vehicle = self._make_listed_vehicle()
+		frappe.db.set_value("Used Car Vehicle", vehicle.name, "status", "已售出")
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.reservation_service.create_reservation(
+				vehicle_name=vehicle.name,
+				customer_name=f"測試客戶{frappe.generate_hash(length=6)}",
+				customer_phone=f"09{frappe.generate_hash(length=8)}",
+				deposit_amount=10000,
+				payment_method="現金",
+			)
+		self.assertIn("只有上架中車輛可以建立訂金保留", str(failure.exception))
+
+	def test_completed_reservation_cannot_be_cancelled(self):
+		result = self._create_fully_posted_reservation()
+		self.reservation_service.complete_active_reservation(result.get("vehicle_name"), "TEST COMPLETE")
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.reservation_service.cancel_reservation(result.get("reservation"), "TEST CANCEL")
+		self.assertIn("只有有效的保留可以取消", str(failure.exception))
+
+	def test_completed_reservation_cannot_create_final_payment(self):
+		result = self._create_fully_posted_reservation()
+		self.reservation_service.complete_active_reservation(result.get("vehicle_name"), "TEST COMPLETE")
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.money_flow_service.create_final_payment_money_flow_from_reservation(
+				result.get("reservation"),
+				50000,
+				"現金",
+			)
+		self.assertIn("只有有效保留紀錄可以建立尾款金流", str(failure.exception))
+
 	def test_manual_reservation_status_change_is_rejected(self):
 		result = self._create_reservation_for_listed_vehicle()
 		reservation = frappe.get_doc("Used Car Reservation", result.get("reservation"))
@@ -342,6 +411,18 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		reservation.save()
 		reservation.reload()
 		self.assertEqual(reservation.completion_note, "SERVICE")
+
+	def test_manual_vehicle_completion_summary_change_is_rejected_but_service_flag_allowed(self):
+		vehicle = self._make_listed_vehicle()
+		vehicle.completed_at = frappe.utils.now()
+		self.assertRaises(frappe.ValidationError, vehicle.save)
+
+		vehicle = frappe.get_doc("Used Car Vehicle", vehicle.name)
+		vehicle.flags.ignore_sale_completion_validation = True
+		vehicle.completed_at = frappe.utils.now()
+		vehicle.save()
+		vehicle.reload()
+		self.assertTrue(vehicle.completed_at)
 
 	def test_verify_service_cleans_core_test_documents(self):
 		result = verify_vehicle_money_flow_voucher_service()

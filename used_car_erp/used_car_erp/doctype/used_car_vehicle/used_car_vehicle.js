@@ -40,6 +40,11 @@ function apply_vehicle_form_mode(frm) {
   add_complete_intake_button(frm);
   add_listing_workflow_buttons(frm);
 
+  if (frm.doc.status === "已售出") {
+    set_vehicle_fields_read_only(frm, true);
+    return;
+  }
+
   if (frm._vehicle_edit_mode) {
     set_vehicle_fields_read_only(frm, false);
 
@@ -510,7 +515,12 @@ function set_vehicle_intake_intro(frm) {
   }
 
   if (frm.doc.status === "已售出") {
-    frm.set_intro("此車輛已確認成交並標記為已售出。正式出庫、銷售發票與收入認列尚未開放。", "green");
+    if (frm.doc.completed_reservation) {
+      frm.set_intro("此車輛已完成成交。可在「成交摘要」查看保留單、訂金、尾款與正式會計傳票連結。正式出庫、銷售發票與收入認列尚未開放。", "green");
+      return;
+    }
+
+    frm.set_intro("此車輛已完成成交並標記為已售出。正式出庫、銷售發票與收入認列尚未開放。", "green");
     return;
   }
 
