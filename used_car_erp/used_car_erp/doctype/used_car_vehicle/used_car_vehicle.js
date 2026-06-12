@@ -37,6 +37,7 @@ const LAYOUT_FIELD_TYPES = [
 function apply_vehicle_form_mode(frm) {
   clear_vehicle_action_buttons(frm);
   set_vehicle_intake_intro(frm);
+  add_sold_vehicle_progress_comment(frm);
 
   if (frm.is_new()) {
     set_vehicle_fields_read_only(frm, false);
@@ -47,7 +48,7 @@ function apply_vehicle_form_mode(frm) {
   add_listing_workflow_buttons(frm);
 
   if (frm.doc.status === "已售出") {
-    add_formal_delivery_preflight_button(frm);
+    add_sold_vehicle_next_step_button(frm);
     set_vehicle_fields_read_only(frm, true);
     return;
   }
@@ -108,6 +109,7 @@ function clear_vehicle_action_buttons(frm) {
     "取消保留",
     "正式交車入帳前檢查",
     "建立 Sales Invoice 草稿",
+    "開啟 Sales Invoice 草稿",
   ].forEach((label) => {
     frm.remove_custom_button(label);
   });
@@ -427,35 +429,17 @@ function add_delivery_preflight_button(frm) {
   });
 }
 
-function add_formal_delivery_preflight_button(frm) {
+function add_sold_vehicle_next_step_button(frm) {
   if (frm.doc.sales_invoice) {
+    frm.add_custom_button("開啟 Sales Invoice 草稿", () => {
+      frappe.set_route("Form", "Sales Invoice", frm.doc.sales_invoice);
+    });
     return;
   }
 
-  frm.add_custom_button("正式交車入帳前檢查", () => {
-    frappe.call({
-      method:
-        "used_car_erp.used_car_erp.services.vehicle_reservation_service.preflight_formal_delivery_for_vehicle",
-      args: {
-        vehicle_name: frm.doc.name,
-      },
-      freeze: true,
-      freeze_message: "正在檢查正式交車入帳前置條件...",
-      callback(response) {
-        const result = response.message || {};
-        frappe.show_alert({
-          message:
-            result.message ||
-            "此車輛已具備正式交車入帳前置條件，可進入 Sales Invoice 草稿建立階段。",
-          indicator: "green",
-        });
-      },
-    });
-  });
-
   frm.add_custom_button("建立 Sales Invoice 草稿", () => {
     frappe.confirm(
-      "系統會先執行正式交車入帳前檢查，通過後建立 Sales Invoice 草稿。此操作不會提交 Sales Invoice、不會出庫、不會建立沖轉傳票。是否繼續？",
+      "系統會建立一張 Sales Invoice 草稿，讓你先檢查客戶、車輛、金額、倉庫與收入科目。這一步不會正式出庫、不會認列收入，也不會建立沖轉傳票。是否繼續？",
       () => {
         frappe.prompt(
           [
@@ -489,7 +473,7 @@ function add_formal_delivery_preflight_button(frm) {
                 frappe.show_alert({
                   message:
                     result.message ||
-                    "已建立 Sales Invoice 草稿，請先人工檢查後再進入正式提交與沖轉階段。",
+                    "Sales Invoice 草稿已建立。請打開草稿確認內容，確認無誤後再進行下一階段。",
                   indicator: "green",
                 });
                 frm.reload_doc();
@@ -502,6 +486,28 @@ function add_formal_delivery_preflight_button(frm) {
       }
     );
   });
+}
+
+function add_sold_vehicle_progress_comment(frm) {
+  if (frm.is_new() || frm.doc.status !== "已售出" || !frm.dashboard) {
+    return;
+  }
+
+  const sales_invoice_status = frm.doc.sales_invoice ? "Sales Invoice 草稿已建立" : "Sales Invoice 草稿尚未建立";
+  const next_step = frm.doc.sales_invoice ? "檢查 Sales Invoice 草稿" : "建立 Sales Invoice 草稿";
+
+  frm.dashboard.add_comment(
+    [
+      "流程進度：",
+      "✓ 訂金已入帳",
+      "✓ 尾款已入帳",
+      "✓ 已確認成交",
+      `✓ ${sales_invoice_status}`,
+      `下一步：${next_step}`,
+    ].join("<br>"),
+    "blue",
+    true
+  );
 }
 
 function add_complete_reservation_button(frm) {
@@ -602,16 +608,11 @@ function set_vehicle_intake_intro(frm) {
 
   if (frm.doc.status === "已售出") {
     if (frm.doc.sales_invoice) {
-      frm.set_intro("此車輛已建立 Sales Invoice 草稿，請先人工檢查銷售發票內容。正式提交與預收款沖轉尚未開放。", "blue");
+      frm.set_intro("此車輛已建立 Sales Invoice 草稿。請先人工檢查客戶、車輛、序號、倉庫、金額與收入科目；正式提交、出庫與預收款沖轉尚未開放。", "blue");
       return;
     }
 
-    if (frm.doc.completed_reservation) {
-      frm.set_intro("此車輛已完成成交。可在「成交摘要」查看保留單、訂金、尾款與正式會計傳票連結。正式出庫、銷售發票與收入認列尚未開放。", "green");
-      return;
-    }
-
-    frm.set_intro("此車輛已完成成交並標記為已售出。正式出庫、銷售發票與收入認列尚未開放。", "green");
+    frm.set_intro("此車輛已完成成交，訂金與尾款已完成入帳。下一步是建立 Sales Invoice 草稿，供人工檢查銷售資料；目前不會正式出庫或認列收入。", "blue");
     return;
   }
 
