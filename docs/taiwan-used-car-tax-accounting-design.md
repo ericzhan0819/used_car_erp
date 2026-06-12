@@ -676,10 +676,20 @@ COGS 科目與庫存科目是否正確
 
 目標：先讓每台車標記來源與稅務模式。
 
+Phase Tax-1 已實作 Tax Metadata Foundation。
+
+目前只在 `Used Car Vehicle` 收集車源類型、稅務模式、買入憑證、買入金額與稅務確認狀態。
+
+此階段不計算正式營業稅、不建立 Tax Summary、不提交 Sales Invoice、不做稅務入帳。
+
 ```text
 purchase_source_type
 vehicle_tax_mode
-accountant_tax_review_status
+purchase_document_type
+purchase_document_no
+purchase_price
+tax_review_status
+tax_review_note
 ```
 
 不做正式稅額入帳。

@@ -38,6 +38,7 @@ function apply_vehicle_form_mode(frm) {
   clear_vehicle_action_buttons(frm);
   set_vehicle_intake_intro(frm);
   add_sold_vehicle_progress_comment(frm);
+  add_tax_metadata_comment(frm);
 
   if (frm.is_new()) {
     set_vehicle_fields_read_only(frm, false);
@@ -529,6 +530,28 @@ function build_sales_invoice_draft_checklist_comment() {
     "✓ 狀態是否仍為 Draft / 草稿",
     "確認無誤後，下一階段才會開放正式提交、出庫與預收款沖轉。",
   ].join("<br>");
+}
+
+function add_tax_metadata_comment(frm) {
+  if (frm.is_new() || !frm.dashboard || !frm.get_field("tax_review_status")) {
+    return;
+  }
+
+  const status = frm.doc.tax_review_status;
+  let message = "此車輛已有初步稅務資訊，正式稅務結果仍需會計師確認。";
+  let indicator = "blue";
+
+  if (status === "待確認") {
+    message = "此車輛稅務資訊尚未確認。請先補齊車源類型、稅務模式、買入憑證與買入金額；正式稅務申報仍需會計師確認。";
+    indicator = "orange";
+  }
+
+  if (["會計師已確認", "已鎖定"].includes(status)) {
+    message = "此車輛稅務資訊已由會計師確認。後續稅務估算與報表可依此資料產生。";
+    indicator = "green";
+  }
+
+  frm.dashboard.add_comment(message, indicator, true);
 }
 
 function add_complete_reservation_button(frm) {

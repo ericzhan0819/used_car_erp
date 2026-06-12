@@ -33,6 +33,7 @@ class UsedCarVehicle(Document):
 
 	def validate(self):
 		self._prevent_stock_no_change()
+		self._validate_tax_metadata()
 		self._prevent_manual_sale_completion_change()
 		self._prevent_manual_formal_delivery_change()
 
@@ -43,6 +44,14 @@ class UsedCarVehicle(Document):
 		old_stock_no = frappe.db.get_value("Used Car Vehicle", self.name, "stock_no")
 		if old_stock_no and self.stock_no != old_stock_no:
 			frappe.throw("車輛編號由系統自動產生，不可手動修改。")
+
+	def _validate_tax_metadata(self):
+		meta = frappe.get_meta("Used Car Vehicle")
+		if not meta.has_field("purchase_price"):
+			return
+		if self.purchase_price is not None and self.purchase_price < 0:
+			# 買入金額是後續稅務估算基礎，先阻擋負數以避免產生錯誤的營業稅與毛利資料。
+			frappe.throw("買入金額不可為負數。")
 
 	def _prevent_manual_sale_completion_change(self):
 		if self.is_new() or self.flags.ignore_sale_completion_validation:

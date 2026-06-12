@@ -132,6 +132,44 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		result = self._create_reservation_for_listed_vehicle()
 		self.assertTrue(frappe.db.exists("Used Car Money Flow", result.get("money_flow")))
 
+	def test_vehicle_tax_metadata_fields_exist(self):
+		meta = frappe.get_meta("Used Car Vehicle")
+		for fieldname in (
+			"purchase_source_type",
+			"vehicle_tax_mode",
+			"purchase_document_type",
+			"purchase_document_no",
+			"purchase_price",
+			"tax_review_status",
+			"tax_review_note",
+		):
+			self.assertTrue(meta.has_field(fieldname), fieldname)
+
+	def test_vehicle_tax_metadata_defaults(self):
+		vehicle = self._make_vehicle()
+
+		self.assertEqual(vehicle.purchase_source_type, "個人")
+		self.assertEqual(vehicle.vehicle_tax_mode, "會計師確認")
+		self.assertEqual(vehicle.purchase_document_type, "未取得")
+		self.assertEqual(vehicle.tax_review_status, "待確認")
+
+	def test_vehicle_purchase_price_cannot_be_negative(self):
+		vehicle = frappe.get_doc(
+			{
+				"doctype": "Used Car Vehicle",
+				"brand": "Toyota",
+				"model": "Altis",
+				"year": 2020,
+				"license_plate": f"TST-MF-{frappe.generate_hash(length=6)}",
+				"vin": f"TST-MF-{frappe.generate_hash(length=10)}",
+				"purchase_price": -1,
+			}
+		)
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			vehicle.insert()
+		self.assertIn("買入金額不可為負數。", str(failure.exception))
+
 	def test_create_reservation_creates_voucher_draft(self):
 		result = self._create_reservation_for_listed_vehicle()
 		self.assertTrue(frappe.db.exists("Used Car Voucher Draft", result.get("voucher_draft")))
