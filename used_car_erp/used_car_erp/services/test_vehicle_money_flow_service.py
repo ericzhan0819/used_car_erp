@@ -603,7 +603,19 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError) as failure:
 			self.reservation_service._resolve_sales_income_account(vehicle.item, "TEST MISSING COMPANY")
 
-		self.assertIn("找不到公司 TEST MISSING COMPANY 可用的收入科目", str(failure.exception))
+		self.assertIn("找不到公司 TEST MISSING COMPANY，無法建立 Sales Invoice 草稿。", str(failure.exception))
+
+	def test_resolve_sales_income_account_allows_empty_item_defaults(self):
+		vehicle = self._make_listed_vehicle()
+		company = self.reservation_service._resolve_company_for_sales_invoice(vehicle)
+		item = frappe.get_doc("Item", vehicle.item)
+		item_group = frappe.get_doc("Item Group", item.item_group)
+		item.item_defaults = None
+		item_group.item_defaults = None
+
+		income_account = self.reservation_service._resolve_sales_income_account(vehicle.item, company)
+
+		self.assertTrue(income_account)
 
 	def test_manual_reservation_status_change_is_rejected(self):
 		result = self._create_reservation_for_listed_vehicle()

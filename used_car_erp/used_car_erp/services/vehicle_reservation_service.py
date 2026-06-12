@@ -347,15 +347,18 @@ class VehicleReservationService:
 
 	def _resolve_sales_income_account(self, item_code: str, company: str):
 		item = frappe.get_doc("Item", item_code)
-		for default in item.get("item_defaults", []):
+		for default in item.get("item_defaults") or []:
 			if default.company == company and default.income_account:
 				return self._validate_account_for_company(default.income_account, company, "收入科目")
 
 		if item.item_group:
 			item_group = frappe.get_doc("Item Group", item.item_group)
-			for default in item_group.get("item_defaults", []):
+			for default in item_group.get("item_defaults") or []:
 				if default.company == company and default.income_account:
 					return self._validate_account_for_company(default.income_account, company, "收入科目")
+
+		if not frappe.db.exists("Company", company):
+			frappe.throw(f"找不到公司 {company}，無法建立 Sales Invoice 草稿。")
 
 		company_doc = frappe.get_doc("Company", company)
 		if company_doc.get("default_income_account"):
