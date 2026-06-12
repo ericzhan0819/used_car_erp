@@ -8,10 +8,12 @@ frappe.ui.form.on("Used Car Reservation", {
 
     if (frm.doc.final_money_flow || frm.doc.final_voucher_draft) {
       frm.set_intro("此保留紀錄已建立尾款金流與傳票草稿，請到「會計作業」確認入帳。", "green");
+      frm.add_custom_button("成交前檢查", () => preflight_delivery(frm));
       return;
     }
 
     frm.add_custom_button("建立尾款收款", () => create_final_payment(frm));
+    frm.add_custom_button("成交前檢查", () => preflight_delivery(frm));
   },
 });
 
@@ -83,4 +85,24 @@ function create_final_payment(frm) {
     "建立尾款收款",
     "建立尾款"
   );
+}
+
+function preflight_delivery(frm) {
+  frappe.call({
+    method:
+      "used_car_erp.used_car_erp.services.vehicle_reservation_service.preflight_delivery_for_active_reservation",
+    args: {
+      vehicle_name: frm.doc.vehicle,
+    },
+    freeze: true,
+    freeze_message: "正在檢查成交前條件...",
+    callback(response) {
+      const result = response.message || {};
+      frappe.show_alert({
+        message: result.message || "此車輛已完成訂金與尾款入帳，可進入成交 / 交車流程。",
+        indicator: "green",
+      });
+      frm.reload_doc();
+    },
+  });
 }

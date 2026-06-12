@@ -91,6 +91,7 @@ function clear_vehicle_action_buttons(frm) {
     "下架回庫存",
     "建立訂金保留",
     "建立尾款收款",
+    "成交前檢查",
     "取消保留",
   ].forEach((label) => {
     frm.remove_custom_button(label);
@@ -186,6 +187,7 @@ function add_listing_workflow_buttons(frm) {
 
   if (frm.doc.status === "保留中") {
     add_final_payment_button(frm);
+    add_delivery_preflight_button(frm);
     add_cancel_reservation_button(frm);
   }
 }
@@ -384,6 +386,28 @@ function add_cancel_reservation_button(frm) {
       "取消保留",
       "取消保留"
     );
+  });
+}
+
+function add_delivery_preflight_button(frm) {
+  frm.add_custom_button("成交前檢查", () => {
+    frappe.call({
+      method:
+        "used_car_erp.used_car_erp.services.vehicle_reservation_service.preflight_delivery_for_active_reservation",
+      args: {
+        vehicle_name: frm.doc.name,
+      },
+      freeze: true,
+      freeze_message: "正在檢查成交前條件...",
+      callback(response) {
+        const result = response.message || {};
+        frappe.show_alert({
+          message: result.message || "此車輛已完成訂金與尾款入帳，可進入成交 / 交車流程。",
+          indicator: "green",
+        });
+        frm.reload_doc();
+      },
+    });
   });
 }
 

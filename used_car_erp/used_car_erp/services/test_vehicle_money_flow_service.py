@@ -210,6 +210,54 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 			"現金",
 		)
 
+	def test_delivery_preflight_rejects_missing_final_payment(self):
+		result = self._create_reservation_for_listed_vehicle()
+		confirm_result = self.voucher_service.confirm_voucher_draft(result.get("voucher_draft"), "TEST DEPOSIT CONFIRM")
+		self.created_journal_entries.append(confirm_result.get("journal_entry"))
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.reservation_service.preflight_delivery_for_active_reservation(result.get("vehicle_name"))
+		self.assertIn("尚未建立尾款金流紀錄", str(failure.exception))
+
+	def test_delivery_preflight_rejects_unposted_final_payment(self):
+		result = self._create_reservation_for_listed_vehicle()
+		confirm_result = self.voucher_service.confirm_voucher_draft(result.get("voucher_draft"), "TEST DEPOSIT CONFIRM")
+		self.created_journal_entries.append(confirm_result.get("journal_entry"))
+		self._create_final_payment_for_reservation(result.get("reservation"))
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.reservation_service.preflight_delivery_for_active_reservation(result.get("vehicle_name"))
+		self.assertIn("尾款金流尚未入帳", str(failure.exception))
+
+	def test_delivery_preflight_passes_after_deposit_and_final_posted(self):
+		result = self._create_fully_posted_reservation()
+		preflight = self.reservation_service.preflight_delivery_for_active_reservation(result.get("vehicle_name"))
+
+		self.assertTrue(preflight.get("passed"))
+		self.assertEqual(preflight.get("reservation"), result.get("reservation"))
+		self.assertEqual(preflight.get("deposit_journal_entry"), result.get("deposit_journal_entry"))
+		self.assertEqual(preflight.get("final_journal_entry"), result.get("final_journal_entry"))
+
+	def test_delivery_preflight_does_not_create_restricted_documents(self):
+		result = self._create_fully_posted_reservation()
+		before_counts = self._restricted_doc_counts()
+		self.reservation_service.preflight_delivery_for_active_reservation(result.get("vehicle_name"))
+		after_counts = self._restricted_doc_counts()
+
+		self.assertEqual(after_counts["Payment Entry"], before_counts["Payment Entry"])
+		self.assertEqual(after_counts["Sales Invoice"], before_counts["Sales Invoice"])
+		self.assertEqual(after_counts["Delivery Note"], before_counts["Delivery Note"])
+		self.assertEqual(after_counts["Stock Entry"], before_counts["Stock Entry"])
+
+	def test_delivery_preflight_keeps_vehicle_and_reservation_status(self):
+		result = self._create_fully_posted_reservation()
+		self.reservation_service.preflight_delivery_for_active_reservation(result.get("vehicle_name"))
+		vehicle = frappe.get_doc("Used Car Vehicle", result.get("vehicle_name"))
+		reservation = frappe.get_doc("Used Car Reservation", result.get("reservation"))
+
+		self.assertEqual(vehicle.status, "保留中")
+		self.assertEqual(reservation.status, "有效")
+
 	def test_verify_service_cleans_core_test_documents(self):
 		result = verify_vehicle_money_flow_voucher_service()
 		self.assertTrue(result.get("voucher_draft_deleted"))
@@ -246,6 +294,23 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		)
 		self.created_money_flows.append(result.get("money_flow"))
 		self.created_voucher_drafts.append(result.get("voucher_draft"))
+		return result
+
+	def _create_fully_posted_reservation(self):
+		result = self._create_reservation_for_listed_vehicle()
+		deposit_confirm = self.voucher_service.confirm_voucher_draft(result.get("voucher_draft"), "TEST DEPOSIT CONFIRM")
+		self.created_journal_entries.append(deposit_confirm.get("journal_entry"))
+		final_result = self._create_final_payment_for_reservation(result.get("reservation"))
+		final_confirm = self.voucher_service.confirm_voucher_draft(final_result.get("voucher_draft"), "TEST FINAL CONFIRM")
+		self.created_journal_entries.append(final_confirm.get("journal_entry"))
+		result.update(
+			{
+				"final_money_flow": final_result.get("money_flow"),
+				"final_voucher_draft": final_result.get("voucher_draft"),
+				"deposit_journal_entry": deposit_confirm.get("journal_entry"),
+				"final_journal_entry": final_confirm.get("journal_entry"),
+			}
+		)
 		return result
 
 	def _make_vehicle(self):
