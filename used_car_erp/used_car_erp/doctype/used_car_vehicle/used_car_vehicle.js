@@ -41,6 +41,7 @@ function apply_vehicle_form_mode(frm) {
   add_listing_workflow_buttons(frm);
 
   if (frm.doc.status === "已售出") {
+    add_formal_delivery_preflight_button(frm);
     set_vehicle_fields_read_only(frm, true);
     return;
   }
@@ -99,6 +100,7 @@ function clear_vehicle_action_buttons(frm) {
     "成交前檢查",
     "確認成交",
     "取消保留",
+    "正式交車入帳前檢查",
   ].forEach((label) => {
     frm.remove_custom_button(label);
   });
@@ -413,6 +415,29 @@ function add_delivery_preflight_button(frm) {
           indicator: "green",
         });
         frm.reload_doc();
+      },
+    });
+  });
+}
+
+function add_formal_delivery_preflight_button(frm) {
+  frm.add_custom_button("正式交車入帳前檢查", () => {
+    frappe.call({
+      method:
+        "used_car_erp.used_car_erp.services.vehicle_reservation_service.preflight_formal_delivery_for_vehicle",
+      args: {
+        vehicle_name: frm.doc.name,
+      },
+      freeze: true,
+      freeze_message: "正在檢查正式交車入帳前置條件...",
+      callback(response) {
+        const result = response.message || {};
+        frappe.show_alert({
+          message:
+            result.message ||
+            "此車輛已具備正式交車入帳前置條件，可進入 Sales Invoice 草稿建立階段。",
+          indicator: "green",
+        });
       },
     });
   });

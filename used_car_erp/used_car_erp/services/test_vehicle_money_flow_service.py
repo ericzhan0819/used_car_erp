@@ -392,6 +392,108 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 			)
 		self.assertIn("只有有效保留紀錄可以建立尾款金流", str(failure.exception))
 
+	def test_formal_delivery_preflight_rejects_before_completion(self):
+		result = self._create_fully_posted_reservation()
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.reservation_service.preflight_formal_delivery_for_vehicle(result.get("vehicle_name"))
+		self.assertIn("車輛狀態不是已售出", str(failure.exception))
+
+	def test_formal_delivery_preflight_passes_after_completion(self):
+		result = self._create_completed_reservation()
+		preflight = self.reservation_service.preflight_formal_delivery_for_vehicle(result.get("vehicle_name"))
+
+		self.assertTrue(preflight.get("passed"))
+		self.assertEqual(preflight.get("reservation"), result.get("reservation"))
+		self.assertEqual(preflight.get("customer"), result.get("customer"))
+		self.assertEqual(preflight.get("item"), result.get("item"))
+		self.assertEqual(preflight.get("serial_no"), result.get("serial_no"))
+		self.assertEqual(preflight.get("sales_amount"), 60000)
+
+	def test_formal_delivery_preflight_rejects_missing_completed_reservation(self):
+		result = self._create_completed_reservation()
+		frappe.db.set_value("Used Car Vehicle", result.get("vehicle_name"), "completed_reservation", None)
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.reservation_service.preflight_formal_delivery_for_vehicle(result.get("vehicle_name"))
+		self.assertIn("車輛尚未回寫成交保留單", str(failure.exception))
+
+	def test_formal_delivery_preflight_rejects_uncompleted_reservation(self):
+		result = self._create_completed_reservation()
+		frappe.db.set_value("Used Car Reservation", result.get("reservation"), "status", "有效")
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.reservation_service.preflight_formal_delivery_for_vehicle(result.get("vehicle_name"))
+		self.assertIn("保留單狀態不是已完成", str(failure.exception))
+
+	def test_formal_delivery_preflight_rejects_missing_deposit_links(self):
+		missing_link_cases = (
+			("deposit_money_flow", "缺少訂金金流紀錄"),
+			("deposit_voucher_draft", "缺少訂金傳票草稿"),
+			("deposit_journal_entry", "缺少訂金正式會計傳票"),
+		)
+		for fieldname, message in missing_link_cases:
+			with self.subTest(fieldname=fieldname):
+				result = self._create_completed_reservation()
+				frappe.db.set_value("Used Car Vehicle", result.get("vehicle_name"), fieldname, None)
+
+				with self.assertRaises(frappe.ValidationError) as failure:
+					self.reservation_service.preflight_formal_delivery_for_vehicle(result.get("vehicle_name"))
+				self.assertIn(message, str(failure.exception))
+
+	def test_formal_delivery_preflight_rejects_missing_final_links(self):
+		missing_link_cases = (
+			("final_money_flow", "缺少尾款金流紀錄"),
+			("final_voucher_draft", "缺少尾款傳票草稿"),
+			("final_journal_entry", "缺少尾款正式會計傳票"),
+		)
+		for fieldname, message in missing_link_cases:
+			with self.subTest(fieldname=fieldname):
+				result = self._create_completed_reservation()
+				frappe.db.set_value("Used Car Vehicle", result.get("vehicle_name"), fieldname, None)
+
+				with self.assertRaises(frappe.ValidationError) as failure:
+					self.reservation_service.preflight_formal_delivery_for_vehicle(result.get("vehicle_name"))
+				self.assertIn(message, str(failure.exception))
+
+	def test_formal_delivery_preflight_rejects_missing_item(self):
+		result = self._create_completed_reservation()
+		frappe.db.set_value("Used Car Vehicle", result.get("vehicle_name"), "item", None)
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.reservation_service.preflight_formal_delivery_for_vehicle(result.get("vehicle_name"))
+		self.assertIn("車輛尚未建立 Item", str(failure.exception))
+
+	def test_formal_delivery_preflight_rejects_missing_serial_no(self):
+		result = self._create_completed_reservation()
+		frappe.db.set_value("Used Car Vehicle", result.get("vehicle_name"), "serial_no", None)
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.reservation_service.preflight_formal_delivery_for_vehicle(result.get("vehicle_name"))
+		self.assertIn("車輛尚未建立 Serial No", str(failure.exception))
+
+	def test_formal_delivery_preflight_does_not_create_restricted_documents(self):
+		result = self._create_completed_reservation()
+		before_counts = self._restricted_doc_counts()
+		self.reservation_service.preflight_formal_delivery_for_vehicle(result.get("vehicle_name"))
+		after_counts = self._restricted_doc_counts()
+
+		self.assertEqual(after_counts["Sales Invoice"], before_counts["Sales Invoice"])
+		self.assertEqual(after_counts["Payment Entry"], before_counts["Payment Entry"])
+		self.assertEqual(after_counts["Delivery Note"], before_counts["Delivery Note"])
+		self.assertEqual(after_counts["Stock Entry"], before_counts["Stock Entry"])
+		self.assertEqual(after_counts["Journal Entry"], before_counts["Journal Entry"])
+		self.assertEqual(after_counts["Purchase Invoice"], before_counts["Purchase Invoice"])
+
+	def test_formal_delivery_preflight_keeps_vehicle_and_reservation_status(self):
+		result = self._create_completed_reservation()
+		self.reservation_service.preflight_formal_delivery_for_vehicle(result.get("vehicle_name"))
+		vehicle = frappe.get_doc("Used Car Vehicle", result.get("vehicle_name"))
+		reservation = frappe.get_doc("Used Car Reservation", result.get("reservation"))
+
+		self.assertEqual(vehicle.status, "已售出")
+		self.assertEqual(reservation.status, "已完成")
+
 	def test_manual_reservation_status_change_is_rejected(self):
 		result = self._create_reservation_for_listed_vehicle()
 		reservation = frappe.get_doc("Used Car Reservation", result.get("reservation"))
@@ -464,6 +566,8 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 
 	def _create_fully_posted_reservation(self):
 		result = self._create_reservation_for_listed_vehicle()
+		vehicle = frappe.get_doc("Used Car Vehicle", result.get("vehicle_name"))
+		result.update({"item": vehicle.item, "serial_no": vehicle.serial_no})
 		deposit_confirm = self.voucher_service.confirm_voucher_draft(result.get("voucher_draft"), "TEST DEPOSIT CONFIRM")
 		self.created_journal_entries.append(deposit_confirm.get("journal_entry"))
 		final_result = self._create_final_payment_for_reservation(result.get("reservation"))
@@ -477,6 +581,11 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 				"final_journal_entry": final_confirm.get("journal_entry"),
 			}
 		)
+		return result
+
+	def _create_completed_reservation(self):
+		result = self._create_fully_posted_reservation()
+		self.reservation_service.complete_active_reservation(result.get("vehicle_name"), "TEST COMPLETE")
 		return result
 
 	def _make_vehicle(self):
@@ -508,6 +617,7 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		return {
 			"Journal Entry": frappe.db.count("Journal Entry"),
 			"Stock Entry": frappe.db.count("Stock Entry"),
+			"Purchase Invoice": frappe.db.count("Purchase Invoice"),
 			"Payment Entry": frappe.db.count("Payment Entry"),
 			"Sales Invoice": frappe.db.count("Sales Invoice"),
 			"Delivery Note": frappe.db.count("Delivery Note"),

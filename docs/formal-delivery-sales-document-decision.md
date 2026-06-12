@@ -448,6 +448,12 @@ ERPNext `Sales Invoice` 是內部 ERP 銷售文件，不等同於台灣電子發
 
 只做檢查，不建立文件。
 
+Phase 1 已實作正式交車入帳前檢查。
+
+此階段只驗證已售出車輛、已完成保留單、成交摘要、Item、Serial No、訂金與尾款入帳資料是否完整。
+
+此階段不建立 Sales Invoice、不出庫、不建立沖轉 Journal Entry。
+
 目標：
 
 ```text

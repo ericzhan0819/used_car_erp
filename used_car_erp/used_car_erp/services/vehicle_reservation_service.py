@@ -198,6 +198,69 @@ class VehicleReservationService:
 			"message": "此車輛已完成訂金與尾款入帳，可進入成交 / 交車流程。",
 		}
 
+	def preflight_formal_delivery_for_vehicle(self, vehicle_name: str):
+		vehicle = frappe.get_doc("Used Car Vehicle", vehicle_name)
+		vehicle.check_permission("read")
+
+		if vehicle.status != "已售出":
+			frappe.throw("車輛狀態不是已售出。")
+		if not vehicle.get("completed_reservation"):
+			frappe.throw("車輛尚未回寫成交保留單。")
+		if not frappe.db.exists("Used Car Reservation", vehicle.completed_reservation):
+			frappe.throw("找不到已完成保留單。")
+
+		reservation = frappe.get_doc("Used Car Reservation", vehicle.completed_reservation)
+		reservation.check_permission("read")
+		if reservation.status != "已完成":
+			frappe.throw("保留單狀態不是已完成。")
+
+		self._validate_formal_delivery_not_started(vehicle)
+		self._validate_vehicle_completion_summary(vehicle)
+		deposit_money_flow = self._validate_linked_money_flow(vehicle.deposit_money_flow, "訂金")
+		final_money_flow = self._validate_linked_money_flow(vehicle.final_money_flow, "尾款")
+		deposit_voucher_draft = self._validate_linked_voucher_draft(vehicle.deposit_voucher_draft, "訂金")
+		final_voucher_draft = self._validate_linked_voucher_draft(vehicle.final_voucher_draft, "尾款")
+		self._validate_linked_journal_entry(vehicle.deposit_journal_entry, "訂金")
+		self._validate_linked_journal_entry(vehicle.final_journal_entry, "尾款")
+
+		if deposit_money_flow.status != "已入帳":
+			frappe.throw("訂金金流尚未入帳。")
+		if final_money_flow.status != "已入帳":
+			frappe.throw("尾款金流尚未入帳。")
+		if deposit_voucher_draft.status != "已入帳":
+			frappe.throw("訂金傳票草稿尚未入帳。")
+		if final_voucher_draft.status != "已入帳":
+			frappe.throw("尾款傳票草稿尚未入帳。")
+		if not deposit_voucher_draft.journal_entry:
+			frappe.throw("缺少訂金正式會計傳票。")
+		if not final_voucher_draft.journal_entry:
+			frappe.throw("缺少尾款正式會計傳票。")
+		if deposit_voucher_draft.journal_entry != vehicle.deposit_journal_entry:
+			frappe.throw("訂金傳票草稿未連結車輛成交摘要的正式會計傳票。")
+		if final_voucher_draft.journal_entry != vehicle.final_journal_entry:
+			frappe.throw("尾款傳票草稿未連結車輛成交摘要的正式會計傳票。")
+		if not vehicle.item:
+			frappe.throw("車輛尚未建立 Item。")
+		if not vehicle.serial_no:
+			frappe.throw("車輛尚未建立 Serial No。")
+
+		return {
+			"passed": True,
+			"vehicle_name": vehicle.name,
+			"reservation": reservation.name,
+			"customer": reservation.customer,
+			"item": vehicle.item,
+			"serial_no": vehicle.serial_no,
+			"deposit_money_flow": vehicle.deposit_money_flow,
+			"deposit_voucher_draft": vehicle.deposit_voucher_draft,
+			"deposit_journal_entry": vehicle.deposit_journal_entry,
+			"final_money_flow": vehicle.final_money_flow,
+			"final_voucher_draft": vehicle.final_voucher_draft,
+			"final_journal_entry": vehicle.final_journal_entry,
+			"sales_amount": self._resolve_formal_delivery_sales_amount(reservation, final_money_flow),
+			"message": "此車輛已具備正式交車入帳前置條件，可進入 Sales Invoice 草稿建立階段。",
+		}
+
 	def complete_active_reservation(self, vehicle_name: str, completion_note: str | None = None):
 		preflight = self.preflight_delivery_for_active_reservation(vehicle_name)
 
@@ -421,6 +484,49 @@ class VehicleReservationService:
 			reservation.set(fieldname, value)
 		reservation.save()
 
+	def _validate_formal_delivery_not_started(self, vehicle):
+		meta = frappe.get_meta("Used Car Vehicle")
+		for fieldname, label in (
+			("sales_invoice", "Sales Invoice"),
+			("advance_settlement_journal_entry", "預收款沖轉 Journal Entry"),
+		):
+			if meta.has_field(fieldname) and vehicle.get(fieldname):
+				frappe.throw(f"此車輛已建立 {label}，不可重複進行正式交車入帳。")
+		if meta.has_field("formal_delivery_status") and vehicle.get("formal_delivery_status") == "已完成":
+			frappe.throw("此車輛已完成正式交車入帳，不可重複進行正式交車入帳。")
+
+	def _validate_vehicle_completion_summary(self, vehicle):
+		for fieldname, message in (
+			("deposit_money_flow", "缺少訂金金流紀錄。"),
+			("deposit_voucher_draft", "缺少訂金傳票草稿。"),
+			("deposit_journal_entry", "缺少訂金正式會計傳票。"),
+			("final_money_flow", "缺少尾款金流紀錄。"),
+			("final_voucher_draft", "缺少尾款傳票草稿。"),
+			("final_journal_entry", "缺少尾款正式會計傳票。"),
+		):
+			if not vehicle.get(fieldname):
+				frappe.throw(message)
+
+	def _validate_linked_money_flow(self, money_flow_name: str, label: str):
+		if not money_flow_name or not frappe.db.exists("Used Car Money Flow", money_flow_name):
+			frappe.throw(f"缺少{label}金流紀錄。")
+		return frappe.get_doc("Used Car Money Flow", money_flow_name)
+
+	def _validate_linked_voucher_draft(self, voucher_draft_name: str, label: str):
+		if not voucher_draft_name or not frappe.db.exists("Used Car Voucher Draft", voucher_draft_name):
+			frappe.throw(f"缺少{label}傳票草稿。")
+		return frappe.get_doc("Used Car Voucher Draft", voucher_draft_name)
+
+	def _validate_linked_journal_entry(self, journal_entry_name: str, label: str):
+		if not journal_entry_name or not frappe.db.exists("Journal Entry", journal_entry_name):
+			frappe.throw(f"缺少{label}正式會計傳票。")
+
+	def _resolve_formal_delivery_sales_amount(self, reservation, final_money_flow):
+		final_payment_amount = reservation.get("final_payment_amount")
+		if final_payment_amount is None:
+			final_payment_amount = final_money_flow.amount
+		return flt(reservation.deposit_amount) + flt(final_payment_amount)
+
 	def _write_vehicle_sale_completion_summary(self, vehicle, values: dict):
 		meta = frappe.get_meta("Used Car Vehicle")
 		vehicle.flags.ignore_sale_completion_validation = True
@@ -557,6 +663,12 @@ def create_final_payment_for_active_reservation(
 def preflight_delivery_for_active_reservation(vehicle_name: str):
 	service = VehicleReservationService()
 	return service.preflight_delivery_for_active_reservation(vehicle_name)
+
+
+@frappe.whitelist()
+def preflight_formal_delivery_for_vehicle(vehicle_name: str):
+	service = VehicleReservationService()
+	return service.preflight_formal_delivery_for_vehicle(vehicle_name)
 
 
 @frappe.whitelist()

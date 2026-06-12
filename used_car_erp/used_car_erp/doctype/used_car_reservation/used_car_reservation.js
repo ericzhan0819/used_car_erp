@@ -4,6 +4,7 @@ frappe.ui.form.on("Used Car Reservation", {
 
     if (frm.doc.status === "已完成") {
       frm.set_intro("此保留紀錄已完成成交。正式出庫、銷售發票與收入認列尚未開放。", "green");
+      frm.add_custom_button("正式交車入帳前檢查", () => preflight_formal_delivery(frm));
       return;
     }
 
@@ -110,6 +111,27 @@ function preflight_delivery(frm) {
         indicator: "green",
       });
       frm.reload_doc();
+    },
+  });
+}
+
+function preflight_formal_delivery(frm) {
+  frappe.call({
+    method:
+      "used_car_erp.used_car_erp.services.vehicle_reservation_service.preflight_formal_delivery_for_vehicle",
+    args: {
+      vehicle_name: frm.doc.vehicle,
+    },
+    freeze: true,
+    freeze_message: "正在檢查正式交車入帳前置條件...",
+    callback(response) {
+      const result = response.message || {};
+      frappe.show_alert({
+        message:
+          result.message ||
+          "此車輛已具備正式交車入帳前置條件，可進入 Sales Invoice 草稿建立階段。",
+        indicator: "green",
+      });
     },
   });
 }
