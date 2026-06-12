@@ -38,6 +38,7 @@ function apply_vehicle_form_mode(frm) {
   clear_vehicle_action_buttons(frm);
   set_vehicle_intake_intro(frm);
   add_sold_vehicle_progress_comment(frm);
+  add_sold_vehicle_final_check_comment(frm);
   add_tax_metadata_comment(frm);
   add_vehicle_cost_summary_comment(frm);
   add_vehicle_profit_tax_estimate_comment(frm);
@@ -55,6 +56,7 @@ function apply_vehicle_form_mode(frm) {
 
   if (frm.doc.status === "已售出") {
     add_sold_vehicle_next_step_button(frm);
+    add_refresh_sold_vehicle_final_check_button(frm);
     set_vehicle_fields_read_only(frm, true);
     return;
   }
@@ -119,8 +121,34 @@ function clear_vehicle_action_buttons(frm) {
     "新增單車成本",
     "重新計算成本摘要",
     "重新整理損益與稅務估算",
+    "重新整理交車前檢查",
   ].forEach((label) => {
     frm.remove_custom_button(label);
+  });
+}
+
+function add_refresh_sold_vehicle_final_check_button(frm) {
+  if (frm.is_new() || !frm.doc.name || frm.doc.status !== "已售出") {
+    return;
+  }
+
+  frm.add_custom_button("重新整理交車前檢查", () => {
+    frappe.call({
+      method:
+        "used_car_erp.used_car_erp.services.vehicle_final_check_service.get_sold_vehicle_final_check_for_vehicle",
+      args: {
+        vehicle_name: frm.doc.name,
+      },
+      freeze: true,
+      freeze_message: "正在重新整理交車前檢查...",
+      callback() {
+        frappe.show_alert({
+          message: "已重新整理交車前檢查",
+          indicator: "green",
+        });
+        frm.reload_doc();
+      },
+    });
   });
 }
 
@@ -605,6 +633,59 @@ function build_sales_invoice_draft_checklist_comment() {
     "✓ 狀態是否仍為 Draft / 草稿",
     "確認無誤後，下一階段才會開放正式提交、出庫與預收款沖轉。",
   ].join("<br>");
+}
+
+function add_sold_vehicle_final_check_comment(frm) {
+  if (frm.is_new() || frm.doc.status !== "已售出" || !frm.doc.name || !frm.dashboard) {
+    return;
+  }
+
+  frappe.call({
+    method:
+      "used_car_erp.used_car_erp.services.vehicle_final_check_service.get_sold_vehicle_final_check_for_vehicle",
+    args: {
+      vehicle_name: frm.doc.name,
+    },
+    callback(response) {
+      const result = response.message;
+
+      if (!result) {
+        return;
+      }
+
+      const indicator_by_status = {
+        ready: "green",
+        warning: "orange",
+        blocked: "red",
+      };
+      const message = [
+        "交車前最終檢查：",
+        `整體狀態：${result.status_label || result.status}`,
+        ...result.checks.map((check) => `${final_check_icon(check.state)} ${check.label}：${check.message}`),
+        "",
+        "此面板只作交車前人工檢查，不會正式提交、出庫、沖轉或入帳。",
+      ];
+
+      frm.dashboard.add_comment(
+        message.join("<br>"),
+        indicator_by_status[result.status] || "blue",
+        true
+      );
+    },
+    error() {
+      // 最終檢查面板只是唯讀輔助資訊，載入失敗不可阻斷車輛頁既有操作。
+    },
+  });
+}
+
+function final_check_icon(state) {
+  if (state === "ok") {
+    return "✓";
+  }
+  if (state === "warning") {
+    return "△";
+  }
+  return "✕";
 }
 
 function add_tax_metadata_comment(frm) {
