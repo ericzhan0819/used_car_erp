@@ -682,6 +682,8 @@ Phase Tax-1 已實作 Tax Metadata Foundation。
 
 此階段不計算正式營業稅、不建立 Tax Summary、不提交 Sales Invoice、不做稅務入帳。
 
+UX 決策：日常操作畫面避免過度使用「會計師確認」字眼，改以「稅務確認」呈現；正式申報與最終稅務判斷仍須由會計師或稅務人員確認。
+
 ```text
 purchase_source_type
 vehicle_tax_mode
@@ -690,6 +692,25 @@ purchase_document_no
 purchase_price
 tax_review_status
 tax_review_note
+```
+
+Phase Tax-1 欄位選項：
+
+```text
+vehicle_tax_mode:
+- 待確認
+- 15-1 特殊扣抵
+- 一般發票扣抵
+- 不可扣抵
+- 拍場需確認
+
+tax_review_status:
+- 待補資料
+- 待確認
+- 已初步判斷
+- 已確認
+- 已調整
+- 已鎖定
 ```
 
 不做正式稅額入帳。

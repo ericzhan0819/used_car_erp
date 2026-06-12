@@ -49,7 +49,9 @@ Sales Invoice Draft Foundation 只建立銷售發票草稿，供人工檢查 cus
 
 Sales Invoice 草稿建立後，已售出車輛頁會提供白話檢查清單，讓使用者確認銷售發票草稿內容後再進入後續正式提交階段。
 
-Tax Metadata Foundation 會先在車輛上收集車源、稅務模式、買入憑證、買入金額與會計師確認狀態；此階段只作資料準備，不作正式稅務計算或入帳。
+Tax Metadata Foundation 會先在車輛上收集車源、稅務模式、買入憑證、買入金額與稅務確認狀態；此階段只作資料準備，不作正式稅務計算或入帳。
+
+Tax Metadata Foundation 的日常 UI 採中性稅務確認語氣；正式申報與最終稅務判斷仍需由會計師或稅務人員確認。
 
 Decision documents:
 

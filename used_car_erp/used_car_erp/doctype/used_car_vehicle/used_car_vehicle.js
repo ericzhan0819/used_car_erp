@@ -538,16 +538,16 @@ function add_tax_metadata_comment(frm) {
   }
 
   const status = frm.doc.tax_review_status;
-  let message = "此車輛已有初步稅務資訊，正式稅務結果仍需會計師確認。";
+  let message = "此車輛已有初步稅務資料，正式申報前仍需確認。";
   let indicator = "blue";
 
-  if (status === "待確認") {
-    message = "此車輛稅務資訊尚未確認。請先補齊車源類型、稅務模式、買入憑證與買入金額；正式稅務申報仍需會計師確認。";
+  if (["待補資料", "待確認"].includes(status)) {
+    message = "此車輛稅務資料尚未確認。請先補齊車源、稅務模式、買入憑證與買入金額；正式申報前仍需確認。";
     indicator = "orange";
   }
 
-  if (["會計師已確認", "已鎖定"].includes(status)) {
-    message = "此車輛稅務資訊已由會計師確認。後續稅務估算與報表可依此資料產生。";
+  if (["已確認", "已鎖定"].includes(status)) {
+    message = "此車輛稅務資料已確認。後續可依此資料產生稅務估算與報表。";
     indicator = "green";
   }
 

@@ -149,7 +149,7 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		vehicle = self._make_vehicle()
 
 		self.assertEqual(vehicle.purchase_source_type, "個人")
-		self.assertEqual(vehicle.vehicle_tax_mode, "會計師確認")
+		self.assertEqual(vehicle.vehicle_tax_mode, "待確認")
 		self.assertEqual(vehicle.purchase_document_type, "未取得")
 		self.assertEqual(vehicle.tax_review_status, "待確認")
 
