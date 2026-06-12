@@ -34,6 +34,15 @@ const LAYOUT_FIELD_TYPES = [
   "Button",
 ];
 
+const SOLD_VEHICLE_TAX_METADATA_FIELDS = [
+  "purchase_source_type",
+  "vehicle_tax_mode",
+  "purchase_document_type",
+  "purchase_document_no",
+  "tax_review_status",
+  "tax_review_note",
+];
+
 function apply_vehicle_form_mode(frm) {
   clear_vehicle_action_buttons(frm);
   set_vehicle_intake_intro(frm);
@@ -64,6 +73,7 @@ function apply_vehicle_form_mode(frm) {
     add_submit_advance_settlement_journal_entry_button(frm);
     add_open_advance_settlement_journal_entry_button(frm);
     set_vehicle_fields_read_only(frm, true);
+    allow_sold_vehicle_tax_metadata_edit(frm);
     return;
   }
 
@@ -103,6 +113,34 @@ function set_vehicle_fields_read_only(frm, read_only) {
   });
 
   frm.refresh_fields();
+}
+
+function allow_sold_vehicle_tax_metadata_edit(frm) {
+  if (!can_edit_sold_vehicle_tax_metadata(frm)) {
+    return;
+  }
+
+  SOLD_VEHICLE_TAX_METADATA_FIELDS.forEach((fieldname) => {
+    frm.set_df_property(fieldname, "read_only", 0);
+  });
+
+  frm.set_intro("此車已售出，但正式交車完成前仍可由會計修改稅務確認資訊。", "blue");
+  frm.refresh_fields(SOLD_VEHICLE_TAX_METADATA_FIELDS);
+}
+
+function can_edit_sold_vehicle_tax_metadata(frm) {
+  const allowed_roles = ["System Manager", "Accounts Manager", "Accounts User"];
+  const user_roles = frappe.user_roles || [];
+  const has_allowed_role =
+    frappe.session.user === "Administrator" ||
+    allowed_roles.some((role) => user_roles.includes(role));
+
+  return Boolean(
+    !frm.is_new() &&
+      frm.doc.status === "已售出" &&
+      frm.doc.formal_delivery_status !== "已完成" &&
+      has_allowed_role
+  );
 }
 
 function clear_vehicle_action_buttons(frm) {
