@@ -12,19 +12,27 @@ Used car business operations layer for ERPNext.
 → 庫存中
 → 整備中 / 上架中
 → 建立訂金保留
-→ 建立金流紀錄
-→ 建立傳票草稿
+→ 建立訂金金流紀錄
+→ 建立訂金傳票草稿
 → 會計作業
 → 待審核傳票草稿
-→ 確認入帳
+→ 確認訂金入帳
+→ 建立正式會計傳票
+→ 建立尾款收款
+→ 建立尾款金流紀錄
+→ 建立尾款傳票草稿
+→ 會計確認尾款入帳
 → 建立正式會計傳票
 ```
 
 目前業務端只建立訂金保留、金流紀錄與傳票草稿；正式會計傳票由會計人員在「會計作業」工作區人工確認後建立。
 
+目前尾款收款仍屬於成交前金流，不會自動交車、出庫、開銷售發票、建立收款單或把車改成已售出。
+
 Manual QA checklist:
 
 - [訂金保留到會計入帳手動 QA 清單](docs/deposit-accounting-manual-qa-checklist.md)
+- [尾款收款金流手動 QA 清單](docs/final-payment-money-flow-manual-qa-checklist.md)
 
 ### Installation
 
