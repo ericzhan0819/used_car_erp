@@ -5,7 +5,7 @@ from frappe.utils import flt, now
 class VehicleVoucherService:
 	def create_deposit_voucher_draft(self, money_flow_name: str):
 		money_flow = frappe.get_doc("Used Car Money Flow", money_flow_name)
-		self._validate_deposit_money_flow_for_draft(money_flow)
+		self._validate_money_flow_for_draft(money_flow, "訂金收款")
 		debit_account, credit_account = self._resolve_deposit_accounts()
 		self._validate_same_company_accounts([debit_account, credit_account])
 
@@ -40,6 +40,46 @@ class VehicleVoucherService:
 		frappe.db.set_value("Used Car Money Flow", money_flow.name, "voucher_draft", draft.name)
 		if money_flow.reservation and frappe.get_meta("Used Car Reservation").has_field("voucher_draft"):
 			frappe.db.set_value("Used Car Reservation", money_flow.reservation, "voucher_draft", draft.name)
+
+		return draft.name
+
+	def create_final_payment_voucher_draft(self, money_flow_name: str):
+		money_flow = frappe.get_doc("Used Car Money Flow", money_flow_name)
+		self._validate_money_flow_for_draft(money_flow, "尾款收款")
+		debit_account, credit_account = self._resolve_deposit_accounts()
+		self._validate_same_company_accounts([debit_account, credit_account])
+
+		draft = frappe.get_doc(
+			{
+				"doctype": "Used Car Voucher Draft",
+				"status": "待審核",
+				"posting_date": money_flow.payment_date,
+				"money_flow": money_flow.name,
+				"vehicle": money_flow.vehicle,
+				"reservation": money_flow.reservation,
+				"customer": money_flow.customer,
+				"memo": f"尾款收款：{money_flow.stock_no or money_flow.vehicle} / {money_flow.customer_name or ''}",
+				"review_note": "系統自動建議科目，請會計確認。",
+				"lines": [
+					{
+						"account": debit_account,
+						"debit": money_flow.amount,
+						"credit": 0,
+						"note": "尾款收款科目",
+					},
+					{
+						"account": credit_account,
+						"debit": 0,
+						"credit": money_flow.amount,
+						"note": "尾款預收款 / 暫收款",
+					},
+				],
+			}
+		).insert()
+
+		frappe.db.set_value("Used Car Money Flow", money_flow.name, "voucher_draft", draft.name)
+		if money_flow.reservation and frappe.get_meta("Used Car Reservation").has_field("final_voucher_draft"):
+			frappe.db.set_value("Used Car Reservation", money_flow.reservation, "final_voucher_draft", draft.name)
 
 		return draft.name
 
@@ -82,11 +122,8 @@ class VehicleVoucherService:
 			money_flow.journal_entry = journal_entry.name
 			money_flow.save()
 
-			if draft.reservation and frappe.get_meta("Used Car Reservation").has_field("journal_entry"):
-				reservation = frappe.get_doc("Used Car Reservation", draft.reservation)
-				reservation.flags.ignore_accounting_link_validation = True
-				reservation.journal_entry = journal_entry.name
-				reservation.save()
+			if draft.reservation:
+				self._set_reservation_journal_entry(draft.reservation, money_flow.flow_type, journal_entry.name)
 
 			frappe.db.commit()
 		except Exception:
@@ -140,11 +177,11 @@ class VehicleVoucherService:
 		frappe.db.commit()
 		return {"voucher_draft": draft.name, "status": "已作廢", "message": "已作廢傳票草稿。"}
 
-	def _validate_deposit_money_flow_for_draft(self, money_flow):
+	def _validate_money_flow_for_draft(self, money_flow, flow_type: str):
 		if money_flow.status != "待審核":
 			frappe.throw("只有待審核金流紀錄可以建立傳票草稿。")
-		if money_flow.flow_type != "訂金收款":
-			frappe.throw("本次只支援訂金收款建立傳票草稿。")
+		if money_flow.flow_type != flow_type:
+			frappe.throw(f"本次只支援{flow_type}建立傳票草稿。")
 		if flt(money_flow.amount) <= 0:
 			frappe.throw("金流金額必須大於 0。")
 		if money_flow.voucher_draft or frappe.db.exists("Used Car Voucher Draft", {"money_flow": money_flow.name}):
@@ -173,6 +210,18 @@ class VehicleVoucherService:
 			companies.add(account.company)
 		if len(companies) != 1:
 			frappe.throw("所有會計科目必須屬於同一家公司。")
+
+	def _set_reservation_journal_entry(self, reservation_name: str, flow_type: str, journal_entry_name: str):
+		if not frappe.db.exists("Used Car Reservation", reservation_name):
+			return
+		reservation = frappe.get_doc("Used Car Reservation", reservation_name)
+		reservation.flags.ignore_accounting_link_validation = True
+		reservation_meta = frappe.get_meta("Used Car Reservation")
+		if flow_type == "尾款收款" and reservation_meta.has_field("final_journal_entry"):
+			reservation.final_journal_entry = journal_entry_name
+		elif reservation_meta.has_field("journal_entry"):
+			reservation.journal_entry = journal_entry_name
+		reservation.save()
 
 	def _resolve_deposit_accounts(self):
 		debit_account = self._first_account({"is_group": 0, "account_type": "Bank"})
@@ -207,6 +256,12 @@ class VehicleVoucherService:
 def create_deposit_voucher_draft(money_flow_name: str):
 	service = VehicleVoucherService()
 	return service.create_deposit_voucher_draft(money_flow_name)
+
+
+@frappe.whitelist()
+def create_final_payment_voucher_draft(money_flow_name: str):
+	service = VehicleVoucherService()
+	return service.create_final_payment_voucher_draft(money_flow_name)
 
 
 @frappe.whitelist()
