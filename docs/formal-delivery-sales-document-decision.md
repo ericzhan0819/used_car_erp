@@ -27,6 +27,8 @@
 
 UX 決策：已售出車輛頁採「下一步操作」模式，使用者只需要按主要下一步按鈕；正式交車入帳前檢查由建立 Sales Invoice 草稿流程自動執行，不作為主要操作入口。
 
+UX 決策：Sales Invoice 草稿建立後，已售出車輛頁會顯示草稿檢查清單，提醒使用者確認客戶、公司、Item、Serial No、Warehouse、金額、Income Account、Update Stock 與 Draft 狀態；正式提交與預收款沖轉仍屬後續階段。
+
 ---
 
 ## 目前明確邊界

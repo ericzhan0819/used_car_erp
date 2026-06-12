@@ -494,20 +494,41 @@ function add_sold_vehicle_progress_comment(frm) {
   }
 
   const sales_invoice_status = frm.doc.sales_invoice ? "Sales Invoice 草稿已建立" : "Sales Invoice 草稿尚未建立";
-  const next_step = frm.doc.sales_invoice ? "檢查 Sales Invoice 草稿" : "建立 Sales Invoice 草稿";
+  const next_step = frm.doc.sales_invoice ? "開啟並檢查 Sales Invoice 草稿" : "建立 Sales Invoice 草稿";
+  const progress_comment = [
+    "流程進度：",
+    "✓ 訂金已入帳",
+    "✓ 尾款已入帳",
+    "✓ 已確認成交",
+    `✓ ${sales_invoice_status}`,
+    `下一步：${next_step}`,
+  ];
+
+  if (frm.doc.sales_invoice) {
+    progress_comment.push("", build_sales_invoice_draft_checklist_comment());
+  }
 
   frm.dashboard.add_comment(
-    [
-      "流程進度：",
-      "✓ 訂金已入帳",
-      "✓ 尾款已入帳",
-      "✓ 已確認成交",
-      `✓ ${sales_invoice_status}`,
-      `下一步：${next_step}`,
-    ].join("<br>"),
+    progress_comment.join("<br>"),
     "blue",
     true
   );
+}
+
+function build_sales_invoice_draft_checklist_comment() {
+  return [
+    "Sales Invoice 草稿檢查清單：",
+    "✓ 客戶是否正確",
+    "✓ 公司是否正確",
+    "✓ 車輛 Item 是否正確",
+    "✓ Serial No 是否為這台車",
+    "✓ Warehouse 是否為車輛所在倉",
+    "✓ 金額是否等於訂金 + 尾款",
+    "✓ Income Account 是否為正確收入科目",
+    "✓ Update Stock 是否已勾選",
+    "✓ 狀態是否仍為 Draft / 草稿",
+    "確認無誤後，下一階段才會開放正式提交、出庫與預收款沖轉。",
+  ].join("<br>");
 }
 
 function add_complete_reservation_button(frm) {
@@ -608,7 +629,7 @@ function set_vehicle_intake_intro(frm) {
 
   if (frm.doc.status === "已售出") {
     if (frm.doc.sales_invoice) {
-      frm.set_intro("此車輛已建立 Sales Invoice 草稿。請先人工檢查客戶、車輛、序號、倉庫、金額與收入科目；正式提交、出庫與預收款沖轉尚未開放。", "blue");
+      frm.set_intro("Sales Invoice 草稿已建立。請先開啟草稿並依檢查清單確認內容；正式提交、出庫與預收款沖轉尚未開放。", "blue");
       return;
     }
 
