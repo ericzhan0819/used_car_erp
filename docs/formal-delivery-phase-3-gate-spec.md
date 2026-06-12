@@ -380,3 +380,9 @@ Phase 3A: formal delivery submit preflight only
 ```
 
 Phase 3A should return strict gate results without submitting or creating any ERPNext formal document.
+
+## 19. Phase 3A implementation status
+
+Phase 3A 已實作 submit preflight only。
+
+此 service 只回傳 ready / blocked、checks 與 blocked reasons，不提交 Sales Invoice、不建立 Journal Entry、不改 formal delivery status。

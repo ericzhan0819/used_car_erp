@@ -39,6 +39,7 @@ function apply_vehicle_form_mode(frm) {
   set_vehicle_intake_intro(frm);
   add_sold_vehicle_progress_comment(frm);
   add_sold_vehicle_final_check_comment(frm);
+  add_formal_delivery_submit_preflight_comment(frm);
   add_tax_metadata_comment(frm);
   add_vehicle_cost_summary_comment(frm);
   add_vehicle_profit_tax_estimate_comment(frm);
@@ -57,6 +58,7 @@ function apply_vehicle_form_mode(frm) {
   if (frm.doc.status === "已售出") {
     add_sold_vehicle_next_step_button(frm);
     add_refresh_sold_vehicle_final_check_button(frm);
+    add_formal_delivery_submit_preflight_button(frm);
     set_vehicle_fields_read_only(frm, true);
     return;
   }
@@ -122,8 +124,38 @@ function clear_vehicle_action_buttons(frm) {
     "重新計算成本摘要",
     "重新整理損益與稅務估算",
     "重新整理交車前檢查",
+    "正式交車提交前檢查",
   ].forEach((label) => {
     frm.remove_custom_button(label);
+  });
+}
+
+function add_formal_delivery_submit_preflight_button(frm) {
+  if (frm.is_new() || !frm.doc.name || frm.doc.status !== "已售出") {
+    return;
+  }
+
+  frm.add_custom_button("正式交車提交前檢查", () => {
+    frappe.call({
+      method:
+        "used_car_erp.used_car_erp.services.vehicle_formal_delivery_service.preflight_formal_delivery_submit_for_vehicle",
+      args: {
+        vehicle_name: frm.doc.name,
+      },
+      freeze: true,
+      freeze_message: "正在執行正式交車提交前檢查...",
+      callback(response) {
+        const result = response.message || {};
+        frappe.show_alert({
+          message: result.ready ? "可進入 Sales Invoice 正式提交階段" : "尚不可正式提交，請查看檢查面板。",
+          indicator: result.ready ? "green" : "red",
+        });
+        frm.reload_doc();
+      },
+      error() {
+        // 提交前檢查只提供唯讀 gate 結果，呼叫失敗不得阻斷已售出車輛頁其他操作。
+      },
+    });
   });
 }
 
@@ -674,6 +706,40 @@ function add_sold_vehicle_final_check_comment(frm) {
     },
     error() {
       // 最終檢查面板只是唯讀輔助資訊，載入失敗不可阻斷車輛頁既有操作。
+    },
+  });
+}
+
+function add_formal_delivery_submit_preflight_comment(frm) {
+  if (frm.is_new() || frm.doc.status !== "已售出" || !frm.doc.name || !frm.dashboard) {
+    return;
+  }
+
+  frappe.call({
+    method:
+      "used_car_erp.used_car_erp.services.vehicle_formal_delivery_service.preflight_formal_delivery_submit_for_vehicle",
+    args: {
+      vehicle_name: frm.doc.name,
+    },
+    callback(response) {
+      const result = response.message;
+
+      if (!result) {
+        return;
+      }
+
+      const message = [
+        "正式交車提交前檢查：",
+        `整體狀態：${result.status_label || result.status}`,
+        ...result.checks.map((check) => `${final_check_icon(check.state)} ${check.label}：${check.message}`),
+        "",
+        "此檢查只判斷是否可進入下一階段，不會提交、出庫、沖轉或入帳。",
+      ];
+
+      frm.dashboard.add_comment(message.join("<br>"), result.ready ? "green" : "red", true);
+    },
+    error() {
+      // 正式交車 preflight 面板只是唯讀輔助資訊，載入失敗不可阻斷車輛頁既有操作。
     },
   });
 }

@@ -497,6 +497,8 @@ Sales Invoice 草稿建立時，item row 需解析並填入公司可用的 incom
 
 此階段仍不建立沖轉 Journal Entry。
 
+Phase 3A 已新增正式交車提交前檢查；正式提交 Sales Invoice 與 update_stock 出庫仍未開放。
+
 ### Phase 3：正式提交與預收款沖轉
 
 在 Sales Invoice 草稿確認正確後：
