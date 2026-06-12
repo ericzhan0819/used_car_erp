@@ -52,6 +52,7 @@ Sales Invoice 草稿建立後，已售出車輛頁會提供白話檢查清單，
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
+- [台灣中古車稅務與成本設計文件](docs/taiwan-used-car-tax-accounting-design.md)
 
 Manual QA checklist:
 
@@ -78,12 +79,3 @@ pre-commit install
 ```
 
 Pre-commit is configured to use the following tools for checking and formatting your code:
-
-- ruff
-- eslint
-- prettier
-- pyupgrade
-
-### License
-
-mit
