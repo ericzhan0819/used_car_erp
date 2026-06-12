@@ -551,6 +551,10 @@ accountant_review_status
 
 這些費用可能因交易安排不同而有不同處理方式，系統應先標記為 `accountant_review_required`。
 
+Phase Cost-1 已建立單車成本摘要基礎。`Used Car Vehicle Cost` 用於記錄直接歸屬於單台車的整備、維修、美容、拍場費、拖車費與其他成本。
+
+只有 `capitalization_mode = 單車成本` 的資料會納入 `Used Car Vehicle.total_cost`。此階段的 `total_cost` / `gross_margin` 只作管理估算，不代表正式會計成本、COGS 或稅務申報結果。
+
 ---
 
 ## 8. 公式設計
@@ -726,6 +730,8 @@ tax_review_status:
 未稅銷售收入
 粗估毛利
 ```
+
+Phase Cost-1 已建立單車成本摘要基礎。`Used Car Vehicle Cost` 記錄直接歸屬於單台車的成本；只有 `capitalization_mode = 單車成本` 會納入 `Used Car Vehicle.total_cost`，`total_cost` / `gross_margin` 只作管理估算，不代表正式會計成本、COGS 或稅務申報結果。
 
 ### Phase Tax-3：15-1 預估摘要
 

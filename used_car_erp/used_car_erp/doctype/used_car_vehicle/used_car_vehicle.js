@@ -39,6 +39,7 @@ function apply_vehicle_form_mode(frm) {
   set_vehicle_intake_intro(frm);
   add_sold_vehicle_progress_comment(frm);
   add_tax_metadata_comment(frm);
+  add_vehicle_cost_summary_comment(frm);
 
   if (frm.is_new()) {
     set_vehicle_fields_read_only(frm, false);
@@ -47,6 +48,7 @@ function apply_vehicle_form_mode(frm) {
 
   add_complete_intake_button(frm);
   add_listing_workflow_buttons(frm);
+  add_recalculate_cost_summary_button(frm);
 
   if (frm.doc.status === "已售出") {
     add_sold_vehicle_next_step_button(frm);
@@ -111,8 +113,34 @@ function clear_vehicle_action_buttons(frm) {
     "正式交車入帳前檢查",
     "建立 Sales Invoice 草稿",
     "開啟 Sales Invoice 草稿",
+    "重新計算成本摘要",
   ].forEach((label) => {
     frm.remove_custom_button(label);
+  });
+}
+
+function add_recalculate_cost_summary_button(frm) {
+  if (frm.is_new() || !frm.doc.name || frm.doc.status === "封存") {
+    return;
+  }
+
+  frm.add_custom_button("重新計算成本摘要", () => {
+    frappe.call({
+      method:
+        "used_car_erp.used_car_erp.services.vehicle_cost_service.recalculate_vehicle_cost_summary_for_vehicle",
+      args: {
+        vehicle_name: frm.doc.name,
+      },
+      freeze: true,
+      freeze_message: "正在重新計算成本摘要...",
+      callback() {
+        frappe.show_alert({
+          message: "已重新計算成本摘要",
+          indicator: "green",
+        });
+        frm.reload_doc();
+      },
+    });
   });
 }
 
@@ -552,6 +580,33 @@ function add_tax_metadata_comment(frm) {
   }
 
   frm.dashboard.add_comment(message, indicator, true);
+}
+
+function add_vehicle_cost_summary_comment(frm) {
+  if (frm.is_new() || !frm.dashboard) {
+    return;
+  }
+
+  const purchase_price = flt(frm.doc.purchase_price || 0);
+  const total_cost = flt(frm.doc.total_cost || 0);
+  const capitalized_cost_total = Math.max(total_cost - purchase_price, 0);
+  const sold_price = flt(frm.doc.sold_price || 0);
+  const gross_margin = flt(frm.doc.gross_margin || 0);
+  const message = [
+    "成本摘要：",
+    `買入金額：${format_vehicle_currency(purchase_price)}`,
+    `累計成本：${format_vehicle_currency(total_cost)}`,
+    `單車直接成本：${format_vehicle_currency(capitalized_cost_total)}`,
+    `成交價：${format_vehicle_currency(sold_price)}`,
+    `預估毛利：${format_vehicle_currency(gross_margin)}`,
+    "此摘要只作管理估算，不是正式會計成本。",
+  ];
+
+  frm.dashboard.add_comment(message.join("<br>"), "blue", true);
+}
+
+function format_vehicle_currency(value) {
+  return format_currency(value || 0, frappe.defaults.get_default("currency"));
 }
 
 function add_complete_reservation_button(frm) {
