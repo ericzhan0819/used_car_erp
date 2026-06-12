@@ -19,10 +19,16 @@ RESTRICTED_FORMAL_DELIVERY_DOCTYPES = (*RESTRICTED_FINAL_CHECK_DOCTYPES,)
 PHASE_3C_FORBIDDEN_DOCTYPES = ("Payment Entry", "Delivery Note", "Stock Entry", "Tax Summary")
 SUBMITTED_FORMAL_DELIVERY_STATUS = "銷售發票已提交"
 ADVANCE_SETTLEMENT_DRAFT_STATUS = "預收款沖轉草稿"
+ADVANCE_SETTLEMENT_SUBMITTED_STATUS = "預收款沖轉已提交"
 SUBMIT_ALLOWED_ROLES = {"System Manager", "Accounts Manager", "Accounts User"}
 SETTLEMENT_DRAFT_ALLOWED_ROLES = {"System Manager", "Accounts Manager", "Accounts User"}
+SETTLEMENT_SUBMIT_ALLOWED_ROLES = {"System Manager", "Accounts Manager", "Accounts User"}
 SETTLEMENT_BLOCKED_MESSAGE = "預收款沖轉傳票草稿建立前檢查未通過。"
+SETTLEMENT_SUBMIT_BLOCKED_MESSAGE = "預收款沖轉 Journal Entry 提交前檢查未通過。"
 SETTLEMENT_LINK_BLOCKED_REASON = "訂金或尾款入帳連結尚未完整，無法建立預收款沖轉草稿。"
+SETTLEMENT_STRUCTURE_BLOCKED_REASON = "預收款沖轉 Journal Entry 分錄結構與 Phase 3C 草稿規格不一致。"
+SETTLEMENT_RECEIVABLE_BLOCKED_REASON = "預收款沖轉 Journal Entry 應收帳款科目與 Sales Invoice 不一致。"
+SETTLEMENT_AMOUNT_BLOCKED_REASON = "預收款沖轉 Journal Entry 金額與 Sales Invoice 不一致，請先人工確認。"
 
 
 def preflight_formal_delivery_submit(vehicle_name: str) -> dict:
@@ -201,6 +207,66 @@ def create_advance_settlement_journal_entry_draft_for_vehicle(vehicle_name, note
 	return create_advance_settlement_journal_entry_draft(vehicle_name, note=note)
 
 
+def submit_advance_settlement_journal_entry(vehicle_name: str, note: str | None = None) -> dict:
+	permission_blocked = _require_advance_settlement_submit_permission()
+	if permission_blocked:
+		return _blocked_settlement_submit_result(vehicle_name, [permission_blocked])
+
+	vehicle = frappe.get_doc("Used Car Vehicle", vehicle_name)
+	sales_invoice = (
+		frappe.get_doc("Sales Invoice", vehicle.sales_invoice)
+		if vehicle.sales_invoice and frappe.db.exists("Sales Invoice", vehicle.sales_invoice)
+		else None
+	)
+	journal_entry = (
+		frappe.get_doc("Journal Entry", vehicle.advance_settlement_journal_entry)
+		if vehicle.advance_settlement_journal_entry
+		and frappe.db.exists("Journal Entry", vehicle.advance_settlement_journal_entry)
+		else None
+	)
+
+	blocked_reasons = _validate_advance_settlement_submit_preconditions(vehicle, sales_invoice, journal_entry)
+	settlement_amount = 0
+	if not blocked_reasons:
+		settlement_amount = _validate_advance_settlement_journal_entry_structure(sales_invoice, journal_entry, blocked_reasons)
+
+	if blocked_reasons:
+		_add_formal_delivery_comment(vehicle.name, f"{SETTLEMENT_SUBMIT_BLOCKED_MESSAGE} {' '.join(blocked_reasons)}")
+		return _blocked_settlement_submit_result(vehicle.name, blocked_reasons)
+
+	journal_entry.submit()
+	journal_entry.reload()
+	if journal_entry.docstatus != 1:
+		frappe.throw("預收款沖轉 Journal Entry 提交失敗，車輛正式交車狀態未變更。")
+
+	# Phase 3D 只提交 Phase 3C 已連結草稿；不得建立替代傳票或直接標記正式交車完成，避免越權完成會計流程。
+	vehicle.db_set("formal_delivery_status", ADVANCE_SETTLEMENT_SUBMITTED_STATUS, update_modified=True)
+	if note:
+		vehicle.db_set("formal_delivery_note", note, update_modified=True)
+
+	_add_formal_delivery_comment(
+		vehicle.name,
+		f"預收款沖轉 Journal Entry {journal_entry.name} 已提交；Phase 3D 不建立 Payment Entry、Delivery Note 或正式交車完成標記。",
+	)
+
+	return {
+		"vehicle": vehicle.name,
+		"status": "settlement_submitted",
+		"message": "預收款沖轉 Journal Entry 已提交，正式交車完成仍待後續確認。",
+		"sales_invoice": sales_invoice.name,
+		"journal_entry": journal_entry.name,
+		"journal_entry_docstatus": journal_entry.docstatus,
+		"settlement_amount": settlement_amount,
+		"formal_delivery_status": ADVANCE_SETTLEMENT_SUBMITTED_STATUS,
+		"next_step": "正式交車完成檢查",
+	}
+
+
+@frappe.whitelist()
+def submit_advance_settlement_journal_entry_for_vehicle(vehicle_name, note=None):
+	return submit_advance_settlement_journal_entry(vehicle_name, note=note)
+
+
 def verify_formal_delivery_submit_preflight_service():
 	vehicle_name = None
 	before_counts = _restricted_doc_counts()
@@ -340,6 +406,45 @@ def verify_advance_settlement_journal_entry_draft_service():
 		frappe.db.commit()
 
 
+def verify_advance_settlement_journal_entry_submit_service():
+	vehicle_name = None
+	before_counts = _settlement_restricted_doc_counts()
+
+	try:
+		vehicle = frappe.get_doc(
+			{
+				"doctype": "Used Car Vehicle",
+				"brand": "Toyota",
+				"model": "Altis",
+				"year": 2020,
+				"license_plate": f"VERIFY-SETTLEMENT-SUBMIT-{frappe.generate_hash(length=4)}",
+				"vin": f"VERIFY-SETTLEMENT-SUBMIT-{frappe.generate_hash(length=10)}",
+				"status": "已售出",
+				"formal_delivery_status": "未處理",
+				"completed_reservation": "VERIFY-RESERVATION",
+				"completed_at": now_datetime(),
+				"purchase_price": 500000,
+				"sold_price": 600000,
+			}
+		).insert(ignore_links=True)
+		vehicle_name = vehicle.name
+
+		result = submit_advance_settlement_journal_entry(vehicle.name)
+		after_counts = _settlement_restricted_doc_counts()
+
+		if result["status"] != "blocked":
+			frappe.throw("Advance settlement submit verification should be blocked without Phase 3D prerequisites.")
+		for doctype, before_count in before_counts.items():
+			if after_counts[doctype] != before_count:
+				frappe.throw(f"Blocked advance settlement submit verification must not create {doctype}.")
+
+		return {**result, "cleaned_up": True}
+	finally:
+		if vehicle_name and frappe.db.exists("Used Car Vehicle", vehicle_name):
+			frappe.delete_doc("Used Car Vehicle", vehicle_name, force=True, ignore_permissions=True)
+		frappe.db.commit()
+
+
 def _build_final_check_gate(final_check, blocked_reasons):
 	status = final_check.get("status")
 	status_label = final_check.get("status_label") or status
@@ -373,6 +478,16 @@ def _require_advance_settlement_draft_permission():
 	return "只有 Administrator、System Manager、Accounts Manager 或 Accounts User 可建立預收款沖轉草稿。"
 
 
+def _require_advance_settlement_submit_permission():
+	if frappe.session.user == "Administrator":
+		return None
+	user_roles = set(frappe.get_roles(frappe.session.user))
+	if user_roles.intersection(SETTLEMENT_SUBMIT_ALLOWED_ROLES):
+		return None
+	# 未來應改用 formal_delivery.submit_settlement 權限鍵；目前先用會計層級角色避免 Sales 角色提交會計沖轉傳票。
+	return "只有 Administrator、System Manager、Accounts Manager 或 Accounts User 可提交預收款沖轉 Journal Entry。"
+
+
 def _validate_advance_settlement_preconditions(vehicle, sales_invoice):
 	reasons = []
 	if vehicle.status != "已售出":
@@ -393,6 +508,73 @@ def _validate_advance_settlement_preconditions(vehicle, sales_invoice):
 	if vehicle.advance_settlement_journal_entry:
 		reasons.append("預收款沖轉傳票草稿已存在，請先人工確認既有草稿。")
 	return reasons
+
+
+def _validate_advance_settlement_submit_preconditions(vehicle, sales_invoice, journal_entry):
+	reasons = []
+	if vehicle.status != "已售出":
+		reasons.append("車輛狀態必須為已售出。")
+	if vehicle.formal_delivery_status != ADVANCE_SETTLEMENT_DRAFT_STATUS:
+		reasons.append("正式交車入帳狀態必須為預收款沖轉草稿。")
+	if not vehicle.sales_invoice:
+		reasons.append("車輛尚未連結 Sales Invoice。")
+	if not sales_invoice:
+		reasons.append("Sales Invoice 不存在。")
+	else:
+		if sales_invoice.docstatus != 1:
+			reasons.append("Sales Invoice 尚未提交，無法提交預收款沖轉 Journal Entry。")
+		if not sales_invoice.debit_to:
+			reasons.append("Sales Invoice 應收帳款科目缺失，請先人工確認。")
+	if not vehicle.advance_settlement_journal_entry:
+		reasons.append("車輛尚未連結預收款沖轉 Journal Entry 草稿。")
+	elif not journal_entry:
+		reasons.append("預收款沖轉 Journal Entry 不存在。")
+	else:
+		if journal_entry.docstatus != 0:
+			reasons.append("預收款沖轉 Journal Entry 已不是草稿，請先人工確認。")
+		if sales_invoice and journal_entry.company != sales_invoice.company:
+			reasons.append("預收款沖轉 Journal Entry 公司與 Sales Invoice 不一致。")
+		if journal_entry.voucher_type != "Journal Entry":
+			reasons.append(SETTLEMENT_STRUCTURE_BLOCKED_REASON)
+	return reasons
+
+
+def _validate_advance_settlement_journal_entry_structure(sales_invoice, journal_entry, blocked_reasons):
+	accounts = list(journal_entry.accounts or [])
+	if len(accounts) != 2:
+		blocked_reasons.append(SETTLEMENT_STRUCTURE_BLOCKED_REASON)
+		return 0
+
+	debit_rows = [row for row in accounts if flt(row.debit_in_account_currency or row.debit) > 0]
+	credit_rows = [row for row in accounts if flt(row.credit_in_account_currency or row.credit) > 0]
+	if len(debit_rows) != 1 or len(credit_rows) != 1:
+		blocked_reasons.append(SETTLEMENT_STRUCTURE_BLOCKED_REASON)
+		return 0
+
+	debit_row = debit_rows[0]
+	credit_row = credit_rows[0]
+	if flt(debit_row.credit_in_account_currency or debit_row.credit) or flt(credit_row.debit_in_account_currency or credit_row.debit):
+		blocked_reasons.append(SETTLEMENT_STRUCTURE_BLOCKED_REASON)
+		return 0
+	if credit_row.account != sales_invoice.debit_to:
+		blocked_reasons.append(SETTLEMENT_RECEIVABLE_BLOCKED_REASON)
+		return 0
+
+	account_type, root_type = _get_account_values(debit_row.account)
+	if root_type != "Liability" and account_type not in {"Payable", "Temporary"}:
+		blocked_reasons.append(SETTLEMENT_STRUCTURE_BLOCKED_REASON)
+		return 0
+
+	total_debit = sum(flt(row.debit_in_account_currency or row.debit) for row in accounts)
+	total_credit = sum(flt(row.credit_in_account_currency or row.credit) for row in accounts)
+	settlement_amount = flt(total_debit)
+	if abs(total_debit - total_credit) > AMOUNT_TOLERANCE:
+		blocked_reasons.append(SETTLEMENT_AMOUNT_BLOCKED_REASON)
+		return 0
+	if settlement_amount <= 0 or settlement_amount > flt(sales_invoice.grand_total):
+		blocked_reasons.append(SETTLEMENT_AMOUNT_BLOCKED_REASON)
+		return 0
+	return settlement_amount
 
 
 def _load_submitted_advance_journal_entries(vehicle, blocked_reasons):
@@ -506,6 +688,15 @@ def _blocked_settlement_result(vehicle_name, blocked_reasons):
 		"vehicle": vehicle_name,
 		"status": "blocked",
 		"message": SETTLEMENT_BLOCKED_MESSAGE,
+		"blocked_reasons": blocked_reasons,
+	}
+
+
+def _blocked_settlement_submit_result(vehicle_name, blocked_reasons):
+	return {
+		"vehicle": vehicle_name,
+		"status": "blocked",
+		"message": SETTLEMENT_SUBMIT_BLOCKED_MESSAGE,
 		"blocked_reasons": blocked_reasons,
 	}
 

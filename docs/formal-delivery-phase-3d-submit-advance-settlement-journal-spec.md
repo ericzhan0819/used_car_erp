@@ -8,7 +8,9 @@ This document defines the future implementation boundary for Formal Delivery Pha
 
 Phase 3D should allow accounting users to submit the existing advance settlement Journal Entry draft created by Phase 3C.
 
-This document is a specification only. It does not implement runtime behavior.
+Phase 3D runtime 已實作：提交既有 linked advance settlement Journal Entry 草稿，並回寫 formal_delivery_status = 預收款沖轉已提交。
+
+此階段仍不建立新 Journal Entry、不建立 Payment Entry、不建立 Delivery Note、不建立 manual Stock Entry、不建立 Tax Summary，也不標記正式交車完成。
 
 ## 2. Current baseline
 
@@ -35,7 +37,6 @@ formal delivery completion still pending
 Still not open:
 
 ```text
-advance settlement Journal Entry submit
 formal delivery completion marker
 Payment Entry
 Delivery Note
@@ -441,12 +442,10 @@ Do not add reversal logic to Phase 3D runtime.
 
 ## 20. Current decision
 
-Do not implement Phase 3D runtime yet.
-
-Next safe runtime step, if approved later:
+Phase 3D runtime is implemented.
 
 ```text
 Formal Delivery Phase 3D Submit Advance Settlement Journal Runtime
 ```
 
-That implementation must submit only the linked settlement Journal Entry and keep final completion logic out of Phase 3D.
+The implementation submits only the linked settlement Journal Entry and keeps final completion logic out of Phase 3D.

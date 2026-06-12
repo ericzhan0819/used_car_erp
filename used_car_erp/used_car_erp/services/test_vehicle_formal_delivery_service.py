@@ -7,8 +7,10 @@ from used_car_erp.used_car_erp.services.vehicle_formal_delivery_service import (
 	RESTRICTED_FORMAL_DELIVERY_DOCTYPES,
 	create_advance_settlement_journal_entry_draft,
 	preflight_formal_delivery_submit,
+	submit_advance_settlement_journal_entry,
 	submit_formal_delivery_sales_invoice,
 	verify_advance_settlement_journal_entry_draft_service,
+	verify_advance_settlement_journal_entry_submit_service,
 	verify_formal_delivery_submit_preflight_service,
 	verify_formal_delivery_sales_invoice_submit_service,
 )
@@ -349,6 +351,136 @@ class TestVehicleFormalDeliveryService(FrappeTestCase):
 
 		self.assertEqual(result["status"], "blocked")
 
+	def test_submit_settlement_wrong_formal_status_is_blocked(self):
+		invoice, journal_entry, vehicle = self._make_phase_3d_ready_docs(formal_delivery_status="銷售發票已提交")
+
+		result = submit_advance_settlement_journal_entry(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertEqual(frappe.db.get_value("Journal Entry", journal_entry.name, "docstatus"), 0)
+		self.assertEqual(frappe.db.get_value("Used Car Vehicle", vehicle.name, "formal_delivery_status"), "銷售發票已提交")
+
+	def test_submit_settlement_missing_sales_invoice_is_blocked(self):
+		_, journal_entry, vehicle = self._make_phase_3d_ready_docs(sales_invoice_exists=False)
+
+		result = submit_advance_settlement_journal_entry(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertEqual(frappe.db.get_value("Journal Entry", journal_entry.name, "docstatus"), 0)
+
+	def test_submit_settlement_sales_invoice_not_submitted_is_blocked(self):
+		invoice, journal_entry, vehicle = self._make_phase_3d_ready_docs(invoice_docstatus=0)
+
+		result = submit_advance_settlement_journal_entry(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertEqual(frappe.db.get_value("Journal Entry", journal_entry.name, "docstatus"), 0)
+
+	def test_submit_settlement_missing_linked_journal_entry_is_blocked(self):
+		invoice, journal_entry, vehicle = self._make_phase_3d_ready_docs(link_journal_entry=False)
+
+		result = submit_advance_settlement_journal_entry(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertEqual(frappe.db.get_value("Journal Entry", journal_entry.name, "docstatus"), 0)
+
+	def test_submit_settlement_missing_journal_entry_doc_is_blocked(self):
+		invoice, journal_entry, vehicle = self._make_phase_3d_ready_docs()
+		vehicle.db_set("advance_settlement_journal_entry", "MISSING-JOURNAL-ENTRY", update_modified=False)
+
+		result = submit_advance_settlement_journal_entry(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertEqual(frappe.db.get_value("Used Car Vehicle", vehicle.name, "formal_delivery_status"), "預收款沖轉草稿")
+
+	def test_submit_settlement_submitted_journal_entry_is_blocked(self):
+		invoice, journal_entry, vehicle = self._make_phase_3d_ready_docs(journal_entry_docstatus=1)
+
+		result = submit_advance_settlement_journal_entry(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertIn("預收款沖轉 Journal Entry 已不是草稿", " ".join(result["blocked_reasons"]))
+		self.assertEqual(frappe.db.get_value("Used Car Vehicle", vehicle.name, "formal_delivery_status"), "預收款沖轉草稿")
+
+	def test_submit_settlement_unbalanced_journal_entry_is_blocked(self):
+		invoice, journal_entry, vehicle = self._make_phase_3d_ready_docs(credit_amount=500000)
+
+		result = submit_advance_settlement_journal_entry(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertEqual(frappe.db.get_value("Journal Entry", journal_entry.name, "docstatus"), 0)
+
+	def test_submit_settlement_extra_journal_entry_line_is_blocked(self):
+		invoice, journal_entry, vehicle = self._make_phase_3d_ready_docs(extra_line=True)
+
+		result = submit_advance_settlement_journal_entry(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertIn("分錄結構", " ".join(result["blocked_reasons"]))
+
+	def test_submit_settlement_wrong_credit_account_is_blocked(self):
+		invoice, journal_entry, vehicle = self._make_phase_3d_ready_docs(credit_account="TST-OTHER-RECEIVABLE")
+
+		result = submit_advance_settlement_journal_entry(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertIn("應收帳款科目", " ".join(result["blocked_reasons"]))
+
+	def test_submit_settlement_invalid_amount_is_blocked(self):
+		invoice, journal_entry, vehicle = self._make_phase_3d_ready_docs(debit_amount=700000, credit_amount=700000)
+
+		result = submit_advance_settlement_journal_entry(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertIn("金額", " ".join(result["blocked_reasons"]))
+		self.assertEqual(frappe.db.get_value("Journal Entry", journal_entry.name, "docstatus"), 0)
+
+	def test_submit_settlement_success_submits_linked_journal_entry(self):
+		invoice, journal_entry, vehicle = self._make_phase_3d_ready_docs()
+		self._patch_journal_entry_submit_to_mark_submitted()
+
+		result = submit_advance_settlement_journal_entry(vehicle.name, note="Phase 3D test")
+
+		self.assertEqual(result["status"], "settlement_submitted")
+		self.assertEqual(result["journal_entry"], journal_entry.name)
+		self.assertEqual(frappe.db.get_value("Journal Entry", journal_entry.name, "docstatus"), 1)
+		vehicle_values = frappe.db.get_value(
+			"Used Car Vehicle",
+			vehicle.name,
+			["formal_delivery_status", "formal_delivery_note", "formal_delivery_completed_at", "formal_delivery_completed_by"],
+			as_dict=True,
+		)
+		self.assertEqual(vehicle_values.formal_delivery_status, "預收款沖轉已提交")
+		self.assertEqual(vehicle_values.formal_delivery_note, "Phase 3D test")
+		self.assertFalse(vehicle_values.formal_delivery_completed_at)
+		self.assertFalse(vehicle_values.formal_delivery_completed_by)
+
+	def test_submit_settlement_success_does_not_create_other_documents_or_finish_delivery(self):
+		invoice, journal_entry, vehicle = self._make_phase_3d_ready_docs()
+		before_counts = self._phase_3d_forbidden_doc_counts()
+		self._patch_journal_entry_submit_to_mark_submitted()
+
+		submit_advance_settlement_journal_entry(vehicle.name)
+
+		after_counts = self._phase_3d_forbidden_doc_counts()
+		self.assertEqual(after_counts["Journal Entry"], before_counts["Journal Entry"])
+		for doctype in ("Payment Entry", "Delivery Note", "Stock Entry", "Tax Summary"):
+			self.assertEqual(after_counts[doctype], before_counts[doctype])
+		vehicle_values = frappe.db.get_value(
+			"Used Car Vehicle",
+			vehicle.name,
+			["formal_delivery_status", "formal_delivery_completed_at", "formal_delivery_completed_by"],
+			as_dict=True,
+		)
+		self.assertNotEqual(vehicle_values.formal_delivery_status, "已完成")
+		self.assertFalse(vehicle_values.formal_delivery_completed_at)
+		self.assertFalse(vehicle_values.formal_delivery_completed_by)
+
+	def test_verify_advance_settlement_journal_entry_submit_service(self):
+		result = verify_advance_settlement_journal_entry_submit_service()
+
+		self.assertEqual(result["status"], "blocked")
+
 	def _make_complete_vehicle(
 		self,
 		sales_invoice,
@@ -447,6 +579,78 @@ class TestVehicleFormalDeliveryService(FrappeTestCase):
 			self.created_journal_entries.append(journal_entry.name)
 		return journal_entry
 
+	def _make_phase_3d_ready_docs(
+		self,
+		formal_delivery_status="預收款沖轉草稿",
+		sales_invoice_exists=True,
+		invoice_docstatus=1,
+		link_journal_entry=True,
+		journal_entry_docstatus=0,
+		debit_amount=600000,
+		credit_amount=600000,
+		credit_account="TST-RECEIVABLE",
+		extra_line=False,
+	):
+		self._patch_account_values()
+		invoice = self._make_sales_invoice_stub(docstatus=invoice_docstatus, debit_to="TST-RECEIVABLE") if sales_invoice_exists else None
+		journal_entry = self._make_settlement_journal_entry_stub(
+			docstatus=journal_entry_docstatus,
+			debit_amount=debit_amount,
+			credit_amount=credit_amount,
+			credit_account=credit_account,
+			extra_line=extra_line,
+		)
+		vehicle = self._make_complete_vehicle(sales_invoice=invoice.name if invoice else None)
+		vehicle.db_set("formal_delivery_status", formal_delivery_status, update_modified=False)
+		vehicle.db_set("advance_settlement_journal_entry", journal_entry.name if link_journal_entry else None, update_modified=False)
+		vehicle.reload()
+		return invoice, journal_entry, vehicle
+
+	def _make_settlement_journal_entry_stub(
+		self,
+		docstatus=0,
+		debit_amount=600000,
+		credit_amount=600000,
+		credit_account="TST-RECEIVABLE",
+		extra_line=False,
+	):
+		accounts = [
+			{
+				"account": "TST-ADVANCE-LIABILITY",
+				"debit_in_account_currency": debit_amount,
+				"credit_in_account_currency": 0,
+			},
+			{
+				"account": credit_account,
+				"debit_in_account_currency": 0,
+				"credit_in_account_currency": credit_amount,
+			},
+		]
+		if extra_line:
+			accounts.append(
+				{
+					"account": "TST-ADVANCE-LIABILITY",
+					"debit_in_account_currency": 1,
+					"credit_in_account_currency": 0,
+				}
+			)
+		journal_entry = frappe.get_doc(
+			{
+				"doctype": "Journal Entry",
+				"voucher_type": "Journal Entry",
+				"company": "TST-COMPANY",
+				"posting_date": "2026-01-01",
+				"docstatus": docstatus,
+				"accounts": accounts,
+			}
+		).insert(ignore_links=True, ignore_mandatory=True)
+		if docstatus:
+			journal_entry.db_set("docstatus", docstatus, update_modified=False)
+			journal_entry.docstatus = docstatus
+		if journal_entry.name not in self.created_journal_entries:
+			self.created_journal_entries.append(journal_entry.name)
+		return journal_entry
+
 	def _set_vehicle_phase_3c_links(
 		self,
 		vehicle,
@@ -501,6 +705,22 @@ class TestVehicleFormalDeliveryService(FrappeTestCase):
 			invoice_doc.docstatus = 1
 
 		Document.submit = fake_submit
+
+	def _patch_journal_entry_submit_to_mark_submitted(self):
+		def fake_submit(doc):
+			# 測試聚焦 Phase 3D 是否只提交既有 linked Journal Entry，不觸發 ERPNext 實際總帳 side effect。
+			if doc.doctype != "Journal Entry":
+				return self._original_submit(doc)
+			doc.db_set("docstatus", 1, update_modified=True)
+			doc.docstatus = 1
+
+		Document.submit = fake_submit
+
+	def _phase_3d_forbidden_doc_counts(self):
+		counts = {"Journal Entry": frappe.db.count("Journal Entry") if frappe.db.table_exists("Journal Entry") else 0}
+		for doctype in ("Payment Entry", "Delivery Note", "Stock Entry", "Tax Summary"):
+			counts[doctype] = frappe.db.count(doctype) if frappe.db.table_exists(doctype) else 0
+		return counts
 
 	def _restricted_doc_counts(self):
 		counts = {}
