@@ -3,8 +3,11 @@ from frappe.tests.utils import FrappeTestCase
 
 from used_car_erp.used_car_erp.services.vehicle_intake_service import VehicleIntakeService
 from used_car_erp.used_car_erp.services.vehicle_listing_service import VehicleListingService
+from used_car_erp.used_car_erp.services.vehicle_money_flow_service import (
+	VehicleMoneyFlowService,
+	verify_vehicle_money_flow_voucher_service,
+)
 from used_car_erp.used_car_erp.services.vehicle_reservation_service import VehicleReservationService
-from used_car_erp.used_car_erp.services.vehicle_money_flow_service import verify_vehicle_money_flow_voucher_service
 from used_car_erp.used_car_erp.services.vehicle_voucher_service import VehicleVoucherService
 
 
@@ -12,6 +15,7 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 	def setUp(self):
 		self.intake_service = VehicleIntakeService()
 		self.listing_service = VehicleListingService()
+		self.money_flow_service = VehicleMoneyFlowService()
 		self.reservation_service = VehicleReservationService()
 		self.voucher_service = VehicleVoucherService()
 		self.created_vehicles = []
@@ -25,6 +29,22 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		self.created_customers = []
 
 	def tearDown(self):
+		for reservation_name in reversed(self.created_reservations):
+			if frappe.db.exists("Used Car Reservation", reservation_name):
+				updates = {}
+				meta = frappe.get_meta("Used Car Reservation")
+				for fieldname in (
+					"money_flow",
+					"voucher_draft",
+					"journal_entry",
+					"final_money_flow",
+					"final_voucher_draft",
+					"final_journal_entry",
+				):
+					if meta.has_field(fieldname):
+						updates[fieldname] = None
+				if updates:
+					frappe.db.set_value("Used Car Reservation", reservation_name, updates)
 		for journal_entry_name in reversed(self.created_journal_entries):
 			if frappe.db.exists("Journal Entry", journal_entry_name):
 				journal_entry = frappe.get_doc("Journal Entry", journal_entry_name)
@@ -148,6 +168,48 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		draft.lines[0].debit = 1
 		self.assertRaises(frappe.ValidationError, self.voucher_service._validate_draft_ready_for_confirm, draft)
 
+	def test_create_final_payment_creates_money_flow_and_voucher_draft(self):
+		result = self._create_reservation_for_listed_vehicle()
+		final_result = self._create_final_payment_for_reservation(result.get("reservation"))
+		money_flow = frappe.get_doc("Used Car Money Flow", final_result.get("money_flow"))
+		draft = frappe.get_doc("Used Car Voucher Draft", final_result.get("voucher_draft"))
+		self.assertEqual(money_flow.flow_type, "尾款收款")
+		self.assertEqual(money_flow.status, "待審核")
+		self.assertEqual(draft.status, "待審核")
+		self.assertEqual(draft.total_debit, draft.total_credit)
+		self.assertEqual(draft.difference, 0)
+
+	def test_create_final_payment_does_not_create_restricted_documents(self):
+		result = self._create_reservation_for_listed_vehicle()
+		before_counts = self._restricted_doc_counts()
+		before_journal_count = frappe.db.count("Journal Entry")
+		self._create_final_payment_for_reservation(result.get("reservation"))
+		after_counts = self._restricted_doc_counts()
+		self.assertEqual(frappe.db.count("Journal Entry"), before_journal_count)
+		self.assertEqual(after_counts["Payment Entry"], before_counts["Payment Entry"])
+		self.assertEqual(after_counts["Sales Invoice"], before_counts["Sales Invoice"])
+		self.assertEqual(after_counts["Delivery Note"], before_counts["Delivery Note"])
+		self.assertEqual(after_counts["Stock Entry"], before_counts["Stock Entry"])
+
+	def test_confirm_final_payment_updates_final_journal_entry(self):
+		result = self._create_reservation_for_listed_vehicle()
+		final_result = self._create_final_payment_for_reservation(result.get("reservation"))
+		confirm_result = self.voucher_service.confirm_voucher_draft(final_result.get("voucher_draft"), "TEST FINAL CONFIRM")
+		self.created_journal_entries.append(confirm_result.get("journal_entry"))
+		reservation = frappe.get_doc("Used Car Reservation", result.get("reservation"))
+		self.assertEqual(reservation.final_journal_entry, confirm_result.get("journal_entry"))
+
+	def test_duplicate_final_payment_is_rejected(self):
+		result = self._create_reservation_for_listed_vehicle()
+		self._create_final_payment_for_reservation(result.get("reservation"))
+		self.assertRaises(
+			frappe.ValidationError,
+			self.money_flow_service.create_final_payment_money_flow_from_reservation,
+			result.get("reservation"),
+			50000,
+			"現金",
+		)
+
 	def test_verify_service_cleans_core_test_documents(self):
 		result = verify_vehicle_money_flow_voucher_service()
 		self.assertTrue(result.get("voucher_draft_deleted"))
@@ -173,6 +235,17 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		self.created_money_flows.append(result.get("money_flow"))
 		self.created_voucher_drafts.append(result.get("voucher_draft"))
 		self.created_customers.append(result.get("customer"))
+		return result
+
+	def _create_final_payment_for_reservation(self, reservation_name):
+		result = self.money_flow_service.create_final_payment_money_flow_from_reservation(
+			reservation_name=reservation_name,
+			amount=50000,
+			payment_method="現金",
+			payment_reference="TEST FINAL",
+		)
+		self.created_money_flows.append(result.get("money_flow"))
+		self.created_voucher_drafts.append(result.get("voucher_draft"))
 		return result
 
 	def _make_vehicle(self):
