@@ -1,20 +1,28 @@
 import frappe
+from frappe.model.document import Document
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import now_datetime
 
 from used_car_erp.used_car_erp.services.vehicle_formal_delivery_service import (
 	RESTRICTED_FORMAL_DELIVERY_DOCTYPES,
 	preflight_formal_delivery_submit,
+	submit_formal_delivery_sales_invoice,
 	verify_formal_delivery_submit_preflight_service,
+	verify_formal_delivery_sales_invoice_submit_service,
 )
+import used_car_erp.used_car_erp.services.vehicle_formal_delivery_service as formal_delivery_service
 
 
 class TestVehicleFormalDeliveryService(FrappeTestCase):
 	def setUp(self):
 		self.created_vehicles = []
 		self.created_invoices = []
+		self._original_preflight = formal_delivery_service.preflight_formal_delivery_submit
+		self._original_submit = Document.submit
 
 	def tearDown(self):
+		formal_delivery_service.preflight_formal_delivery_submit = self._original_preflight
+		Document.submit = self._original_submit
 		for vehicle_name in reversed(self.created_vehicles):
 			if frappe.db.exists("Used Car Vehicle", vehicle_name):
 				frappe.delete_doc("Used Car Vehicle", vehicle_name, force=True, ignore_permissions=True)
@@ -121,6 +129,105 @@ class TestVehicleFormalDeliveryService(FrappeTestCase):
 
 		self.assertEqual(result["status"], "blocked")
 
+	def test_submit_preflight_blocked_does_not_submit_or_change_vehicle(self):
+		invoice = self._make_sales_invoice_stub()
+		vehicle = self._make_complete_vehicle(sales_invoice=invoice.name)
+		formal_delivery_service.preflight_formal_delivery_submit = lambda vehicle_name: {
+			"vehicle": vehicle_name,
+			"ready": False,
+			"status": "blocked",
+			"blocked_reasons": ["final checklist blocked"],
+		}
+
+		result = submit_formal_delivery_sales_invoice(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertEqual(frappe.db.get_value("Sales Invoice", invoice.name, "docstatus"), 0)
+		self.assertEqual(frappe.db.get_value("Used Car Vehicle", vehicle.name, "formal_delivery_status"), vehicle.formal_delivery_status)
+
+	def test_submit_sales_invoice_not_draft_is_blocked(self):
+		invoice = self._make_sales_invoice_stub(docstatus=1)
+		vehicle = self._make_complete_vehicle(sales_invoice=invoice.name)
+		self._force_submit_preflight_ready()
+
+		result = submit_formal_delivery_sales_invoice(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertEqual(frappe.db.get_value("Used Car Vehicle", vehicle.name, "formal_delivery_status"), vehicle.formal_delivery_status)
+
+	def test_submit_update_stock_not_enabled_is_blocked(self):
+		invoice = self._make_sales_invoice_stub(update_stock=0)
+		vehicle = self._make_complete_vehicle(sales_invoice=invoice.name)
+		self._force_submit_preflight_ready()
+
+		result = submit_formal_delivery_sales_invoice(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertEqual(frappe.db.get_value("Sales Invoice", invoice.name, "docstatus"), 0)
+		self.assertEqual(frappe.db.get_value("Used Car Vehicle", vehicle.name, "formal_delivery_status"), vehicle.formal_delivery_status)
+
+	def test_submit_amount_mismatch_is_blocked(self):
+		invoice = self._make_sales_invoice_stub(grand_total=590000, item_amount=590000)
+		vehicle = self._make_complete_vehicle(sales_invoice=invoice.name, sold_price=600000)
+		self._force_submit_preflight_ready()
+
+		result = submit_formal_delivery_sales_invoice(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertEqual(frappe.db.get_value("Sales Invoice", invoice.name, "docstatus"), 0)
+		self.assertEqual(frappe.db.get_value("Used Car Vehicle", vehicle.name, "formal_delivery_status"), vehicle.formal_delivery_status)
+
+	def test_submit_success_submits_invoice_and_marks_vehicle(self):
+		invoice = self._make_sales_invoice_stub()
+		vehicle = self._make_complete_vehicle(sales_invoice=invoice.name)
+		self._force_submit_preflight_ready()
+		self._patch_sales_invoice_submit_to_mark_submitted()
+
+		result = submit_formal_delivery_sales_invoice(vehicle.name, note="Phase 3B test")
+
+		self.assertEqual(result["status"], "submitted")
+		self.assertEqual(frappe.db.get_value("Sales Invoice", invoice.name, "docstatus"), 1)
+		vehicle_values = frappe.db.get_value(
+			"Used Car Vehicle",
+			vehicle.name,
+			["formal_delivery_status", "formal_delivery_posting_date", "formal_delivery_note"],
+			as_dict=True,
+		)
+		self.assertEqual(vehicle_values.formal_delivery_status, "銷售發票已提交")
+		self.assertEqual(str(vehicle_values.formal_delivery_posting_date), "2026-01-01")
+		self.assertEqual(vehicle_values.formal_delivery_note, "Phase 3B test")
+
+	def test_submit_success_does_not_create_restricted_documents_or_mark_completed(self):
+		invoice = self._make_sales_invoice_stub()
+		vehicle = self._make_complete_vehicle(sales_invoice=invoice.name)
+		before_counts = self._restricted_doc_counts()
+		reservation_before = vehicle.completed_reservation
+		self._force_submit_preflight_ready()
+		self._patch_sales_invoice_submit_to_mark_submitted()
+
+		submit_formal_delivery_sales_invoice(vehicle.name)
+
+		vehicle_values = frappe.db.get_value(
+			"Used Car Vehicle",
+			vehicle.name,
+			[
+				"formal_delivery_completed_at",
+				"formal_delivery_completed_by",
+				"advance_settlement_journal_entry",
+			],
+			as_dict=True,
+		)
+		self.assertEqual(self._restricted_doc_counts(), before_counts)
+		self.assertFalse(vehicle_values.formal_delivery_completed_at)
+		self.assertFalse(vehicle_values.formal_delivery_completed_by)
+		self.assertFalse(vehicle_values.advance_settlement_journal_entry)
+		self.assertEqual(frappe.db.get_value("Used Car Vehicle", vehicle.name, "completed_reservation"), reservation_before)
+
+	def test_verify_formal_delivery_sales_invoice_submit_service(self):
+		result = verify_formal_delivery_sales_invoice_submit_service()
+
+		self.assertEqual(result["status"], "blocked")
+
 	def _make_complete_vehicle(
 		self,
 		sales_invoice,
@@ -190,6 +297,22 @@ class TestVehicleFormalDeliveryService(FrappeTestCase):
 
 	def _find_check(self, result, key):
 		return next(check for check in result["checks"] if check["key"] == key)
+
+	def _force_submit_preflight_ready(self):
+		formal_delivery_service.preflight_formal_delivery_submit = lambda vehicle_name: {
+			"vehicle": vehicle_name,
+			"ready": True,
+			"status": "ready",
+			"blocked_reasons": [],
+		}
+
+	def _patch_sales_invoice_submit_to_mark_submitted(self):
+		def fake_submit(invoice_doc):
+			# 測試只驗證本 app 的 mutation 邊界；ERPNext 原生 ledger/stock side effect 由整合環境負責。
+			invoice_doc.db_set("docstatus", 1, update_modified=True)
+			invoice_doc.docstatus = 1
+
+		Document.submit = fake_submit
 
 	def _restricted_doc_counts(self):
 		counts = {}

@@ -8,7 +8,9 @@ This document defines the future implementation boundary for Formal Delivery Pha
 
 Phase 3B is the first runtime phase that may submit the existing Sales Invoice draft and let ERPNext perform stock delivery through `update_stock = 1`.
 
-This document is a specification only. It does not implement runtime behavior.
+Phase 3B runtime 已實作：提交既有 Sales Invoice 草稿，並透過 ERPNext update_stock 出庫。
+
+此階段仍不處理預收款沖轉、Payment Entry、Delivery Note、manual Stock Entry、Tax Summary 或正式交車完成。
 
 ## 2. Current baseline
 
@@ -386,12 +388,12 @@ Do not jump directly from Phase 3B to final completion.
 
 ## 19. Current decision
 
-Do not implement Phase 3B runtime yet.
+Phase 3B runtime 已實作並限制在提交既有 Sales Invoice 草稿。
 
-Next safe runtime step, if approved later:
+已開放 runtime step:
 
 ```text
 Formal Delivery Phase 3B Submit Sales Invoice runtime implementation
 ```
 
-That implementation must follow this specification and keep settlement logic out of Phase 3B.
+Implementation must continue to follow this specification and keep settlement logic out of Phase 3B.

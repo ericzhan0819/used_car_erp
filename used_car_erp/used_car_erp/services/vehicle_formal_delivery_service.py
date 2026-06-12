@@ -16,6 +16,8 @@ BLOCKED_LABEL = "尚不可正式提交"
 ALLOWED_FORMAL_DELIVERY_STATUSES = {None, "", "銷售發票草稿"}
 ALLOWED_TAX_REVIEW_STATUSES = {"已初步判斷", "已確認", "已調整", "已鎖定"}
 RESTRICTED_FORMAL_DELIVERY_DOCTYPES = (*RESTRICTED_FINAL_CHECK_DOCTYPES,)
+SUBMITTED_FORMAL_DELIVERY_STATUS = "銷售發票已提交"
+SUBMIT_ALLOWED_ROLES = {"System Manager", "Accounts Manager", "Accounts User"}
 
 
 def preflight_formal_delivery_submit(vehicle_name: str) -> dict:
@@ -55,6 +57,53 @@ def preflight_formal_delivery_submit(vehicle_name: str) -> dict:
 @frappe.whitelist()
 def preflight_formal_delivery_submit_for_vehicle(vehicle_name):
 	return preflight_formal_delivery_submit(vehicle_name)
+
+
+def submit_formal_delivery_sales_invoice(vehicle_name: str, note: str | None = None) -> dict:
+	_permission_blocked = _require_formal_delivery_submit_permission()
+	if _permission_blocked:
+		return _blocked_submit_result(vehicle_name, [_permission_blocked])
+
+	preflight = preflight_formal_delivery_submit(vehicle_name)
+	if not _preflight_allows_submit(preflight):
+		blocked_reasons = preflight.get("blocked_reasons") or ["Sales Invoice 正式提交前檢查未通過，請先處理待處理項目。"]
+		return _blocked_submit_result(vehicle_name, blocked_reasons, preflight=preflight)
+
+	vehicle = frappe.get_doc("Used Car Vehicle", vehicle_name)
+	invoice = frappe.get_doc("Sales Invoice", vehicle.sales_invoice) if vehicle.sales_invoice else None
+	blocked_reasons = _validate_sales_invoice_submit_runtime(vehicle, invoice)
+	if blocked_reasons:
+		return _blocked_submit_result(vehicle.name, blocked_reasons, vehicle=vehicle, invoice=invoice, preflight=preflight)
+
+	before_formal_delivery_status = vehicle.formal_delivery_status
+	invoice.submit()
+
+	# Phase 3B 僅允許留下提交節點，避免提早標記正式交車完成或沖轉預收款。
+	vehicle.db_set("formal_delivery_status", SUBMITTED_FORMAL_DELIVERY_STATUS, update_modified=True)
+	vehicle.db_set("formal_delivery_posting_date", invoice.posting_date, update_modified=True)
+	if note:
+		vehicle.db_set("formal_delivery_note", note, update_modified=True)
+
+	_add_formal_delivery_comment(
+		vehicle.name,
+		f"Sales Invoice {invoice.name} 已提交；Phase 3B 僅完成 update_stock 出庫，預收款沖轉仍待後續處理。",
+	)
+
+	return {
+		"vehicle": vehicle.name,
+		"status": "submitted",
+		"message": "Sales Invoice 已正式提交並依 update_stock 出庫。預收款沖轉仍待後續處理。",
+		"sales_invoice": invoice.name,
+		"sales_invoice_docstatus": invoice.docstatus,
+		"formal_delivery_status": SUBMITTED_FORMAL_DELIVERY_STATUS,
+		"before_formal_delivery_status": before_formal_delivery_status,
+		"next_step": "建立預收款沖轉 Journal Entry 草稿",
+	}
+
+
+@frappe.whitelist()
+def submit_formal_delivery_sales_invoice_for_vehicle(vehicle_name, note=None):
+	return submit_formal_delivery_sales_invoice(vehicle_name, note=note)
 
 
 def verify_formal_delivery_submit_preflight_service():
@@ -106,6 +155,55 @@ def verify_formal_delivery_submit_preflight_service():
 		frappe.db.commit()
 
 
+def verify_formal_delivery_sales_invoice_submit_service():
+	vehicle_name = None
+	before_counts = _restricted_doc_counts()
+
+	try:
+		vehicle = frappe.get_doc(
+			{
+				"doctype": "Used Car Vehicle",
+				"brand": "Toyota",
+				"model": "Altis",
+				"year": 2020,
+				"license_plate": f"VERIFY-FORMAL-SUBMIT-{frappe.generate_hash(length=4)}",
+				"vin": f"VERIFY-FORMAL-SUBMIT-{frappe.generate_hash(length=10)}",
+				"status": "已售出",
+				"completed_reservation": "VERIFY-RESERVATION",
+				"completed_at": now_datetime(),
+				"deposit_money_flow": "VERIFY-DEPOSIT-FLOW",
+				"deposit_voucher_draft": "VERIFY-DEPOSIT-DRAFT",
+				"deposit_journal_entry": "VERIFY-DEPOSIT-JE",
+				"final_money_flow": "VERIFY-FINAL-FLOW",
+				"final_voucher_draft": "VERIFY-FINAL-DRAFT",
+				"final_journal_entry": "VERIFY-FINAL-JE",
+				"item": "VERIFY-ITEM",
+				"serial_no": "VERIFY-SERIAL",
+				"stock_warehouse": "VERIFY-WAREHOUSE",
+				"purchase_price": 500000,
+				"sold_price": 600000,
+				"vehicle_tax_mode": "15-1 特殊扣抵",
+				"tax_review_status": "已確認",
+			}
+		).insert(ignore_links=True)
+		vehicle_name = vehicle.name
+
+		result = submit_formal_delivery_sales_invoice(vehicle.name)
+		if result["status"] != "blocked":
+			frappe.throw("Formal delivery submit verification should be blocked without Sales Invoice draft.")
+		if frappe.db.get_value("Used Car Vehicle", vehicle.name, "formal_delivery_status") != vehicle.formal_delivery_status:
+			frappe.throw("Blocked submit must not change vehicle formal delivery status.")
+		for doctype, before_count in before_counts.items():
+			if _restricted_doc_counts()[doctype] != before_count:
+				frappe.throw(f"Formal delivery submit blocked case must not create {doctype}.")
+
+		return {**result, "cleaned_up": True}
+	finally:
+		if vehicle_name and frappe.db.exists("Used Car Vehicle", vehicle_name):
+			frappe.delete_doc("Used Car Vehicle", vehicle_name, force=True, ignore_permissions=True)
+		frappe.db.commit()
+
+
 def _build_final_check_gate(final_check, blocked_reasons):
 	status = final_check.get("status")
 	status_label = final_check.get("status_label") or status
@@ -117,6 +215,76 @@ def _build_final_check_gate(final_check, blocked_reasons):
 		message = f"交車前最終檢查尚未通過，狀態：{status_label}。"
 	blocked_reasons.append(message)
 	return _check("final_check", "交車前最終檢查", "blocked", message)
+
+
+def _require_formal_delivery_submit_permission():
+	if frappe.session.user == "Administrator":
+		return None
+	user_roles = set(frappe.get_roles(frappe.session.user))
+	if user_roles.intersection(SUBMIT_ALLOWED_ROLES):
+		return None
+	# 尚未導入 formal_delivery.submit_sales_invoice 權限鍵前，先用保守會計/系統角色避免 Sales 角色誤觸正式入帳 mutation。
+	return "只有 System Manager、Accounts Manager 或 Accounts User 可提交正式 Sales Invoice。"
+
+
+def _preflight_allows_submit(preflight):
+	return preflight.get("ready") is True and preflight.get("status") == "ready" and not preflight.get("blocked_reasons")
+
+
+def _validate_sales_invoice_submit_runtime(vehicle, invoice):
+	reasons = []
+	if vehicle.status != "已售出":
+		reasons.append("車輛狀態必須為已售出。")
+	if not vehicle.sales_invoice:
+		reasons.append("車輛尚未連結 Sales Invoice 草稿。")
+	if vehicle.formal_delivery_status not in ALLOWED_FORMAL_DELIVERY_STATUSES:
+		reasons.append("此車輛已進入正式交車後續狀態，不可重複提交 Sales Invoice。")
+	if not invoice:
+		reasons.append("Sales Invoice 草稿不存在。")
+		return reasons
+
+	items = invoice.items or []
+	first_item = items[0] if items else None
+	if invoice.docstatus != 0:
+		reasons.append("Sales Invoice 已不是草稿，請人工確認。")
+	if invoice.update_stock != 1:
+		reasons.append("Sales Invoice 必須啟用 Update Stock。")
+	if len(items) != 1:
+		reasons.append("Sales Invoice 必須只有一筆車輛 item。")
+	if first_item:
+		if not first_item.item_code:
+			reasons.append("Sales Invoice item_code 尚未完整。")
+		if flt(first_item.qty) != 1:
+			reasons.append("Sales Invoice 車輛數量必須為 1。")
+		if not first_item.serial_no or not first_item.warehouse or not first_item.income_account:
+			reasons.append("Sales Invoice 車輛 item 的 Serial No、Warehouse 或 Income Account 尚未完整。")
+	if flt(vehicle.sold_price) <= 0 or abs(flt(invoice.grand_total) - flt(vehicle.sold_price)) > AMOUNT_TOLERANCE:
+		reasons.append("Sales Invoice 金額與車輛成交價不一致，請先人工確認草稿。")
+
+	return reasons
+
+
+def _blocked_submit_result(vehicle_name, blocked_reasons, vehicle=None, invoice=None, preflight=None):
+	message = "Sales Invoice 正式提交前檢查未通過。"
+	if vehicle:
+		_add_formal_delivery_comment(vehicle.name, f"{message} {' '.join(blocked_reasons)}")
+	return {
+		"vehicle": vehicle.name if vehicle else vehicle_name,
+		"status": "blocked",
+		"message": message,
+		"blocked_reasons": blocked_reasons,
+		"sales_invoice": invoice.name if invoice else None,
+		"sales_invoice_docstatus": invoice.docstatus if invoice else None,
+		"preflight_status": preflight.get("status") if preflight else None,
+	}
+
+
+def _add_formal_delivery_comment(vehicle_name, text):
+	try:
+		vehicle = frappe.get_doc("Used Car Vehicle", vehicle_name)
+		vehicle.add_comment("Comment", text)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Formal Delivery Phase 3B audit comment failed")
 
 
 def _build_vehicle_gate(vehicle, blocked_reasons):

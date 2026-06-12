@@ -211,7 +211,7 @@
   {"fieldname": "final_voucher_draft", "fieldtype": "Link", "label": "尾款傳票草稿", "options": "Used Car Voucher Draft", "read_only": 1},
   {"fieldname": "final_journal_entry", "fieldtype": "Link", "label": "尾款正式會計傳票", "options": "Journal Entry", "read_only": 1},
   {"fieldname": "formal_delivery_section", "fieldtype": "Section Break", "label": "正式交車入帳"},
-  {"default": "未處理", "fieldname": "formal_delivery_status", "fieldtype": "Select", "label": "正式交車入帳狀態", "options": "未處理\n銷售發票草稿\n已完成", "read_only": 1},
+  {"default": "未處理", "fieldname": "formal_delivery_status", "fieldtype": "Select", "label": "正式交車入帳狀態", "options": "未處理\n銷售發票草稿\n銷售發票已提交\n已完成", "read_only": 1},
   {"fieldname": "formal_delivery_posting_date", "fieldtype": "Date", "label": "正式交車入帳日期", "read_only": 1},
   {"fieldname": "sales_invoice", "fieldtype": "Link", "label": "銷售發票草稿", "options": "Sales Invoice", "read_only": 1},
   {"fieldname": "formal_delivery_column", "fieldtype": "Column Break"},

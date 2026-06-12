@@ -34,13 +34,6 @@ const LAYOUT_FIELD_TYPES = [
   "Button",
 ];
 
-// Phase 3B future confirmation copy:
-// 此操作會提交 Sales Invoice，並依 ERPNext update_stock 正式出庫。
-// 此操作可能影響收入、庫存與成本。
-// 此操作不會自動建立 Payment Entry。
-// 此操作不會自動完成預收款沖轉，除非後續階段已實作。
-// Phase 3A-1 不得新增 submit button。
-
 function apply_vehicle_form_mode(frm) {
   clear_vehicle_action_buttons(frm);
   set_vehicle_intake_intro(frm);
@@ -66,6 +59,7 @@ function apply_vehicle_form_mode(frm) {
     add_sold_vehicle_next_step_button(frm);
     add_refresh_sold_vehicle_final_check_button(frm);
     add_formal_delivery_submit_preflight_button(frm);
+    add_submit_formal_delivery_sales_invoice_button(frm);
     set_vehicle_fields_read_only(frm, true);
     return;
   }
@@ -133,6 +127,7 @@ function clear_vehicle_action_buttons(frm) {
     "重新整理交車前檢查",
     "正式交車提交前檢查",
     "檢查提交資格",
+    "提交 Sales Invoice 並正式出庫",
   ].forEach((label) => {
     frm.remove_custom_button(label);
   });
@@ -164,6 +159,50 @@ function add_formal_delivery_submit_preflight_button(frm) {
         // 提交前檢查只提供唯讀 gate 結果，呼叫失敗不得阻斷已售出車輛頁其他操作。
       },
     });
+  });
+}
+
+function add_submit_formal_delivery_sales_invoice_button(frm) {
+  if (!can_submit_formal_delivery_sales_invoice(frm)) {
+    return;
+  }
+
+  frm.add_custom_button("提交 Sales Invoice 並正式出庫", () => {
+    frappe.confirm(
+      [
+        "此操作會提交 Sales Invoice，並依 ERPNext update_stock 正式出庫。",
+        "",
+        "此操作可能影響收入、庫存與成本。",
+        "此操作不會自動建立 Payment Entry。",
+        "此操作不會自動完成預收款沖轉。",
+        "此操作不會完成正式交車入帳。",
+        "",
+        "提交後 Sales Invoice 將不再是草稿。",
+        "請確認客戶、車輛、金額、Serial No、Warehouse 與稅務資料均已確認。",
+      ].join("<br>"),
+      () => {
+        frappe.call({
+          method:
+            "used_car_erp.used_car_erp.services.vehicle_formal_delivery_service.submit_formal_delivery_sales_invoice_for_vehicle",
+          args: {
+            vehicle_name: frm.doc.name,
+          },
+          freeze: true,
+          freeze_message: "正在提交 Sales Invoice 並正式出庫...",
+          callback(response) {
+            const result = response.message || {};
+            frappe.show_alert({
+              message:
+                result.status === "submitted"
+                  ? "Sales Invoice 已提交，預收款沖轉仍待後續處理。"
+                  : result.message || "Sales Invoice 正式提交前檢查未通過。",
+              indicator: result.status === "submitted" ? "green" : "red",
+            });
+            frm.reload_doc();
+          },
+        });
+      }
+    );
   });
 }
 
@@ -574,6 +613,13 @@ function add_delivery_preflight_button(frm) {
 }
 
 function add_sold_vehicle_next_step_button(frm) {
+  if (frm.doc.formal_delivery_status === "銷售發票已提交") {
+    frm.add_custom_button("開啟 Sales Invoice 草稿", () => {
+      frappe.set_route("Form", "Sales Invoice", frm.doc.sales_invoice);
+    });
+    return;
+  }
+
   if (frm.doc.sales_invoice) {
     frm.add_custom_button("開啟 Sales Invoice 草稿", () => {
       frappe.set_route("Form", "Sales Invoice", frm.doc.sales_invoice);
@@ -637,8 +683,17 @@ function add_sold_vehicle_progress_comment(frm) {
     return;
   }
 
-  const sales_invoice_status = frm.doc.sales_invoice ? "Sales Invoice 草稿已建立" : "Sales Invoice 草稿尚未建立";
-  const next_step = frm.doc.sales_invoice ? "開啟並檢查 Sales Invoice 草稿" : "建立 Sales Invoice 草稿";
+  const sales_invoice_submitted = frm.doc.formal_delivery_status === "銷售發票已提交";
+  const sales_invoice_status = sales_invoice_submitted
+    ? "Sales Invoice 已正式提交並出庫"
+    : frm.doc.sales_invoice
+      ? "Sales Invoice 草稿已建立"
+      : "Sales Invoice 草稿尚未建立";
+  const next_step = sales_invoice_submitted
+    ? "建立預收款沖轉 Journal Entry 草稿"
+    : frm.doc.sales_invoice
+      ? "開啟並檢查 Sales Invoice 草稿"
+      : "建立 Sales Invoice 草稿";
   const progress_comment = [
     "流程進度：",
     "✓ 訂金已入帳",
@@ -648,7 +703,14 @@ function add_sold_vehicle_progress_comment(frm) {
     `下一步：${next_step}`,
   ];
 
-  if (frm.doc.sales_invoice) {
+  if (sales_invoice_submitted) {
+    progress_comment.push(
+      "",
+      "Sales Invoice 已正式提交並出庫。",
+      "預收款沖轉仍待後續處理。",
+      "正式交車入帳尚未完成。"
+    );
+  } else if (frm.doc.sales_invoice) {
     progress_comment.push("", build_sales_invoice_draft_checklist_comment());
   }
 
@@ -736,6 +798,7 @@ function add_formal_delivery_submit_preflight_comment(frm) {
         return;
       }
 
+      const sales_invoice_submitted = frm.doc.formal_delivery_status === "銷售發票已提交";
       const blocked_reasons = result.blocked_reasons || [];
       const readiness_result = result.ready
         ? "判斷結果：目前資料已通過提交前檢查，可進入下一階段人工確認。"
@@ -744,7 +807,7 @@ function add_formal_delivery_submit_preflight_comment(frm) {
         ? ["待處理項目：", ...blocked_reasons.map((reason) => `- ${reason}`)]
         : ["待處理項目：請查看上方檢查項目。"];
       const message = [
-        "正式交車提交前檢查（Phase 3A）：",
+        sales_invoice_submitted ? "正式交車提交狀態（Phase 3B）：" : "正式交車提交前檢查（Phase 3A）：",
         `整體狀態：${result.status_label || result.status}`,
         ...result.checks.map((check) => `${final_check_icon(check.state)} ${check.label}：${check.message}`),
         "",
@@ -756,15 +819,24 @@ function add_formal_delivery_submit_preflight_comment(frm) {
         message.push("", ...blocked_message);
       }
 
-      message.push(
-        "",
-        "注意：",
-        "此檢查只代表「資料可進入下一階段人工確認」。",
-        "目前尚未提交 Sales Invoice，尚未正式出庫，尚未沖轉預收款，尚未完成正式交車入帳。",
-        "尚未正式提交 Sales Invoice。",
-        "尚未正式出庫。",
-        "尚未沖轉預收款。"
-      );
+      if (sales_invoice_submitted) {
+        message.push(
+          "",
+          "Sales Invoice 已正式提交並出庫。",
+          "預收款沖轉仍待後續處理。",
+          "正式交車入帳尚未完成。"
+        );
+      } else {
+        message.push(
+          "",
+          "注意：",
+          "此檢查只代表「資料可進入下一階段人工確認」。",
+          "目前尚未提交 Sales Invoice，尚未正式出庫，尚未沖轉預收款，尚未完成正式交車入帳。",
+          "尚未正式提交 Sales Invoice。",
+          "尚未正式出庫。",
+          "尚未沖轉預收款。"
+        );
+      }
 
       frm.dashboard.add_comment(message.join("<br>"), result.ready ? "green" : "red", true);
     },
@@ -975,8 +1047,13 @@ function set_vehicle_intake_intro(frm) {
   }
 
   if (frm.doc.status === "已售出") {
+    if (frm.doc.formal_delivery_status === "銷售發票已提交") {
+      frm.set_intro("Sales Invoice 已正式提交並出庫。預收款沖轉仍待後續處理；正式交車入帳尚未完成。", "green");
+      return;
+    }
+
     if (frm.doc.sales_invoice) {
-      frm.set_intro("Sales Invoice 草稿已建立。請先開啟草稿並依檢查清單確認內容；正式提交、出庫與預收款沖轉尚未開放。", "blue");
+      frm.set_intro("Sales Invoice 草稿已建立。請先開啟草稿並依檢查清單確認內容；正式提交後只會出庫，預收款沖轉仍待後續處理。", "blue");
       return;
     }
 
@@ -1005,4 +1082,14 @@ function set_vehicle_intake_intro(frm) {
   }
 
   frm.set_intro("下一步：按「完成入庫」，系統會自動建立 ERPNext 商品並完成庫存入庫。", "blue");
+}
+
+function can_submit_formal_delivery_sales_invoice(frm) {
+  return Boolean(
+    !frm.is_new() &&
+      frm.doc.name &&
+      frm.doc.status === "已售出" &&
+      frm.doc.sales_invoice &&
+      [undefined, null, "", "銷售發票草稿"].includes(frm.doc.formal_delivery_status)
+  );
 }
