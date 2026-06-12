@@ -4,6 +4,7 @@ from frappe.utils import flt, nowdate
 from used_car_erp.used_car_erp.services.vehicle_voucher_service import VehicleVoucherService
 
 
+VALID_PAYMENT_METHODS = ("現金", "匯款", "信用卡", "其他")
 RESTRICTED_ACCOUNTING_DOCTYPES = (
 	"Stock Entry",
 	"Purchase Invoice",
@@ -57,6 +58,62 @@ class VehicleMoneyFlowService:
 			"message": "已建立訂金金流紀錄與傳票草稿。",
 		}
 
+	def create_final_payment_money_flow_from_reservation(
+		self,
+		reservation_name: str,
+		amount,
+		payment_method: str,
+		payment_date=None,
+		payment_reference: str | None = None,
+		notes: str | None = None,
+	):
+		reservation = frappe.get_doc("Used Car Reservation", reservation_name)
+		reservation.check_permission("write")
+		self._validate_reservation_for_final_payment_money_flow(reservation, amount, payment_method)
+
+		money_flow = frappe.get_doc(
+			{
+				"doctype": "Used Car Money Flow",
+				"flow_type": "尾款收款",
+				"direction": "收入",
+				"status": "待審核",
+				"vehicle": reservation.vehicle,
+				"reservation": reservation.name,
+				"stock_no": reservation.stock_no,
+				"customer": reservation.customer,
+				"customer_name": reservation.customer_name,
+				"customer_phone": reservation.customer_phone,
+				"amount": amount,
+				"payment_date": payment_date or nowdate(),
+				"payment_method": payment_method,
+				"payment_reference": payment_reference,
+				"notes": notes,
+				"created_by_service": 1,
+			}
+		).insert()
+
+		voucher_draft = VehicleVoucherService().create_final_payment_voucher_draft(money_flow.name)
+		money_flow.reload()
+		reservation = frappe.get_doc("Used Car Reservation", reservation.name)
+		reservation.flags.ignore_accounting_link_validation = True
+		reservation.final_payment_amount = amount
+		reservation.final_payment_date = money_flow.payment_date
+		reservation.final_payment_method = payment_method
+		reservation.final_payment_reference = payment_reference
+		reservation.final_payment_notes = notes
+		reservation.final_money_flow = money_flow.name
+		reservation.final_voucher_draft = voucher_draft
+		reservation.save()
+
+		return {
+			"reservation": reservation.name,
+			"money_flow": money_flow.name,
+			"voucher_draft": voucher_draft,
+			"amount": flt(money_flow.amount),
+			"status": money_flow.status,
+			"message": "已建立尾款金流紀錄與傳票草稿。",
+		}
+
 	def _validate_reservation_for_deposit_money_flow(self, reservation):
 		if reservation.status != "有效":
 			frappe.throw("只有有效保留紀錄可以建立訂金金流。")
@@ -64,6 +121,26 @@ class VehicleMoneyFlowService:
 			frappe.throw("訂金金額必須大於 0，才能建立金流紀錄。")
 		if reservation.money_flow or reservation.voucher_draft:
 			frappe.throw("此保留紀錄已建立金流紀錄。")
+
+	def _validate_reservation_for_final_payment_money_flow(self, reservation, amount, payment_method: str):
+		if reservation.status != "有效":
+			frappe.throw("只有有效保留紀錄可以建立尾款金流。")
+		if not reservation.money_flow or not reservation.voucher_draft:
+			frappe.throw("此保留紀錄尚未建立訂金金流與傳票草稿，不可建立尾款。")
+		if reservation.final_money_flow or reservation.final_voucher_draft:
+			frappe.throw("此保留紀錄已建立尾款金流紀錄。")
+		if flt(amount) <= 0:
+			frappe.throw("尾款金額必須大於 0。")
+		if payment_method not in VALID_PAYMENT_METHODS:
+			frappe.throw("付款方式必須是：現金、匯款、信用卡、其他。")
+
+		vehicle = frappe.get_doc("Used Car Vehicle", reservation.vehicle)
+		vehicle.check_permission("write")
+		if vehicle.status != "保留中":
+			frappe.throw("只有保留中車輛可以建立尾款金流。")
+
+		if frappe.db.exists("Used Car Money Flow", {"reservation": reservation.name, "flow_type": "尾款收款", "status": ["!=", "已作廢"]}):
+			frappe.throw("此保留紀錄已有未作廢的尾款金流紀錄。")
 
 
 def verify_vehicle_money_flow_voucher_service():
@@ -263,7 +340,18 @@ def _safe_cleanup_journal_entry(journal_entry_name, verification):
 def _safe_clear_accounting_links(vehicle_name, reservation_name, money_flow_name, voucher_draft_name, journal_entry_name, verification):
 	try:
 		_safe_clear_doc_links("Used Car Money Flow", money_flow_name, ("voucher_draft", "journal_entry"))
-		_safe_clear_doc_links("Used Car Reservation", reservation_name, ("money_flow", "voucher_draft", "journal_entry"))
+		_safe_clear_doc_links(
+			"Used Car Reservation",
+			reservation_name,
+			(
+				"money_flow",
+				"voucher_draft",
+				"journal_entry",
+				"final_money_flow",
+				"final_voucher_draft",
+				"final_journal_entry",
+			),
+		)
 		_safe_clear_doc_links("Used Car Vehicle", vehicle_name, ("money_flow", "voucher_draft", "reservation", "journal_entry"))
 		if voucher_draft_name and frappe.db.exists("Used Car Voucher Draft", voucher_draft_name):
 			# 驗證工具只清自己建立的草稿；正式傳票若仍存在，避免硬刪造成會計資料風險。
@@ -324,4 +412,24 @@ def _money_flow_verification_cleanup_complete(voucher_draft_name, money_flow_nam
 			("Used Car Reservation", reservation_name),
 			("Used Car Vehicle", vehicle_name),
 		)
+	)
+
+
+@frappe.whitelist()
+def create_final_payment_money_flow_from_reservation(
+	reservation_name: str,
+	amount,
+	payment_method: str,
+	payment_date=None,
+	payment_reference: str | None = None,
+	notes: str | None = None,
+):
+	service = VehicleMoneyFlowService()
+	return service.create_final_payment_money_flow_from_reservation(
+		reservation_name=reservation_name,
+		amount=amount,
+		payment_method=payment_method,
+		payment_date=payment_date,
+		payment_reference=payment_reference,
+		notes=notes,
 	)
