@@ -198,6 +198,54 @@ class VehicleReservationService:
 			"message": "此車輛已完成訂金與尾款入帳，可進入成交 / 交車流程。",
 		}
 
+	def complete_active_reservation(self, vehicle_name: str, completion_note: str | None = None):
+		self.preflight_delivery_for_active_reservation(vehicle_name)
+
+		try:
+			vehicle = frappe.get_doc("Used Car Vehicle", vehicle_name)
+			vehicle.check_permission("write")
+			if vehicle.status != "保留中":
+				frappe.throw("車輛狀態不是保留中。")
+
+			reservation_name = frappe.db.get_value(
+				"Used Car Reservation",
+				{"vehicle": vehicle.name, "status": "有效"},
+				"name",
+				order_by="creation desc",
+			)
+			if not reservation_name:
+				frappe.throw("找不到有效保留紀錄。")
+
+			reservation = frappe.get_doc("Used Car Reservation", reservation_name)
+			reservation.check_permission("write")
+			if reservation.status != "有效":
+				frappe.throw("保留紀錄不是有效狀態。")
+
+			previous_vehicle_status = vehicle.status
+			frappe.db.set_value("Used Car Vehicle", vehicle.name, "status", "已售出")
+			# 成交確認只回寫業務狀態，不建立或異動 ERPNext 會計、銷售與庫存文件。
+			reservation.flags.ignore_accounting_link_validation = True
+			reservation.status = "已完成"
+			reservation.completed_at = now()
+			reservation.completed_by = frappe.session.user
+			reservation.completion_note = completion_note
+			reservation.save()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			raise
+
+		return {
+			"vehicle_name": vehicle.name,
+			"reservation": reservation.name,
+			"previous_vehicle_status": previous_vehicle_status,
+			"vehicle_status": "已售出",
+			"reservation_status": "已完成",
+			"completed_at": reservation.completed_at,
+			"completed_by": reservation.completed_by,
+			"message": "已確認成交，車輛已標記為已售出。",
+		}
+
 	def cancel_reservation(self, reservation_name: str, reason: str):
 		if not reason:
 			frappe.throw("取消原因為必填。")
@@ -213,6 +261,7 @@ class VehicleReservationService:
 			previous_status = vehicle.status
 
 			# 取消資訊由 service 寫入，避免使用者直接改狀態造成保留與車輛狀態不一致。
+			reservation.flags.ignore_accounting_link_validation = True
 			reservation.status = "已取消"
 			reservation.cancellation_reason = reason
 			reservation.cancelled_at = now()
@@ -483,6 +532,12 @@ def create_final_payment_for_active_reservation(
 def preflight_delivery_for_active_reservation(vehicle_name: str):
 	service = VehicleReservationService()
 	return service.preflight_delivery_for_active_reservation(vehicle_name)
+
+
+@frappe.whitelist()
+def complete_active_reservation(vehicle_name: str, completion_note: str | None = None):
+	service = VehicleReservationService()
+	return service.complete_active_reservation(vehicle_name, completion_note)
 
 
 @frappe.whitelist()

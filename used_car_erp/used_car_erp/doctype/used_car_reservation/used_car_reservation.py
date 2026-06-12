@@ -6,6 +6,7 @@ from frappe.utils import flt, nowdate
 VALID_RESERVATION_STATUSES = ("有效", "已取消", "已完成")
 VALID_PAYMENT_METHODS = ("現金", "匯款", "信用卡", "其他")
 ACCOUNTING_SERVICE_FIELDS = (
+	"status",
 	"money_flow",
 	"voucher_draft",
 	"journal_entry",
@@ -17,6 +18,9 @@ ACCOUNTING_SERVICE_FIELDS = (
 	"final_payment_method",
 	"final_payment_reference",
 	"final_payment_notes",
+	"completed_at",
+	"completed_by",
+	"completion_note",
 )
 
 
@@ -57,7 +61,7 @@ class UsedCarReservation(Document):
 		)
 		for fieldname in ACCOUNTING_SERVICE_FIELDS:
 			if old_values and (self.get(fieldname) or "") != (old_values.get(fieldname) or "") and not getattr(self.flags, "ignore_accounting_link_validation", False):
-				frappe.throw("金流紀錄、傳票草稿、正式會計傳票與尾款欄位只能由系統服務回寫。")
+				frappe.throw("保留狀態、金流紀錄、傳票草稿、正式會計傳票、尾款與成交確認欄位只能由系統服務回寫。")
 
 	def _validate_required_fields(self):
 		if not self.vehicle:

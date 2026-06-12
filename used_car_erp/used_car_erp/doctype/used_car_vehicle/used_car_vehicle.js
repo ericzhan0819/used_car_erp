@@ -92,6 +92,7 @@ function clear_vehicle_action_buttons(frm) {
     "建立訂金保留",
     "建立尾款收款",
     "成交前檢查",
+    "確認成交",
     "取消保留",
   ].forEach((label) => {
     frm.remove_custom_button(label);
@@ -188,6 +189,7 @@ function add_listing_workflow_buttons(frm) {
   if (frm.doc.status === "保留中") {
     add_final_payment_button(frm);
     add_delivery_preflight_button(frm);
+    add_complete_reservation_button(frm);
     add_cancel_reservation_button(frm);
   }
 }
@@ -411,6 +413,48 @@ function add_delivery_preflight_button(frm) {
   });
 }
 
+function add_complete_reservation_button(frm) {
+  frm.add_custom_button("確認成交", () => {
+    frappe.confirm(
+      "確認成交前，系統會檢查訂金與尾款是否都已入帳。此操作只會將車輛標記為已售出、保留單標記為已完成，不會交車、出庫、開銷售發票或建立收款單。是否繼續？",
+      () => {
+        frappe.prompt(
+          [
+            {
+              fieldname: "completion_note",
+              label: "成交備註",
+              fieldtype: "Small Text",
+              reqd: 0,
+            },
+          ],
+          (values) => {
+            frappe.call({
+              method:
+                "used_car_erp.used_car_erp.services.vehicle_reservation_service.complete_active_reservation",
+              args: {
+                vehicle_name: frm.doc.name,
+                completion_note: values.completion_note,
+              },
+              freeze: true,
+              freeze_message: "正在確認成交...",
+              callback(response) {
+                const result = response.message || {};
+                frappe.show_alert({
+                  message: result.message || "已確認成交，車輛已標記為已售出。",
+                  indicator: "green",
+                });
+                frm.reload_doc();
+              },
+            });
+          },
+          "確認成交",
+          "確認成交"
+        );
+      }
+    );
+  });
+}
+
 function add_listing_action_button(frm, label, confirm_message, method, success_message) {
   frm.add_custom_button(label, () => {
     frappe.confirm(confirm_message, () => {
@@ -466,7 +510,7 @@ function set_vehicle_intake_intro(frm) {
   }
 
   if (frm.doc.status === "已售出") {
-    frm.set_intro("此車輛已售出，不可再進行整備或上架操作。", "green");
+    frm.set_intro("此車輛已確認成交並標記為已售出。正式出庫、銷售發票與收入認列尚未開放。", "green");
     return;
   }
 

@@ -2,6 +2,11 @@ frappe.ui.form.on("Used Car Reservation", {
   refresh(frm) {
     frm.set_intro("訂金保留只作為中古車業務保留紀錄，不代表 ERPNext 會計收款憑證。", "blue");
 
+    if (frm.doc.status === "已完成") {
+      frm.set_intro("此保留紀錄已完成成交。", "green");
+      return;
+    }
+
     if (frm.doc.status !== "有效") {
       return;
     }
@@ -9,11 +14,13 @@ frappe.ui.form.on("Used Car Reservation", {
     if (frm.doc.final_money_flow || frm.doc.final_voucher_draft) {
       frm.set_intro("此保留紀錄已建立尾款金流與傳票草稿，請到「會計作業」確認入帳。", "green");
       frm.add_custom_button("成交前檢查", () => preflight_delivery(frm));
+      frm.add_custom_button("確認成交", () => complete_reservation(frm));
       return;
     }
 
     frm.add_custom_button("建立尾款收款", () => create_final_payment(frm));
     frm.add_custom_button("成交前檢查", () => preflight_delivery(frm));
+    frm.add_custom_button("確認成交", () => complete_reservation(frm));
   },
 });
 
@@ -105,4 +112,44 @@ function preflight_delivery(frm) {
       frm.reload_doc();
     },
   });
+}
+
+function complete_reservation(frm) {
+  frappe.confirm(
+    "確認成交前，系統會檢查訂金與尾款是否都已入帳。此操作只會將車輛標記為已售出、保留單標記為已完成，不會交車、出庫、開銷售發票或建立收款單。是否繼續？",
+    () => {
+      frappe.prompt(
+        [
+          {
+            fieldname: "completion_note",
+            label: "成交備註",
+            fieldtype: "Small Text",
+            reqd: 0,
+          },
+        ],
+        (values) => {
+          frappe.call({
+            method:
+              "used_car_erp.used_car_erp.services.vehicle_reservation_service.complete_active_reservation",
+            args: {
+              vehicle_name: frm.doc.vehicle,
+              completion_note: values.completion_note,
+            },
+            freeze: true,
+            freeze_message: "正在確認成交...",
+            callback(response) {
+              const result = response.message || {};
+              frappe.show_alert({
+                message: result.message || "已確認成交，車輛已標記為已售出。",
+                indicator: "green",
+              });
+              frm.reload_doc();
+            },
+          });
+        },
+        "確認成交",
+        "確認成交"
+      );
+    }
+  );
 }
