@@ -5,8 +5,10 @@ from frappe.utils import now_datetime
 
 from used_car_erp.used_car_erp.services.vehicle_formal_delivery_service import (
 	RESTRICTED_FORMAL_DELIVERY_DOCTYPES,
+	create_advance_settlement_journal_entry_draft,
 	preflight_formal_delivery_submit,
 	submit_formal_delivery_sales_invoice,
+	verify_advance_settlement_journal_entry_draft_service,
 	verify_formal_delivery_submit_preflight_service,
 	verify_formal_delivery_sales_invoice_submit_service,
 )
@@ -17,15 +19,21 @@ class TestVehicleFormalDeliveryService(FrappeTestCase):
 	def setUp(self):
 		self.created_vehicles = []
 		self.created_invoices = []
+		self.created_journal_entries = []
 		self._original_preflight = formal_delivery_service.preflight_formal_delivery_submit
 		self._original_submit = Document.submit
+		self._original_get_account_values = formal_delivery_service._get_account_values
 
 	def tearDown(self):
 		formal_delivery_service.preflight_formal_delivery_submit = self._original_preflight
 		Document.submit = self._original_submit
+		formal_delivery_service._get_account_values = self._original_get_account_values
 		for vehicle_name in reversed(self.created_vehicles):
 			if frappe.db.exists("Used Car Vehicle", vehicle_name):
 				frappe.delete_doc("Used Car Vehicle", vehicle_name, force=True, ignore_permissions=True)
+		for journal_entry_name in reversed(self.created_journal_entries):
+			if frappe.db.exists("Journal Entry", journal_entry_name):
+				frappe.delete_doc("Journal Entry", journal_entry_name, force=True, ignore_permissions=True)
 		for invoice_name in reversed(self.created_invoices):
 			if frappe.db.exists("Sales Invoice", invoice_name):
 				frappe.delete_doc("Sales Invoice", invoice_name, force=True, ignore_permissions=True)
@@ -228,6 +236,119 @@ class TestVehicleFormalDeliveryService(FrappeTestCase):
 
 		self.assertEqual(result["status"], "blocked")
 
+	def test_advance_settlement_sales_invoice_not_submitted_is_blocked(self):
+		invoice = self._make_sales_invoice_stub(docstatus=0, debit_to="TST-RECEIVABLE")
+		deposit_je = self._make_advance_source_journal_entry()
+		final_je = self._make_advance_source_journal_entry()
+		vehicle = self._make_complete_vehicle(sales_invoice=invoice.name)
+		self._set_vehicle_phase_3c_links(vehicle, deposit_je, final_je)
+		before_count = frappe.db.count("Journal Entry")
+
+		result = create_advance_settlement_journal_entry_draft(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertEqual(frappe.db.count("Journal Entry"), before_count)
+		self.assertFalse(frappe.db.get_value("Used Car Vehicle", vehicle.name, "advance_settlement_journal_entry"))
+
+	def test_advance_settlement_wrong_formal_status_is_blocked(self):
+		invoice = self._make_sales_invoice_stub(docstatus=1, debit_to="TST-RECEIVABLE")
+		deposit_je = self._make_advance_source_journal_entry()
+		final_je = self._make_advance_source_journal_entry()
+		vehicle = self._make_complete_vehicle(sales_invoice=invoice.name)
+		self._set_vehicle_phase_3c_links(vehicle, deposit_je, final_je, formal_delivery_status="銷售發票草稿")
+
+		result = create_advance_settlement_journal_entry_draft(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+
+	def test_advance_settlement_existing_journal_entry_is_blocked(self):
+		invoice = self._make_sales_invoice_stub(docstatus=1, debit_to="TST-RECEIVABLE")
+		deposit_je = self._make_advance_source_journal_entry()
+		final_je = self._make_advance_source_journal_entry()
+		existing_je = self._make_advance_source_journal_entry(docstatus=0)
+		vehicle = self._make_complete_vehicle(sales_invoice=invoice.name)
+		self._set_vehicle_phase_3c_links(vehicle, deposit_je, final_je, advance_settlement_journal_entry=existing_je.name)
+		before_count = frappe.db.count("Journal Entry")
+
+		result = create_advance_settlement_journal_entry_draft(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertEqual(frappe.db.count("Journal Entry"), before_count)
+
+	def test_advance_settlement_missing_accounting_links_is_blocked(self):
+		invoice = self._make_sales_invoice_stub(docstatus=1, debit_to="TST-RECEIVABLE")
+		vehicle = self._make_complete_vehicle(sales_invoice=invoice.name)
+		self._set_vehicle_phase_3c_links(vehicle, None, None)
+
+		result = create_advance_settlement_journal_entry_draft(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertIn("訂金或尾款入帳連結尚未完整", " ".join(result["blocked_reasons"]))
+
+	def test_advance_settlement_missing_debit_to_is_blocked(self):
+		invoice = self._make_sales_invoice_stub(docstatus=1, debit_to=None)
+		deposit_je = self._make_advance_source_journal_entry()
+		final_je = self._make_advance_source_journal_entry()
+		vehicle = self._make_complete_vehicle(sales_invoice=invoice.name)
+		self._set_vehicle_phase_3c_links(vehicle, deposit_je, final_je)
+
+		result = create_advance_settlement_journal_entry_draft(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertIn("Sales Invoice 應收帳款科目缺失", " ".join(result["blocked_reasons"]))
+
+	def test_advance_settlement_liability_account_unresolved_is_blocked(self):
+		invoice = self._make_sales_invoice_stub(docstatus=1, debit_to="TST-RECEIVABLE")
+		deposit_je = self._make_advance_source_journal_entry(liability_account="TST-BANK")
+		final_je = self._make_advance_source_journal_entry(liability_account="TST-BANK")
+		vehicle = self._make_complete_vehicle(sales_invoice=invoice.name)
+		self._set_vehicle_phase_3c_links(vehicle, deposit_je, final_je)
+
+		result = create_advance_settlement_journal_entry_draft(vehicle.name)
+
+		self.assertEqual(result["status"], "blocked")
+		self.assertIn("無法從訂金 / 尾款正式會計傳票解析預收款科目", " ".join(result["blocked_reasons"]))
+
+	def test_advance_settlement_success_creates_journal_entry_draft(self):
+		invoice = self._make_sales_invoice_stub(docstatus=1, debit_to="TST-RECEIVABLE")
+		deposit_je = self._make_advance_source_journal_entry()
+		final_je = self._make_advance_source_journal_entry()
+		vehicle = self._make_complete_vehicle(sales_invoice=invoice.name)
+		self._set_vehicle_phase_3c_links(vehicle, deposit_je, final_je)
+		before_forbidden_counts = self._forbidden_phase_3c_doc_counts()
+
+		result = create_advance_settlement_journal_entry_draft(vehicle.name, note="Phase 3C test")
+
+		self.assertEqual(result["status"], "draft_created")
+		journal_entry = frappe.get_doc("Journal Entry", result["journal_entry"])
+		if journal_entry.name not in self.created_journal_entries:
+			self.created_journal_entries.append(journal_entry.name)
+		self.assertEqual(journal_entry.docstatus, 0)
+		self.assertEqual(journal_entry.accounts[0].account, "TST-ADVANCE-LIABILITY")
+		self.assertEqual(journal_entry.accounts[1].account, "TST-RECEIVABLE")
+		self.assertEqual(journal_entry.accounts[0].debit_in_account_currency, journal_entry.accounts[1].credit_in_account_currency)
+		vehicle_values = frappe.db.get_value(
+			"Used Car Vehicle",
+			vehicle.name,
+			[
+				"advance_settlement_journal_entry",
+				"formal_delivery_status",
+				"formal_delivery_completed_at",
+				"formal_delivery_completed_by",
+			],
+			as_dict=True,
+		)
+		self.assertEqual(vehicle_values.advance_settlement_journal_entry, journal_entry.name)
+		self.assertEqual(vehicle_values.formal_delivery_status, "預收款沖轉草稿")
+		self.assertFalse(vehicle_values.formal_delivery_completed_at)
+		self.assertFalse(vehicle_values.formal_delivery_completed_by)
+		self.assertEqual(self._forbidden_phase_3c_doc_counts(), before_forbidden_counts)
+
+	def test_verify_advance_settlement_journal_entry_draft_service(self):
+		result = verify_advance_settlement_journal_entry_draft_service()
+
+		self.assertEqual(result["status"], "blocked")
+
 	def _make_complete_vehicle(
 		self,
 		sales_invoice,
@@ -268,7 +389,7 @@ class TestVehicleFormalDeliveryService(FrappeTestCase):
 		self.created_vehicles.append(vehicle.name)
 		return vehicle
 
-	def _make_sales_invoice_stub(self, docstatus=0, update_stock=1, grand_total=600000, item_amount=600000):
+	def _make_sales_invoice_stub(self, docstatus=0, update_stock=1, grand_total=600000, item_amount=600000, debit_to=None):
 		invoice = frappe.get_doc(
 			{
 				"doctype": "Sales Invoice",
@@ -277,6 +398,7 @@ class TestVehicleFormalDeliveryService(FrappeTestCase):
 				"posting_date": "2026-01-01",
 				"grand_total": grand_total,
 				"outstanding_amount": grand_total,
+				"debit_to": debit_to,
 				"update_stock": update_stock,
 				"docstatus": docstatus,
 				"items": [
@@ -294,6 +416,72 @@ class TestVehicleFormalDeliveryService(FrappeTestCase):
 		).insert(ignore_links=True, ignore_mandatory=True)
 		self.created_invoices.append(invoice.name)
 		return invoice
+
+	def _make_advance_source_journal_entry(self, docstatus=1, liability_account="TST-ADVANCE-LIABILITY"):
+		self._patch_account_values()
+		journal_entry = frappe.get_doc(
+			{
+				"doctype": "Journal Entry",
+				"voucher_type": "Journal Entry",
+				"company": "TST-COMPANY",
+				"posting_date": "2026-01-01",
+				"docstatus": docstatus,
+				"accounts": [
+					{
+						"account": "TST-BANK",
+						"debit_in_account_currency": 300000,
+						"credit_in_account_currency": 0,
+					},
+					{
+						"account": liability_account,
+						"debit_in_account_currency": 0,
+						"credit_in_account_currency": 300000,
+					},
+				],
+			}
+		).insert(ignore_links=True, ignore_mandatory=True)
+		if docstatus:
+			journal_entry.db_set("docstatus", docstatus, update_modified=False)
+			journal_entry.docstatus = docstatus
+		if journal_entry.name not in self.created_journal_entries:
+			self.created_journal_entries.append(journal_entry.name)
+		return journal_entry
+
+	def _set_vehicle_phase_3c_links(
+		self,
+		vehicle,
+		deposit_je,
+		final_je,
+		formal_delivery_status="銷售發票已提交",
+		advance_settlement_journal_entry=None,
+	):
+		vehicle.db_set("formal_delivery_status", formal_delivery_status, update_modified=False)
+		vehicle.db_set("deposit_money_flow", "TST-DEPOSIT-FLOW", update_modified=False)
+		vehicle.db_set("deposit_voucher_draft", "TST-DEPOSIT-DRAFT", update_modified=False)
+		vehicle.db_set("deposit_journal_entry", deposit_je.name if deposit_je else None, update_modified=False)
+		vehicle.db_set("final_money_flow", "TST-FINAL-FLOW", update_modified=False)
+		vehicle.db_set("final_voucher_draft", "TST-FINAL-DRAFT", update_modified=False)
+		vehicle.db_set("final_journal_entry", final_je.name if final_je else None, update_modified=False)
+		vehicle.db_set("advance_settlement_journal_entry", advance_settlement_journal_entry, update_modified=False)
+		vehicle.reload()
+		return vehicle
+
+	def _patch_account_values(self):
+		def fake_get_account_values(account_name):
+			mapping = {
+				"TST-BANK": ("Bank", "Asset"),
+				"TST-RECEIVABLE": ("Receivable", "Asset"),
+				"TST-ADVANCE-LIABILITY": (None, "Liability"),
+			}
+			return mapping.get(account_name, (None, None))
+
+		formal_delivery_service._get_account_values = fake_get_account_values
+
+	def _forbidden_phase_3c_doc_counts(self):
+		counts = {}
+		for doctype in ("Payment Entry", "Delivery Note", "Stock Entry", "Tax Summary"):
+			counts[doctype] = frappe.db.count(doctype) if frappe.db.table_exists(doctype) else 0
+		return counts
 
 	def _find_check(self, result, key):
 		return next(check for check in result["checks"] if check["key"] == key)

@@ -501,7 +501,9 @@ Phase 3A 已新增正式交車提交前檢查；正式提交 Sales Invoice 與 u
 
 Phase 3A-1 僅強化提交前檢查 UI 與風險提示；正式提交 Sales Invoice 與 update_stock 出庫仍屬 Phase 3B，尚未開放。
 
-Phase 3B 已開放 Sales Invoice submit / update_stock 出庫；預收款沖轉 Journal Entry 仍屬後續 Phase 3C。
+Phase 3B 已開放 Sales Invoice submit / update_stock 出庫。
+
+Phase 3C 已開放預收款沖轉 Journal Entry 草稿建立；Journal Entry submit 與正式交車完成仍屬後續 Phase 3D / Phase 3E。
 
 ### Phase 3：正式提交與預收款沖轉
 
@@ -509,9 +511,11 @@ Phase 3B 已開放 Sales Invoice submit / update_stock 出庫；預收款沖轉 
 
 ```text
 提交 Sales Invoice
-→ 建立預收款沖轉 Journal Entry
+→ 建立預收款沖轉 Journal Entry 草稿
 → 回寫 advance_settlement_journal_entry
-→ formal_delivery_status = 已完成
+→ formal_delivery_status = 預收款沖轉草稿
+→ 後續會計確認提交 Journal Entry
+→ 後續正式交車完成
 ```
 
 ---

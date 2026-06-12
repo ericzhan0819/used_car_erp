@@ -8,7 +8,9 @@ This document defines the future implementation boundary for Formal Delivery Pha
 
 Phase 3C should create a draft Journal Entry to settle customer advance / temporary receipt balances against the receivable created by the submitted Sales Invoice.
 
-This document is a specification only. It does not implement runtime behavior.
+Phase 3C runtime 已實作：建立預收款沖轉 Journal Entry 草稿並回寫 vehicle.advance_settlement_journal_entry。
+
+此階段仍不提交 Journal Entry、不建立 Payment Entry、不建立 Delivery Note、不建立 manual Stock Entry、不建立 Tax Summary，也不標記正式交車完成。
 
 ## 2. Current baseline
 
@@ -471,14 +473,14 @@ Phase 3D: Submit advance settlement Journal Entry after accounting review
 
 Do not jump directly from Phase 3C to final completion.
 
-## 20. Current decision
+## 20. Implementation status
 
-Do not implement Phase 3C runtime yet.
-
-Next safe runtime step, if approved later:
+Phase 3C runtime is implemented as:
 
 ```text
-Formal Delivery Phase 3C Advance Settlement Journal Draft runtime implementation
+Formal Delivery Phase 3C Advance Settlement Journal Draft Runtime
 ```
 
-That implementation must create only a draft Journal Entry and keep submission / completion logic out of Phase 3C.
+The implementation creates only one draft Journal Entry and keeps submission / completion logic out of Phase 3C.
+
+Journal Entry submit and formal delivery completion remain reserved for later phases.
