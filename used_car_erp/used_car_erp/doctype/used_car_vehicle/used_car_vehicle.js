@@ -40,6 +40,7 @@ function apply_vehicle_form_mode(frm) {
   add_sold_vehicle_progress_comment(frm);
   add_tax_metadata_comment(frm);
   add_vehicle_cost_summary_comment(frm);
+  add_vehicle_profit_tax_estimate_comment(frm);
 
   if (frm.is_new()) {
     set_vehicle_fields_read_only(frm, false);
@@ -50,6 +51,7 @@ function apply_vehicle_form_mode(frm) {
   add_listing_workflow_buttons(frm);
   add_create_vehicle_cost_button(frm);
   add_recalculate_cost_summary_button(frm);
+  add_refresh_profit_tax_estimate_button(frm);
 
   if (frm.doc.status === "已售出") {
     add_sold_vehicle_next_step_button(frm);
@@ -116,6 +118,7 @@ function clear_vehicle_action_buttons(frm) {
     "開啟 Sales Invoice 草稿",
     "新增單車成本",
     "重新計算成本摘要",
+    "重新整理損益與稅務估算",
   ].forEach((label) => {
     frm.remove_custom_button(label);
   });
@@ -155,6 +158,31 @@ function add_recalculate_cost_summary_button(frm) {
       callback() {
         frappe.show_alert({
           message: "已重新計算成本摘要",
+          indicator: "green",
+        });
+        frm.reload_doc();
+      },
+    });
+  });
+}
+
+function add_refresh_profit_tax_estimate_button(frm) {
+  if (frm.is_new() || !frm.doc.name || frm.doc.status === "封存") {
+    return;
+  }
+
+  frm.add_custom_button("重新整理損益與稅務估算", () => {
+    frappe.call({
+      method:
+        "used_car_erp.used_car_erp.services.vehicle_profit_tax_estimate_service.get_vehicle_profit_tax_estimate_for_vehicle",
+      args: {
+        vehicle_name: frm.doc.name,
+      },
+      freeze: true,
+      freeze_message: "正在重新整理損益與稅務估算...",
+      callback() {
+        frappe.show_alert({
+          message: "已重新整理損益與稅務估算",
           indicator: "green",
         });
         frm.reload_doc();
@@ -623,6 +651,50 @@ function add_vehicle_cost_summary_comment(frm) {
   ];
 
   frm.dashboard.add_comment(message.join("<br>"), "blue", true);
+}
+
+function add_vehicle_profit_tax_estimate_comment(frm) {
+  if (frm.is_new() || !frm.doc.name || !frm.dashboard) {
+    return;
+  }
+
+  frappe.call({
+    method:
+      "used_car_erp.used_car_erp.services.vehicle_profit_tax_estimate_service.get_vehicle_profit_tax_estimate_for_vehicle",
+    args: {
+      vehicle_name: frm.doc.name,
+    },
+    callback(response) {
+      const estimate = response.message;
+
+      if (!estimate) {
+        return;
+      }
+
+      const indicator = estimate.tax_estimate_status === "需確認" ? "orange" : "blue";
+      const message = [
+        "單車損益與預估營業稅：",
+        `成交價：${format_vehicle_currency(estimate.sale_price_tax_inclusive)}`,
+        `買入金額：${format_vehicle_currency(estimate.purchase_price)}`,
+        `單車直接成本：${format_vehicle_currency(estimate.capitalized_cost_total)}`,
+        `累計成本：${format_vehicle_currency(estimate.total_cost)}`,
+        `預估毛利：${format_vehicle_currency(estimate.gross_margin)}`,
+        `稅務模式：${estimate.vehicle_tax_mode || "待確認"}`,
+        `預估銷項稅：${format_vehicle_currency(estimate.estimated_output_vat)}`,
+        `預估可扣抵稅額：${format_vehicle_currency(estimate.estimated_input_credit)}`,
+        `預估應納營業稅：${format_vehicle_currency(estimate.estimated_vat_payable)}`,
+        `扣稅後管理毛利：${format_vehicle_currency(estimate.estimated_margin_after_vat)}`,
+        `狀態：${estimate.tax_estimate_status || "待確認"}`,
+        `備註：${estimate.tax_estimate_note || "此摘要只作管理估算，不是正式申報或會計入帳。"}`,
+        "此摘要只作管理估算，不是正式申報或會計入帳。",
+      ];
+
+      frm.dashboard.add_comment(message.join("<br>"), indicator, true);
+    },
+    error() {
+      // 摘要載入失敗不可阻斷車輛頁主流程，避免管理估算影響既有銷售與成本作業。
+    },
+  });
 }
 
 function format_vehicle_currency(value) {
