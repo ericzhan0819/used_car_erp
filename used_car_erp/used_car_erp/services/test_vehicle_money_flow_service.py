@@ -542,6 +542,7 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		self.assertEqual(after_counts["Journal Entry"], before_counts["Journal Entry"])
 		self.assertEqual(after_counts["Purchase Invoice"], before_counts["Purchase Invoice"])
 		self.assertEqual(sales_invoice.docstatus, 0)
+		self.assertTrue(sales_invoice.company)
 		self.assertEqual(sales_invoice.customer, reservation.customer)
 		self.assertEqual(str(sales_invoice.posting_date), "2026-06-12")
 		self.assertEqual(sales_invoice.update_stock, 1)
@@ -549,6 +550,10 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		self.assertEqual(sales_invoice.items[0].qty, 1)
 		self.assertIn(vehicle.serial_no, sales_invoice.items[0].serial_no)
 		self.assertEqual(sales_invoice.items[0].rate, 60000)
+		self.assertTrue(sales_invoice.items[0].income_account)
+		income_account = frappe.get_doc("Account", sales_invoice.items[0].income_account)
+		self.assertEqual(income_account.company, sales_invoice.company)
+		self.assertEqual(income_account.is_group, 0)
 		self.assertEqual(vehicle.sales_invoice, sales_invoice.name)
 		self.assertEqual(vehicle.formal_delivery_status, "銷售發票草稿")
 		self.assertEqual(str(vehicle.formal_delivery_posting_date), "2026-06-12")
@@ -591,6 +596,14 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 			self.reservation_service.create_sales_invoice_draft_for_vehicle(result.get("vehicle_name"))
 
 		self.assertIn("找不到車輛庫存倉", str(failure.exception))
+
+	def test_resolve_sales_income_account_rejects_missing_income_account(self):
+		vehicle = self._make_listed_vehicle()
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.reservation_service._resolve_sales_income_account(vehicle.item, "TEST MISSING COMPANY")
+
+		self.assertIn("找不到公司 TEST MISSING COMPANY 可用的收入科目", str(failure.exception))
 
 	def test_manual_reservation_status_change_is_rejected(self):
 		result = self._create_reservation_for_listed_vehicle()

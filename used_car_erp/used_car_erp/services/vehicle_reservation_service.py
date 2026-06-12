@@ -286,11 +286,14 @@ class VehicleReservationService:
 			if not reservation.customer:
 				frappe.throw("保留單缺少 Customer，無法建立 Sales Invoice 草稿。")
 
+			resolved_company = self._resolve_company_for_sales_invoice(vehicle)
 			resolved_warehouse = self._resolve_vehicle_sales_warehouse(vehicle)
+			resolved_income_account = self._resolve_sales_income_account(vehicle.item, resolved_company)
 			sales_amount = flt(preflight.get("sales_amount"))
 			sales_invoice = frappe.get_doc(
 				{
 					"doctype": "Sales Invoice",
+					"company": resolved_company,
 					"customer": reservation.customer,
 					"posting_date": posting_date,
 					"due_date": posting_date,
@@ -303,6 +306,7 @@ class VehicleReservationService:
 							"rate": sales_amount,
 							"serial_no": vehicle.serial_no,
 							"warehouse": resolved_warehouse,
+							"income_account": resolved_income_account,
 						}
 					],
 				}
@@ -331,6 +335,61 @@ class VehicleReservationService:
 			"sales_amount": sales_amount,
 			"message": "已建立 Sales Invoice 草稿，請先人工檢查後再進入正式提交與沖轉階段。",
 		}
+
+	def _resolve_company_for_sales_invoice(self, vehicle):
+		if frappe.get_meta("Used Car Vehicle").has_field("company") and vehicle.get("company"):
+			return vehicle.company
+
+		company = frappe.defaults.get_user_default("Company") or frappe.defaults.get_global_default("company")
+		if not company:
+			frappe.throw("找不到公司，無法建立 Sales Invoice 草稿。")
+		return company
+
+	def _resolve_sales_income_account(self, item_code: str, company: str):
+		item = frappe.get_doc("Item", item_code)
+		for default in item.get("item_defaults", []):
+			if default.company == company and default.income_account:
+				return self._validate_account_for_company(default.income_account, company, "收入科目")
+
+		if item.item_group:
+			item_group = frappe.get_doc("Item Group", item.item_group)
+			for default in item_group.get("item_defaults", []):
+				if default.company == company and default.income_account:
+					return self._validate_account_for_company(default.income_account, company, "收入科目")
+
+		company_doc = frappe.get_doc("Company", company)
+		if company_doc.get("default_income_account"):
+			return self._validate_account_for_company(company_doc.default_income_account, company, "收入科目")
+
+		fallback_account = frappe.db.get_value(
+			"Account",
+			{
+				"company": company,
+				"root_type": "Income",
+				"is_group": 0,
+				"disabled": 0,
+			},
+			"name",
+			order_by="name asc",
+		)
+		if fallback_account:
+			return self._validate_account_for_company(fallback_account, company, "收入科目")
+
+		frappe.throw(
+			f"找不到公司 {company} 可用的收入科目，無法建立 Sales Invoice 草稿。請先設定 Item、Item Group 或 Company 的 income account。"
+		)
+
+	def _validate_account_for_company(self, account: str, company: str, label: str):
+		account_doc = frappe.get_doc("Account", account) if frappe.db.exists("Account", account) else None
+		if not account_doc:
+			frappe.throw(f"{label} {account} 不存在。")
+		if account_doc.company != company:
+			frappe.throw(f"{label} {account} 不屬於公司 {company}。")
+		if account_doc.is_group:
+			frappe.throw(f"{label} {account} 是群組科目，不能用於 Sales Invoice。")
+		if account_doc.disabled:
+			frappe.throw(f"{label} {account} 已停用，不能用於 Sales Invoice。")
+		return account
 
 	def complete_active_reservation(self, vehicle_name: str, completion_note: str | None = None):
 		preflight = self.preflight_delivery_for_active_reservation(vehicle_name)

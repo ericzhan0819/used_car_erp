@@ -472,6 +472,8 @@ Phase 2 已實作 Sales Invoice Draft Foundation。
 
 此階段只建立 Sales Invoice 草稿並回寫車輛連結。
 
+Sales Invoice 草稿建立時，item row 需解析並填入公司可用的 income_account；解析順序為 Item Default、Item Group Default、Company default_income_account、非群組 Income Account fallback。
+
 此階段不提交 Sales Invoice、不建立沖轉 Journal Entry、不建立 Payment Entry 或 Delivery Note。
 
 目標：
