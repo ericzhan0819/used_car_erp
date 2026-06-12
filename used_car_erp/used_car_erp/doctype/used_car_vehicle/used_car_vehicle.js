@@ -34,6 +34,13 @@ const LAYOUT_FIELD_TYPES = [
   "Button",
 ];
 
+// Phase 3B future confirmation copy:
+// 此操作會提交 Sales Invoice，並依 ERPNext update_stock 正式出庫。
+// 此操作可能影響收入、庫存與成本。
+// 此操作不會自動建立 Payment Entry。
+// 此操作不會自動完成預收款沖轉，除非後續階段已實作。
+// Phase 3A-1 不得新增 submit button。
+
 function apply_vehicle_form_mode(frm) {
   clear_vehicle_action_buttons(frm);
   set_vehicle_intake_intro(frm);
@@ -125,6 +132,7 @@ function clear_vehicle_action_buttons(frm) {
     "重新整理損益與稅務估算",
     "重新整理交車前檢查",
     "正式交車提交前檢查",
+    "檢查提交資格",
   ].forEach((label) => {
     frm.remove_custom_button(label);
   });
@@ -135,7 +143,7 @@ function add_formal_delivery_submit_preflight_button(frm) {
     return;
   }
 
-  frm.add_custom_button("正式交車提交前檢查", () => {
+  frm.add_custom_button("檢查提交資格", () => {
     frappe.call({
       method:
         "used_car_erp.used_car_erp.services.vehicle_formal_delivery_service.preflight_formal_delivery_submit_for_vehicle",
@@ -147,7 +155,7 @@ function add_formal_delivery_submit_preflight_button(frm) {
       callback(response) {
         const result = response.message || {};
         frappe.show_alert({
-          message: result.ready ? "可進入 Sales Invoice 正式提交階段" : "尚不可正式提交，請查看檢查面板。",
+          message: result.ready ? "提交前檢查已通過；目前仍未正式提交。" : "提交前檢查未通過，請查看檢查面板。",
           indicator: result.ready ? "green" : "red",
         });
         frm.reload_doc();
@@ -728,13 +736,35 @@ function add_formal_delivery_submit_preflight_comment(frm) {
         return;
       }
 
+      const blocked_reasons = result.blocked_reasons || [];
+      const readiness_result = result.ready
+        ? "判斷結果：目前資料已通過提交前檢查，可進入下一階段人工確認。"
+        : "判斷結果：目前尚不可進入正式提交階段。";
+      const blocked_message = blocked_reasons.length
+        ? ["待處理項目：", ...blocked_reasons.map((reason) => `- ${reason}`)]
+        : ["待處理項目：請查看上方檢查項目。"];
       const message = [
-        "正式交車提交前檢查：",
+        "正式交車提交前檢查（Phase 3A）：",
         `整體狀態：${result.status_label || result.status}`,
         ...result.checks.map((check) => `${final_check_icon(check.state)} ${check.label}：${check.message}`),
         "",
-        "此檢查只判斷是否可進入下一階段，不會提交、出庫、沖轉或入帳。",
+        "判斷結果：",
+        readiness_result,
       ];
+
+      if (!result.ready) {
+        message.push("", ...blocked_message);
+      }
+
+      message.push(
+        "",
+        "注意：",
+        "此檢查只代表「資料可進入下一階段人工確認」。",
+        "目前尚未提交 Sales Invoice，尚未正式出庫，尚未沖轉預收款，尚未完成正式交車入帳。",
+        "尚未正式提交 Sales Invoice。",
+        "尚未正式出庫。",
+        "尚未沖轉預收款。"
+      );
 
       frm.dashboard.add_comment(message.join("<br>"), result.ready ? "green" : "red", true);
     },

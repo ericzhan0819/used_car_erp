@@ -386,3 +386,7 @@ Phase 3A should return strict gate results without submitting or creating any ER
 Phase 3A 已實作 submit preflight only。
 
 此 service 只回傳 ready / blocked、checks 與 blocked reasons，不提交 Sales Invoice、不建立 Journal Entry、不改 formal delivery status。
+
+Phase 3A-1 已強化 submit readiness UX。
+
+ready 只代表資料通過提交前檢查，可進入下一階段人工確認；不代表 Sales Invoice 已提交、車輛已出庫、預收款已沖轉或正式交車入帳已完成。
