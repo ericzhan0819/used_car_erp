@@ -2,85 +2,137 @@ import frappe
 from frappe.utils import flt, now
 
 from used_car_erp.used_car_erp.services.used_car_action_permission_service import assert_can_perform_used_car_action
+from used_car_erp.used_car_erp.services.used_car_controlled_write_service import (
+	db_set_service_controlled_values,
+	insert_service_controlled_doc,
+)
 
 
 class VehicleVoucherService:
 	def create_deposit_voucher_draft(self, money_flow_name: str):
+		return self._create_deposit_voucher_draft(money_flow_name)
+
+	def create_deposit_voucher_draft_from_money_flow_service(self, money_flow_name: str):
+		return self._create_deposit_voucher_draft(
+			money_flow_name,
+			controlled_action="used_car_money_flow.deposit.create",
+		)
+
+	def _create_deposit_voucher_draft(self, money_flow_name: str, controlled_action: str | None = None):
 		money_flow = frappe.get_doc("Used Car Money Flow", money_flow_name)
 		self._validate_money_flow_for_draft(money_flow, "訂金收款")
 		debit_account, credit_account = self._resolve_deposit_accounts()
 		self._validate_same_company_accounts([debit_account, credit_account])
 
-		draft = frappe.get_doc(
-			{
-				"doctype": "Used Car Voucher Draft",
-				"status": "待審核",
-				"posting_date": money_flow.payment_date,
-				"money_flow": money_flow.name,
-				"vehicle": money_flow.vehicle,
-				"reservation": money_flow.reservation,
-				"customer": money_flow.customer,
-				"memo": f"訂金收款：{money_flow.stock_no or money_flow.vehicle} / {money_flow.customer_name or ''}",
-				"review_note": "系統自動建議科目，請會計確認。",
-				"lines": [
-					{
-						"account": debit_account,
-						"debit": money_flow.amount,
-						"credit": 0,
-						"note": "訂金收款科目",
-					},
-					{
-						"account": credit_account,
-						"debit": 0,
-						"credit": money_flow.amount,
-						"note": "訂金預收款 / 暫收款",
-					},
-				],
-			}
-		).insert()
+		draft_values = {
+			"doctype": "Used Car Voucher Draft",
+			"status": "待審核",
+			"posting_date": money_flow.payment_date,
+			"money_flow": money_flow.name,
+			"vehicle": money_flow.vehicle,
+			"reservation": money_flow.reservation,
+			"customer": money_flow.customer,
+			"memo": f"訂金收款：{money_flow.stock_no or money_flow.vehicle} / {money_flow.customer_name or ''}",
+			"review_note": "系統自動建議科目，請會計確認。",
+			"lines": [
+				{
+					"account": debit_account,
+					"debit": money_flow.amount,
+					"credit": 0,
+					"note": "訂金收款科目",
+				},
+				{
+					"account": credit_account,
+					"debit": 0,
+					"credit": money_flow.amount,
+					"note": "訂金預收款 / 暫收款",
+				},
+			],
+		}
+		if controlled_action:
+			draft = insert_service_controlled_doc(
+				frappe.get_doc(draft_values),
+				action=controlled_action,
+				allowed_doctype="Used Car Voucher Draft",
+				fieldnames=draft_values.keys(),
+			)
+		else:
+			draft = frappe.get_doc(draft_values).insert()
 
-		frappe.db.set_value("Used Car Money Flow", money_flow.name, "voucher_draft", draft.name)
-		if money_flow.reservation and frappe.get_meta("Used Car Reservation").has_field("voucher_draft"):
+		if controlled_action:
+			db_set_service_controlled_values(
+				"Used Car Money Flow",
+				money_flow.name,
+				action=controlled_action,
+				values={"voucher_draft": draft.name},
+			)
+		else:
+			frappe.db.set_value("Used Car Money Flow", money_flow.name, "voucher_draft", draft.name)
+		if not controlled_action and money_flow.reservation and frappe.get_meta("Used Car Reservation").has_field("voucher_draft"):
 			frappe.db.set_value("Used Car Reservation", money_flow.reservation, "voucher_draft", draft.name)
 
 		return draft.name
 
 	def create_final_payment_voucher_draft(self, money_flow_name: str):
+		return self._create_final_payment_voucher_draft(money_flow_name)
+
+	def create_final_payment_voucher_draft_from_money_flow_service(self, money_flow_name: str):
+		return self._create_final_payment_voucher_draft(
+			money_flow_name,
+			controlled_action="used_car_money_flow.final_payment.create",
+		)
+
+	def _create_final_payment_voucher_draft(self, money_flow_name: str, controlled_action: str | None = None):
 		money_flow = frappe.get_doc("Used Car Money Flow", money_flow_name)
 		self._validate_money_flow_for_draft(money_flow, "尾款收款")
 		debit_account, credit_account = self._resolve_deposit_accounts()
 		self._validate_same_company_accounts([debit_account, credit_account])
 
-		draft = frappe.get_doc(
-			{
-				"doctype": "Used Car Voucher Draft",
-				"status": "待審核",
-				"posting_date": money_flow.payment_date,
-				"money_flow": money_flow.name,
-				"vehicle": money_flow.vehicle,
-				"reservation": money_flow.reservation,
-				"customer": money_flow.customer,
-				"memo": f"尾款收款：{money_flow.stock_no or money_flow.vehicle} / {money_flow.customer_name or ''}",
-				"review_note": "系統自動建議科目，請會計確認。",
-				"lines": [
-					{
-						"account": debit_account,
-						"debit": money_flow.amount,
-						"credit": 0,
-						"note": "尾款收款科目",
-					},
-					{
-						"account": credit_account,
-						"debit": 0,
-						"credit": money_flow.amount,
-						"note": "尾款預收款 / 暫收款",
-					},
-				],
-			}
-		).insert()
+		draft_values = {
+			"doctype": "Used Car Voucher Draft",
+			"status": "待審核",
+			"posting_date": money_flow.payment_date,
+			"money_flow": money_flow.name,
+			"vehicle": money_flow.vehicle,
+			"reservation": money_flow.reservation,
+			"customer": money_flow.customer,
+			"memo": f"尾款收款：{money_flow.stock_no or money_flow.vehicle} / {money_flow.customer_name or ''}",
+			"review_note": "系統自動建議科目，請會計確認。",
+			"lines": [
+				{
+					"account": debit_account,
+					"debit": money_flow.amount,
+					"credit": 0,
+					"note": "尾款收款科目",
+				},
+				{
+					"account": credit_account,
+					"debit": 0,
+					"credit": money_flow.amount,
+					"note": "尾款預收款 / 暫收款",
+				},
+			],
+		}
+		if controlled_action:
+			draft = insert_service_controlled_doc(
+				frappe.get_doc(draft_values),
+				action=controlled_action,
+				allowed_doctype="Used Car Voucher Draft",
+				fieldnames=draft_values.keys(),
+			)
+		else:
+			draft = frappe.get_doc(draft_values).insert()
 
-		frappe.db.set_value("Used Car Money Flow", money_flow.name, "voucher_draft", draft.name)
-		if money_flow.reservation and frappe.get_meta("Used Car Reservation").has_field("final_voucher_draft"):
+		if controlled_action:
+			db_set_service_controlled_values(
+				"Used Car Money Flow",
+				money_flow.name,
+				action=controlled_action,
+				values={"voucher_draft": draft.name},
+			)
+		else:
+			frappe.db.set_value("Used Car Money Flow", money_flow.name, "voucher_draft", draft.name)
+		if not controlled_action and money_flow.reservation and frappe.get_meta("Used Car Reservation").has_field("final_voucher_draft"):
 			frappe.db.set_value("Used Car Reservation", money_flow.reservation, "final_voucher_draft", draft.name)
 
 		return draft.name

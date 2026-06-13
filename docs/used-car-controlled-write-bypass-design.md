@@ -413,3 +413,25 @@ Action-gated, service-owned, workflow-specific, field-constrained controlled wri
 ```
 
 Everything involving formal accounting, Sales Invoice submission, Stock Entry, tax review, purchase price correction, or accounting-link repair must remain outside the first controlled write scope.
+
+## P1-F-3-A Implementation Status
+
+P1-F-3-A 已導入 sales reservation flow 的 controlled write bypass：
+
+- reservation create
+- deposit money flow create
+- generated deposit voucher draft create through internal service path
+- final payment money flow create
+- generated final payment voucher draft create through internal service path
+- reservation cancel
+- complete sale
+
+仍不包含：
+
+- voucher confirm / reject / void controlled bypass
+- Sales Invoice draft / submit
+- Stock Entry / intake
+- purchase_price write
+- vehicle cost amount write
+- tax metadata
+- accounting link repair

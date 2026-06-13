@@ -205,6 +205,8 @@ used_car_accounting_link.repair
 
 Each service must still keep its business-state validation. Action gate only answers whether the user may attempt the action; it does not replace document validation, accounting balance checks, stock consistency checks, idempotency checks, or linked-document integrity checks.
 
+P1-F-3-A 已在 action gate 之後加入 sales reservation flow 的 controlled write bypass；action gate 仍只負責授權，controlled write helper 另負責限制 DocType 與欄位。
+
 ## Non-goals
 
 This phase does not:

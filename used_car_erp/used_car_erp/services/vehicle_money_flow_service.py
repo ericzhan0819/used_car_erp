@@ -2,6 +2,10 @@ import frappe
 from frappe.utils import flt, nowdate
 
 from used_car_erp.used_car_erp.services.used_car_action_permission_service import assert_can_perform_used_car_action
+from used_car_erp.used_car_erp.services.used_car_controlled_write_service import (
+	insert_service_controlled_doc,
+	save_service_controlled_doc,
+)
 from used_car_erp.used_car_erp.services.vehicle_voucher_service import VehicleVoucherService
 
 
@@ -26,34 +30,41 @@ class VehicleMoneyFlowService:
 		reservation.check_permission("read")
 		self._validate_reservation_for_deposit_money_flow(reservation)
 
-		money_flow = frappe.get_doc(
-			{
-				"doctype": "Used Car Money Flow",
-				"flow_type": "訂金收款",
-				"direction": "收入",
-				"status": "待審核",
-				"vehicle": reservation.vehicle,
-				"reservation": reservation.name,
-				"stock_no": reservation.stock_no,
-				"customer": reservation.customer,
-				"customer_name": reservation.customer_name,
-				"customer_phone": reservation.customer_phone,
-				"amount": reservation.deposit_amount,
-				"payment_date": reservation.deposit_date,
-				"payment_method": reservation.payment_method,
-				"payment_reference": reservation.payment_reference,
-				"notes": reservation.notes,
-				"created_by_service": 1,
-			}
-		).insert()
+		money_flow_values = {
+			"doctype": "Used Car Money Flow",
+			"flow_type": "訂金收款",
+			"direction": "收入",
+			"status": "待審核",
+			"vehicle": reservation.vehicle,
+			"reservation": reservation.name,
+			"stock_no": reservation.stock_no,
+			"customer": reservation.customer,
+			"customer_name": reservation.customer_name,
+			"customer_phone": reservation.customer_phone,
+			"amount": reservation.deposit_amount,
+			"payment_date": reservation.deposit_date,
+			"payment_method": reservation.payment_method,
+			"payment_reference": reservation.payment_reference,
+			"notes": reservation.notes,
+			"created_by_service": 1,
+		}
+		money_flow = insert_service_controlled_doc(
+			frappe.get_doc(money_flow_values),
+			action="used_car_money_flow.deposit.create",
+			allowed_doctype="Used Car Money Flow",
+			fieldnames=money_flow_values.keys(),
+		)
 
-		voucher_draft = VehicleVoucherService().create_deposit_voucher_draft(money_flow.name)
+		voucher_draft = VehicleVoucherService().create_deposit_voucher_draft_from_money_flow_service(money_flow.name)
 		money_flow.reload()
 		reservation = frappe.get_doc("Used Car Reservation", reservation.name)
 		reservation.flags.ignore_accounting_link_validation = True
-		reservation.money_flow = money_flow.name
-		reservation.voucher_draft = voucher_draft
-		reservation.save()
+		save_service_controlled_doc(
+			reservation,
+			action="used_car_money_flow.deposit.create",
+			allowed_doctype="Used Car Reservation",
+			values={"money_flow": money_flow.name, "voucher_draft": voucher_draft},
+		)
 
 		return {
 			"money_flow": money_flow.name,
@@ -77,46 +88,57 @@ class VehicleMoneyFlowService:
 			message="你沒有建立中古車尾款金流的權限。",
 		)
 		reservation = frappe.get_doc("Used Car Reservation", reservation_name)
-		reservation.check_permission("write")
+		reservation.check_permission("read")
 		deposit_money_flow, deposit_voucher_draft = self._validate_reservation_for_final_payment_money_flow(reservation, amount, payment_method)
 
-		money_flow = frappe.get_doc(
-			{
-				"doctype": "Used Car Money Flow",
-				"flow_type": "尾款收款",
-				"direction": "收入",
-				"status": "待審核",
-				"vehicle": reservation.vehicle,
-				"reservation": reservation.name,
-				"stock_no": reservation.stock_no,
-				"customer": reservation.customer,
-				"customer_name": reservation.customer_name,
-				"customer_phone": reservation.customer_phone,
-				"amount": amount,
-				"payment_date": payment_date or nowdate(),
-				"payment_method": payment_method,
-				"payment_reference": payment_reference,
-				"notes": notes,
-				"created_by_service": 1,
-			}
-		).insert()
+		money_flow_values = {
+			"doctype": "Used Car Money Flow",
+			"flow_type": "尾款收款",
+			"direction": "收入",
+			"status": "待審核",
+			"vehicle": reservation.vehicle,
+			"reservation": reservation.name,
+			"stock_no": reservation.stock_no,
+			"customer": reservation.customer,
+			"customer_name": reservation.customer_name,
+			"customer_phone": reservation.customer_phone,
+			"amount": amount,
+			"payment_date": payment_date or nowdate(),
+			"payment_method": payment_method,
+			"payment_reference": payment_reference,
+			"notes": notes,
+			"created_by_service": 1,
+		}
+		money_flow = insert_service_controlled_doc(
+			frappe.get_doc(money_flow_values),
+			action="used_car_money_flow.final_payment.create",
+			allowed_doctype="Used Car Money Flow",
+			fieldnames=money_flow_values.keys(),
+		)
 
-		voucher_draft = VehicleVoucherService().create_final_payment_voucher_draft(money_flow.name)
+		voucher_draft = VehicleVoucherService().create_final_payment_voucher_draft_from_money_flow_service(money_flow.name)
 		money_flow.reload()
 		reservation = frappe.get_doc("Used Car Reservation", reservation.name)
 		reservation.flags.ignore_accounting_link_validation = True
+		reservation_updates = {
+			"final_payment_amount": amount,
+			"final_payment_date": money_flow.payment_date,
+			"final_payment_method": payment_method,
+			"final_payment_reference": payment_reference,
+			"final_payment_notes": notes,
+			"final_money_flow": money_flow.name,
+			"final_voucher_draft": voucher_draft,
+		}
 		if not reservation.money_flow:
-			reservation.money_flow = deposit_money_flow
+			reservation_updates["money_flow"] = deposit_money_flow
 		if not reservation.voucher_draft:
-			reservation.voucher_draft = deposit_voucher_draft
-		reservation.final_payment_amount = amount
-		reservation.final_payment_date = money_flow.payment_date
-		reservation.final_payment_method = payment_method
-		reservation.final_payment_reference = payment_reference
-		reservation.final_payment_notes = notes
-		reservation.final_money_flow = money_flow.name
-		reservation.final_voucher_draft = voucher_draft
-		reservation.save()
+			reservation_updates["voucher_draft"] = deposit_voucher_draft
+		save_service_controlled_doc(
+			reservation,
+			action="used_car_money_flow.final_payment.create",
+			allowed_doctype="Used Car Reservation",
+			values=reservation_updates,
+		)
 
 		return {
 			"reservation": reservation.name,
@@ -150,7 +172,7 @@ class VehicleMoneyFlowService:
 			frappe.throw("付款方式必須是：現金、匯款、信用卡、其他。")
 
 		vehicle = frappe.get_doc("Used Car Vehicle", reservation.vehicle)
-		vehicle.check_permission("write")
+		vehicle.check_permission("read")
 		if vehicle.status != "保留中":
 			frappe.throw("只有保留中車輛可以建立尾款金流。")
 

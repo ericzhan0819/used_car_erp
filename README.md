@@ -111,6 +111,8 @@ Used Car Server-side Action Gate Adoption Phase P1-F-2 已將 action-based serve
 
 Used Car Controlled Write Bypass Design Phase P1-F-3 定義 action-gated、service-owned、workflow-specific、field-constrained controlled writes；本階段只新增設計文件，不修改 runtime，不放寬 DocPerm，不新增 patch，第一批建議只處理 sales reservation flow，不碰 Sales Invoice、Journal Entry、Stock Entry、tax metadata 或 accounting-link repair。
 
+Used Car Controlled Write Bypass Phase P1-F-3-A 已將 sales reservation flow 接上 service-controlled writes，使通過 action gate 的 Sales / Manager / Owner 可透過服務流程建立保留單、訂金 / 尾款金流、自動產生對應傳票草稿、取消保留與確認成交；本階段仍不放寬 DocPerm、不修改 DocType JSON、不新增 Role、不碰 Sales Invoice / Journal Entry / Stock Entry / 稅務 / 成本敏感流程。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)

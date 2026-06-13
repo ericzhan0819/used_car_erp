@@ -2,6 +2,11 @@ import frappe
 from frappe.utils import flt, now, nowdate
 
 from used_car_erp.used_car_erp.services.used_car_action_permission_service import assert_can_perform_used_car_action
+from used_car_erp.used_car_erp.services.used_car_controlled_write_service import (
+	db_set_service_controlled_values,
+	insert_service_controlled_doc,
+	save_service_controlled_doc,
+)
 from used_car_erp.used_car_erp.services.vehicle_intake_service import VehicleIntakeService
 from used_car_erp.used_car_erp.services.vehicle_listing_service import VehicleListingService
 from used_car_erp.used_car_erp.services.vehicle_money_flow_service import VehicleMoneyFlowService
@@ -41,7 +46,7 @@ class VehicleReservationService:
 
 		try:
 			vehicle = frappe.get_doc("Used Car Vehicle", vehicle_name)
-			vehicle.check_permission("write")
+			vehicle.check_permission("read")
 			self._validate_vehicle_ready_for_reservation(vehicle)
 			self._validate_no_active_reservation(vehicle.name)
 
@@ -50,29 +55,38 @@ class VehicleReservationService:
 				frappe.throw("指定的 ERPNext 客戶不存在。")
 
 			previous_status = vehicle.status
-			reservation = frappe.get_doc(
-				{
-					"doctype": "Used Car Reservation",
-					"vehicle": vehicle.name,
-					"stock_no": vehicle.stock_no,
-					"vehicle_title": self._vehicle_title(vehicle),
-					"customer": resolved_customer,
-					"customer_name": customer_name,
-					"customer_phone": customer_phone,
-					"deposit_amount": deposit_amount,
-					"deposit_date": deposit_date or nowdate(),
-					"payment_method": payment_method,
-					"payment_reference": payment_reference,
-					"notes": notes,
-					"status": "有效",
-					"created_by_service": 1,
-				}
-			).insert()
+			reservation_values = {
+				"doctype": "Used Car Reservation",
+				"vehicle": vehicle.name,
+				"stock_no": vehicle.stock_no,
+				"vehicle_title": self._vehicle_title(vehicle),
+				"customer": resolved_customer,
+				"customer_name": customer_name,
+				"customer_phone": customer_phone,
+				"deposit_amount": deposit_amount,
+				"deposit_date": deposit_date or nowdate(),
+				"payment_method": payment_method,
+				"payment_reference": payment_reference,
+				"notes": notes,
+				"status": "有效",
+				"created_by_service": 1,
+			}
+			reservation = insert_service_controlled_doc(
+				frappe.get_doc(reservation_values),
+				action="used_car_reservation.create",
+				allowed_doctype="Used Car Reservation",
+				fieldnames=reservation_values.keys(),
+			)
 
 			money_flow_result = VehicleMoneyFlowService().create_deposit_money_flow_from_reservation(reservation.name)
 
 			# 訂金保留只切換中古車業務狀態；正式會計傳票必須由傳票草稿人工確認後才建立。
-			frappe.db.set_value("Used Car Vehicle", vehicle.name, "status", "保留中")
+			db_set_service_controlled_values(
+				"Used Car Vehicle",
+				vehicle.name,
+				action="used_car_reservation.create",
+				values={"status": "保留中"},
+			)
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
@@ -280,7 +294,7 @@ class VehicleReservationService:
 
 		try:
 			vehicle = frappe.get_doc("Used Car Vehicle", vehicle_name)
-			vehicle.check_permission("write")
+			vehicle.check_permission("read")
 			reservation = frappe.get_doc("Used Car Reservation", preflight.get("reservation"))
 			reservation.check_permission("read")
 
@@ -426,7 +440,7 @@ class VehicleReservationService:
 				frappe.throw("找不到有效保留紀錄。")
 
 			reservation = frappe.get_doc("Used Car Reservation", reservation_name)
-			reservation.check_permission("write")
+			reservation.check_permission("read")
 			if reservation.status != "有效":
 				frappe.throw("保留紀錄不是有效狀態。")
 
@@ -451,11 +465,17 @@ class VehicleReservationService:
 			)
 			# 成交確認只回寫業務狀態，不建立或異動 ERPNext 會計、銷售與庫存文件。
 			reservation.flags.ignore_accounting_link_validation = True
-			reservation.status = "已完成"
-			reservation.completed_at = completed_at
-			reservation.completed_by = completed_by
-			reservation.completion_note = completion_note
-			reservation.save()
+			save_service_controlled_doc(
+				reservation,
+				action="used_car_reservation.complete_sale",
+				allowed_doctype="Used Car Reservation",
+				values={
+					"status": "已完成",
+					"completed_at": completed_at,
+					"completed_by": completed_by,
+					"completion_note": completion_note,
+				},
+			)
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
@@ -482,24 +502,35 @@ class VehicleReservationService:
 
 		try:
 			reservation = frappe.get_doc("Used Car Reservation", reservation_name)
-			reservation.check_permission("write")
+			reservation.check_permission("read")
 			if reservation.status != "有效":
 				frappe.throw("只有有效的保留可以取消。")
 
 			vehicle = frappe.get_doc("Used Car Vehicle", reservation.vehicle)
-			vehicle.check_permission("write")
+			vehicle.check_permission("read")
 			previous_status = vehicle.status
 
 			# 取消資訊由 service 寫入，避免使用者直接改狀態造成保留與車輛狀態不一致。
 			reservation.flags.ignore_accounting_link_validation = True
-			reservation.status = "已取消"
-			reservation.cancellation_reason = reason
-			reservation.cancelled_at = now()
-			reservation.cancelled_by = frappe.session.user
-			reservation.save()
+			save_service_controlled_doc(
+				reservation,
+				action="used_car_reservation.cancel",
+				allowed_doctype="Used Car Reservation",
+				values={
+					"status": "已取消",
+					"cancellation_reason": reason,
+					"cancelled_at": now(),
+					"cancelled_by": frappe.session.user,
+				},
+			)
 
 			if vehicle.status == "保留中":
-				frappe.db.set_value("Used Car Vehicle", vehicle.name, "status", "上架中")
+				db_set_service_controlled_values(
+					"Used Car Vehicle",
+					vehicle.name,
+					action="used_car_reservation.cancel",
+					values={"status": "上架中"},
+				)
 				status = "上架中"
 			else:
 				status = vehicle.status
@@ -796,10 +827,17 @@ class VehicleReservationService:
 	def _write_vehicle_sale_completion_summary(self, vehicle, values: dict):
 		meta = frappe.get_meta("Used Car Vehicle")
 		vehicle.flags.ignore_sale_completion_validation = True
+		controlled_values = {}
 		for fieldname, value in values.items():
 			if fieldname == "status" or (meta.has_field(fieldname) and value):
-				vehicle.set(fieldname, value)
-		vehicle.save()
+				controlled_values[fieldname] = value
+		if controlled_values:
+			save_service_controlled_doc(
+				vehicle,
+				action="used_car_reservation.complete_sale",
+				allowed_doctype="Used Car Vehicle",
+				values=controlled_values,
+			)
 
 	def _validate_vehicle_ready_for_reservation(self, vehicle):
 		if not vehicle.item or not vehicle.serial_no or not vehicle.stock_entry:
