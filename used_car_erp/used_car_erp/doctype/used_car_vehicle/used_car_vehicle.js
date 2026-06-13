@@ -65,13 +65,9 @@ function apply_vehicle_form_mode(frm) {
   add_refresh_profit_tax_estimate_button(frm);
 
   if (frm.doc.status === "已售出") {
-    add_sold_vehicle_next_step_button(frm);
+    add_sold_vehicle_primary_action_button(frm);
+    add_sold_vehicle_related_document_buttons(frm);
     add_refresh_sold_vehicle_final_check_button(frm);
-    add_formal_delivery_submit_preflight_button(frm);
-    add_submit_formal_delivery_sales_invoice_button(frm);
-    add_create_advance_settlement_journal_entry_draft_button(frm);
-    add_submit_advance_settlement_journal_entry_button(frm);
-    add_open_advance_settlement_journal_entry_button(frm);
     set_vehicle_fields_read_only(frm, true);
     allow_sold_vehicle_tax_metadata_edit(frm);
     return;
@@ -171,6 +167,7 @@ function clear_vehicle_action_buttons(frm) {
     "提交 Sales Invoice 並正式出庫",
     "建立預收款沖轉傳票草稿",
     "提交預收款沖轉傳票",
+    "開啟 Sales Invoice",
     "開啟預收款沖轉傳票",
   ].forEach((label) => {
     frm.remove_custom_button(label);
@@ -342,6 +339,16 @@ function add_open_advance_settlement_journal_entry_button(frm) {
 
   frm.add_custom_button("開啟預收款沖轉傳票", () => {
     frappe.set_route("Form", "Journal Entry", frm.doc.advance_settlement_journal_entry);
+  });
+}
+
+function add_open_sales_invoice_button(frm) {
+  if (!frm.doc.sales_invoice) {
+    return;
+  }
+
+  frm.add_custom_button("開啟 Sales Invoice", () => {
+    frappe.set_route("Form", "Sales Invoice", frm.doc.sales_invoice);
   });
 }
 
@@ -752,20 +759,6 @@ function add_delivery_preflight_button(frm) {
 }
 
 function add_sold_vehicle_next_step_button(frm) {
-  if (["銷售發票已提交", "預收款沖轉草稿", "預收款沖轉已提交"].includes(frm.doc.formal_delivery_status)) {
-    frm.add_custom_button("開啟 Sales Invoice", () => {
-      frappe.set_route("Form", "Sales Invoice", frm.doc.sales_invoice);
-    });
-    return;
-  }
-
-  if (frm.doc.sales_invoice) {
-    frm.add_custom_button("開啟 Sales Invoice 草稿", () => {
-      frappe.set_route("Form", "Sales Invoice", frm.doc.sales_invoice);
-    });
-    return;
-  }
-
   frm.add_custom_button("建立 Sales Invoice 草稿", () => {
     frappe.confirm(
       "系統會建立一張 Sales Invoice 草稿，讓你先檢查客戶、車輛、金額、倉庫與收入科目。這一步不會正式出庫、不會認列收入，也不會建立沖轉傳票。是否繼續？",
@@ -817,8 +810,134 @@ function add_sold_vehicle_next_step_button(frm) {
   });
 }
 
+function add_sold_vehicle_primary_action_button(frm) {
+  const action = get_sold_vehicle_primary_next_action(frm);
+
+  if (!action || !action.primary_action) {
+    return;
+  }
+
+  if (action.primary_action === "submit_sales_invoice") {
+    add_submit_formal_delivery_sales_invoice_button(frm);
+    return;
+  }
+
+  if (action.primary_action === "create_advance_settlement_draft") {
+    add_create_advance_settlement_journal_entry_draft_button(frm);
+    return;
+  }
+
+  if (action.primary_action === "submit_advance_settlement") {
+    add_submit_advance_settlement_journal_entry_button(frm);
+    return;
+  }
+
+  if (action.primary_action === "create_sales_invoice_draft") {
+    add_sold_vehicle_next_step_button(frm);
+  }
+}
+
+function add_sold_vehicle_related_document_buttons(frm) {
+  const action = get_sold_vehicle_primary_next_action(frm);
+
+  if (!action) {
+    return;
+  }
+
+  if (action.related_documents.includes("sales_invoice")) {
+    add_open_sales_invoice_button(frm);
+  }
+
+  if (action.related_documents.includes("advance_settlement_journal_entry")) {
+    add_open_advance_settlement_journal_entry_button(frm);
+  }
+}
+
+function get_sold_vehicle_primary_next_action(frm) {
+  if (frm.is_new() || frm.doc.status !== "已售出") {
+    return null;
+  }
+
+  const status = frm.doc.formal_delivery_status;
+  const has_sales_invoice = Boolean(frm.doc.sales_invoice);
+  const has_settlement_journal_entry = Boolean(frm.doc.advance_settlement_journal_entry);
+
+  if (status === "已完成") {
+    return {
+      current_stage: "正式交車入帳流程已完成",
+      next_step: "",
+      primary_action: null,
+      related_documents: [
+        ...(has_sales_invoice ? ["sales_invoice"] : []),
+        ...(has_settlement_journal_entry ? ["advance_settlement_journal_entry"] : []),
+      ],
+    };
+  }
+
+  if (status === "預收款沖轉已提交" && has_settlement_journal_entry) {
+    return {
+      current_stage: "預收款沖轉 Journal Entry 已提交",
+      next_step: "等待正式交車完成檢查",
+      primary_action: null,
+      related_documents: [
+        ...(has_sales_invoice ? ["sales_invoice"] : []),
+        "advance_settlement_journal_entry",
+      ],
+    };
+  }
+
+  if (status === "預收款沖轉草稿" && has_settlement_journal_entry) {
+    return {
+      current_stage: "預收款沖轉 Journal Entry 草稿已建立",
+      next_step: "提交預收款沖轉 Journal Entry",
+      primary_action: "submit_advance_settlement",
+      related_documents: [
+        ...(has_sales_invoice ? ["sales_invoice"] : []),
+        "advance_settlement_journal_entry",
+      ],
+    };
+  }
+
+  if (status === "銷售發票已提交" && has_sales_invoice && !has_settlement_journal_entry) {
+    return {
+      current_stage: "Sales Invoice 已提交並出庫",
+      next_step: "建立預收款沖轉 Journal Entry 草稿",
+      primary_action: "create_advance_settlement_draft",
+      related_documents: ["sales_invoice"],
+    };
+  }
+
+  if (has_sales_invoice && [undefined, null, "", "銷售發票草稿"].includes(status)) {
+    return {
+      current_stage: "Sales Invoice 草稿已建立",
+      next_step: "提交 Sales Invoice 並正式出庫",
+      primary_action: "submit_sales_invoice",
+      related_documents: ["sales_invoice"],
+    };
+  }
+
+  return {
+    current_stage: "已完成成交，Sales Invoice 草稿尚未建立",
+    next_step: "建立 Sales Invoice 草稿",
+    primary_action: "create_sales_invoice_draft",
+    related_documents: [],
+  };
+}
+
 function add_sold_vehicle_progress_comment(frm) {
   if (frm.is_new() || frm.doc.status !== "已售出" || !frm.dashboard) {
+    return;
+  }
+
+  const simplified_action = get_sold_vehicle_primary_next_action(frm);
+
+  if (simplified_action) {
+    const message = [
+      `目前階段：${simplified_action.current_stage}`,
+      simplified_action.next_step ? `下一步：${simplified_action.next_step}` : "正式交車入帳流程已完成",
+    ];
+
+    frm.dashboard.add_comment(message.join("<br>"), "blue", true);
     return;
   }
 
@@ -1037,7 +1156,7 @@ function add_tax_metadata_comment(frm) {
   let indicator = "blue";
 
   if (["待補資料", "待確認"].includes(status)) {
-    message = "此車輛稅務資料尚未確認。請先補齊車源、稅務模式、買入憑證與買入金額；正式申報前仍需確認。";
+    message = "售車稅務資料尚未確認；此項只影響售車入帳前檢查，不影響車輛基本資料建檔。";
     indicator = "orange";
   }
 
@@ -1061,7 +1180,7 @@ function add_vehicle_cost_summary_comment(frm) {
   const gross_margin = flt(frm.doc.gross_margin || 0);
   const message = [
     "成本摘要：",
-    `買入金額：${format_vehicle_currency(purchase_price)}`,
+    `購車價：${format_vehicle_currency(purchase_price)}`,
     `累計成本：${format_vehicle_currency(total_cost)}`,
     `單車直接成本：${format_vehicle_currency(capitalized_cost_total)}`,
     `成交價：${format_vehicle_currency(sold_price)}`,
@@ -1095,7 +1214,7 @@ function add_vehicle_profit_tax_estimate_comment(frm) {
       const message = [
         "單車損益與預估營業稅：",
         `成交價：${format_vehicle_currency(estimate.sale_price_tax_inclusive)}`,
-        `買入金額：${format_vehicle_currency(estimate.purchase_price)}`,
+        `購車價：${format_vehicle_currency(estimate.purchase_price)}`,
         `單車直接成本：${format_vehicle_currency(estimate.capitalized_cost_total)}`,
         `累計成本：${format_vehicle_currency(estimate.total_cost)}`,
         `預估毛利：${format_vehicle_currency(estimate.gross_margin)}`,
@@ -1263,7 +1382,7 @@ function set_vehicle_intake_intro(frm) {
   }
 
   if (!frm.doc.purchase_price) {
-    frm.set_intro("請先填寫採購車價後再完成入庫。", "orange");
+    frm.set_intro("請先填寫購車價後再完成入庫。", "orange");
     return;
   }
 

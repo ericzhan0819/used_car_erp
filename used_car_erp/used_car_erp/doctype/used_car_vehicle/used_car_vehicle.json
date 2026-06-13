@@ -141,7 +141,7 @@
   {"fieldname": "vin", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "車身號碼 / VIN", "unique": 1},
   {"fieldname": "engine_no", "fieldtype": "Data", "label": "引擎號碼"},
   {"fieldname": "quick_pricing_summary_section", "fieldtype": "Section Break", "label": "價格摘要"},
-  {"description": "此欄位暫作稅務與毛利估算基礎，本階段不會自動建立會計分錄。", "fieldname": "purchase_price", "fieldtype": "Currency", "in_list_view": 1, "label": "買入金額"},
+   {"description": "購車價不包含整備、維修、美容、拍場、代辦或其他後續支出；15-1 估算僅以購車價為基礎。", "fieldname": "purchase_price", "fieldtype": "Currency", "in_list_view": 1, "label": "購車價"},
   {"fieldname": "asking_price", "fieldtype": "Currency", "in_list_view": 1, "label": "開價"},
   {"fieldname": "floor_price", "fieldtype": "Currency", "label": "底價"},
   {"fieldname": "quick_pricing_summary_column", "fieldtype": "Column Break"},
