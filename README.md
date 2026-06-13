@@ -101,6 +101,8 @@ Used Car Field Permlevel Design Phase P1-C 定義中古車欄位層級：Level 0
 
 Used Car Field Permlevel Application Phase P1-D-A 依欄位權限層級設計，將價格 / 成本 / 毛利、會計文件連結與會計金額移出 permlevel 0；本階段只保留 System Manager 可存取高層級欄位，不開放中古車業務角色、不改 runtime。
 
+Used Car Voucher Draft Line Note Permlevel Cleanup Phase P1-D-A-1 將實際存在的 `note` 欄位移至 permlevel 2，並修正設計文件中 placeholder `remarks` 與實際 fieldname 不一致的問題；本次不開放任何中古車業務角色權限、不改 runtime。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
