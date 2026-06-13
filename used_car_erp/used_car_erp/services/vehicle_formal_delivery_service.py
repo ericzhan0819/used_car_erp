@@ -183,6 +183,46 @@ def recover_cancelled_sales_invoice_draft_link(vehicle_name: str) -> dict:
 
 
 @frappe.whitelist()
+def get_sales_invoice_draft_link_recovery_state_for_vehicle(vehicle_name: str) -> dict:
+	vehicle = frappe.get_doc("Used Car Vehicle", vehicle_name)
+	state = _base_sales_invoice_draft_link_recovery_state(vehicle)
+	blocked_reasons = _validate_cancelled_sales_invoice_recovery_vehicle_gate(vehicle)
+	if blocked_reasons:
+		state["reason"] = _recovery_state_reason_from_vehicle_gate(blocked_reasons, vehicle)
+		return state
+
+	sales_invoice = frappe.get_doc("Sales Invoice", vehicle.sales_invoice)
+	state.update(
+		{
+			"sales_invoice_docstatus": sales_invoice.docstatus,
+			"sales_invoice_status": sales_invoice.status,
+		}
+	)
+	if sales_invoice.docstatus == 0:
+		state["reason"] = "healthy_draft"
+		return state
+	if sales_invoice.docstatus == 1:
+		state["reason"] = "submitted_locked"
+		return state
+	if sales_invoice.docstatus != 2 or sales_invoice.status != "Cancelled":
+		state["reason"] = "not_cancelled"
+		return state
+
+	replacement_drafts = _find_replacement_sales_invoice_drafts(sales_invoice.name)
+	state["replacement_draft_count"] = len(replacement_drafts)
+	if not replacement_drafts:
+		state["reason"] = "no_replacement_draft"
+		return state
+	if len(replacement_drafts) > 1:
+		state["reason"] = "multiple_replacement_drafts"
+		return state
+
+	state["can_recover"] = True
+	state["reason"] = "cancelled_with_single_replacement_draft"
+	return state
+
+
+@frappe.whitelist()
 def recover_sales_invoice_draft_link_for_vehicle(vehicle_name: str):
 	return recover_cancelled_sales_invoice_draft_link(vehicle_name)
 
@@ -778,6 +818,30 @@ def _find_replacement_sales_invoice_drafts(old_sales_invoice_name):
 		order_by="modified desc",
 		limit=2,
 	)
+
+
+def _base_sales_invoice_draft_link_recovery_state(vehicle):
+	return {
+		"can_recover": False,
+		"reason": None,
+		"vehicle": vehicle.name,
+		"sales_invoice": vehicle.sales_invoice,
+		"sales_invoice_docstatus": None,
+		"sales_invoice_status": None,
+		"replacement_draft_count": 0,
+	}
+
+
+def _recovery_state_reason_from_vehicle_gate(blocked_reasons, vehicle):
+	if not vehicle.get("sales_invoice"):
+		return "missing_link"
+	if vehicle.get("sales_invoice") and not frappe.db.exists("Sales Invoice", vehicle.sales_invoice):
+		return "missing_link"
+	if vehicle.get("status") != "已售出":
+		return "invalid_vehicle_status"
+	if vehicle.get("formal_delivery_status") not in UNLOCKED_SALE_WORKFLOW_STATUSES:
+		return "invalid_formal_delivery_status"
+	return "blocked_by_vehicle_gate" if blocked_reasons else None
 
 
 def _blocked_recovery_result(vehicle_name, blocked_reasons, vehicle=None):

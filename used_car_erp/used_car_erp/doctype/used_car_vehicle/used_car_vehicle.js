@@ -406,10 +406,7 @@ function add_open_sales_invoice_button(frm) {
 }
 
 function add_recover_sales_invoice_draft_link_button(frm) {
-  if (!can_recover_sales_invoice_draft_link(frm)) {
-    return;
-  }
-
+  frm.remove_custom_button("修復 Sales Invoice 草稿連結");
   frm.add_custom_button("修復 Sales Invoice 草稿連結", () => {
     frappe.confirm(
       "此操作只會在後端確認目前 Sales Invoice 已取消，且剛好存在一張 amended Draft Sales Invoice 時，才會修復車輛連結並回填缺失售車資料。是否繼續？",
@@ -436,6 +433,31 @@ function add_recover_sales_invoice_draft_link_button(frm) {
         });
       }
     );
+  });
+}
+
+function add_recover_sales_invoice_draft_link_button_if_needed(frm) {
+  if (!can_check_recover_sales_invoice_draft_link(frm)) {
+    return;
+  }
+
+  frappe.call({
+    method:
+      "used_car_erp.used_car_erp.services.vehicle_formal_delivery_service.get_sales_invoice_draft_link_recovery_state_for_vehicle",
+    args: {
+      vehicle_name: frm.doc.name,
+    },
+    callback(response) {
+      const result = response.message || {};
+      if (!result.can_recover) {
+        return;
+      }
+
+      add_recover_sales_invoice_draft_link_button(frm);
+    },
+    error() {
+      // recovery 狀態檢查只是顯示修復按鈕的唯讀 gate，失敗時採安全預設不顯示 mutation 入口。
+    },
   });
 }
 
@@ -935,14 +957,14 @@ function add_sold_vehicle_related_document_buttons(frm) {
     add_open_sales_invoice_button(frm);
   }
 
-  add_recover_sales_invoice_draft_link_button(frm);
+  add_recover_sales_invoice_draft_link_button_if_needed(frm);
 
   if (action.related_documents.includes("advance_settlement_journal_entry")) {
     add_open_advance_settlement_journal_entry_button(frm);
   }
 }
 
-function can_recover_sales_invoice_draft_link(frm) {
+function can_check_recover_sales_invoice_draft_link(frm) {
   return Boolean(
     !frm.is_new() &&
       frm.doc.status === "已售出" &&
