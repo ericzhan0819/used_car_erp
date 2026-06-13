@@ -1,6 +1,8 @@
 import frappe
 from frappe.utils import flt, now
 
+from used_car_erp.used_car_erp.services.used_car_action_permission_service import assert_can_perform_used_car_action
+
 
 class VehicleVoucherService:
 	def create_deposit_voucher_draft(self, money_flow_name: str):
@@ -84,6 +86,10 @@ class VehicleVoucherService:
 		return draft.name
 
 	def confirm_voucher_draft(self, voucher_draft_name: str, review_note: str | None = None):
+		assert_can_perform_used_car_action(
+			"used_car_voucher_draft.confirm",
+			message="你沒有確認中古車傳票草稿的權限。",
+		)
 		draft = frappe.get_doc("Used Car Voucher Draft", voucher_draft_name)
 		draft.check_permission("write")
 		self._validate_draft_ready_for_confirm(draft)
@@ -138,6 +144,10 @@ class VehicleVoucherService:
 		}
 
 	def reject_voucher_draft(self, voucher_draft_name: str, reason: str):
+		assert_can_perform_used_car_action(
+			"used_car_voucher_draft.reject",
+			message="你沒有退回中古車傳票草稿的權限。",
+		)
 		if not reason:
 			frappe.throw("退回原因為必填。")
 
@@ -155,6 +165,10 @@ class VehicleVoucherService:
 		return {"voucher_draft": draft.name, "status": "已退回", "message": "已退回傳票草稿。"}
 
 	def void_voucher_draft(self, voucher_draft_name: str, reason: str):
+		assert_can_perform_used_car_action(
+			"used_car_voucher_draft.void",
+			message="你沒有作廢中古車傳票草稿的權限。",
+		)
 		if not reason:
 			frappe.throw("作廢原因為必填。")
 

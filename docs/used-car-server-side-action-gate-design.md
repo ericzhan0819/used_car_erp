@@ -153,6 +153,21 @@ Required behavior:
 
 P1-F-2 should connect this helper to high-risk whitelisted service methods in small batches.
 
+## P1-F-2 Adoption Status
+
+P1-F-2 已將 action gate 接到第一批高風險 service methods：
+
+- reservation create / cancel / complete sale
+- final payment money flow
+- deposit/final money flow creation
+- voucher confirm / reject / void
+
+本階段只做 gate adoption，不做 controlled write bypass。
+
+部分業務角色仍可能被既有 DocPerm / check_permission 擋住，這留到 P1-F-3 處理。
+
+create_deposit_voucher_draft / create_final_payment_voucher_draft 暫不接 used_car_voucher_draft.create，避免打斷 reservation → money flow → voucher draft 的現有自動流程。
+
 Priority candidates:
 
 ```text

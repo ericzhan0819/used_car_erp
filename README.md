@@ -107,6 +107,8 @@ Used Car DocType Permission Rows Phase P1-E-1 已依 P1-E 設計套用最小 Doc
 
 Used Car Server-side Action Gate Foundation Phase P1-F-0/P1-F-1 新增 action-based server-side permission gate 設計與 helper skeleton，將高風險業務動作從 DocType write 中獨立出來；本階段不改 runtime service 行為、不新增 DocType、不新增 patch、不修改 ERPNext core，後續 P1-F-2 才會逐步接入 create reservation、money flow、voucher confirm、Sales Invoice draft 等 whitelisted methods。
 
+Used Car Server-side Action Gate Adoption Phase P1-F-2 已將 action-based server-side permission gate 接入第一批高風險 service methods，包含保留單建立 / 取消 / 成交確認、訂金與尾款金流建立、傳票草稿確認 / 退回 / 作廢；本階段只做 gate adoption，不修改 DocType JSON、不新增 Role、不新增 patch、不放寬 DocPerm、不加入 controlled write bypass。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)

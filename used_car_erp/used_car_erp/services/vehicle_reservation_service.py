@@ -1,6 +1,7 @@
 import frappe
 from frappe.utils import flt, now, nowdate
 
+from used_car_erp.used_car_erp.services.used_car_action_permission_service import assert_can_perform_used_car_action
 from used_car_erp.used_car_erp.services.vehicle_intake_service import VehicleIntakeService
 from used_car_erp.used_car_erp.services.vehicle_listing_service import VehicleListingService
 from used_car_erp.used_car_erp.services.vehicle_money_flow_service import VehicleMoneyFlowService
@@ -30,6 +31,10 @@ class VehicleReservationService:
 		notes: str | None = None,
 		customer: str | None = None,
 	):
+		assert_can_perform_used_car_action(
+			"used_car_reservation.create",
+			message="你沒有建立中古車保留單的權限。",
+		)
 		self._validate_customer_inputs(customer_name, customer_phone)
 		self._validate_deposit_amount(deposit_amount)
 		self._validate_payment_method(payment_method)
@@ -99,6 +104,10 @@ class VehicleReservationService:
 		payment_reference: str | None = None,
 		notes: str | None = None,
 	):
+		assert_can_perform_used_car_action(
+			"used_car_money_flow.final_payment.create",
+			message="你沒有建立中古車尾款金流的權限。",
+		)
 		self._validate_payment_method(payment_method)
 		if flt(amount) <= 0:
 			frappe.throw("尾款金額必須大於 0。")
@@ -395,6 +404,10 @@ class VehicleReservationService:
 		return account
 
 	def complete_active_reservation(self, vehicle_name: str, completion_note: str | None = None):
+		assert_can_perform_used_car_action(
+			"used_car_reservation.complete_sale",
+			message="你沒有確認中古車成交的權限。",
+		)
 		preflight = self.preflight_delivery_for_active_reservation(vehicle_name)
 
 		try:
@@ -460,6 +473,10 @@ class VehicleReservationService:
 		}
 
 	def cancel_reservation(self, reservation_name: str, reason: str):
+		assert_can_perform_used_car_action(
+			"used_car_reservation.cancel",
+			message="你沒有取消中古車保留單的權限。",
+		)
 		if not reason:
 			frappe.throw("取消原因為必填。")
 
@@ -503,6 +520,10 @@ class VehicleReservationService:
 		}
 
 	def cancel_active_reservation_for_vehicle(self, vehicle_name: str, reason: str):
+		assert_can_perform_used_car_action(
+			"used_car_reservation.cancel",
+			message="你沒有取消中古車保留單的權限。",
+		)
 		reservation_name = frappe.db.get_value(
 			"Used Car Reservation",
 			{"vehicle": vehicle_name, "status": "有效"},

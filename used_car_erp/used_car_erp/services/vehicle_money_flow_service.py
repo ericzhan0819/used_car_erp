@@ -1,6 +1,7 @@
 import frappe
 from frappe.utils import flt, nowdate
 
+from used_car_erp.used_car_erp.services.used_car_action_permission_service import assert_can_perform_used_car_action
 from used_car_erp.used_car_erp.services.vehicle_voucher_service import VehicleVoucherService
 
 
@@ -17,6 +18,10 @@ RESTRICTED_ACCOUNTING_DOCTYPES = (
 
 class VehicleMoneyFlowService:
 	def create_deposit_money_flow_from_reservation(self, reservation_name: str):
+		assert_can_perform_used_car_action(
+			"used_car_money_flow.deposit.create",
+			message="你沒有建立中古車訂金金流的權限。",
+		)
 		reservation = frappe.get_doc("Used Car Reservation", reservation_name)
 		reservation.check_permission("read")
 		self._validate_reservation_for_deposit_money_flow(reservation)
@@ -67,6 +72,10 @@ class VehicleMoneyFlowService:
 		payment_reference: str | None = None,
 		notes: str | None = None,
 	):
+		assert_can_perform_used_car_action(
+			"used_car_money_flow.final_payment.create",
+			message="你沒有建立中古車尾款金流的權限。",
+		)
 		reservation = frappe.get_doc("Used Car Reservation", reservation_name)
 		reservation.check_permission("write")
 		deposit_money_flow, deposit_voucher_draft = self._validate_reservation_for_final_payment_money_flow(reservation, amount, payment_method)

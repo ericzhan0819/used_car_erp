@@ -623,6 +623,8 @@ Phase P1-F should introduce a small permission helper or explicit checks in serv
 
 P1-F-0/P1-F-1 has turned the action gate concept into a shared helper skeleton. DocPerm does not equal high-risk business action permission. P1-F-2 should connect the helper to existing whitelisted service methods in small, testable batches.
 
+P1-F-2 已開始把 action gate 接到第一批高風險 service methods，但尚未放寬 DocPerm 或加入 controlled write bypass。
+
 Suggested conceptual actions:
 
 ```text
