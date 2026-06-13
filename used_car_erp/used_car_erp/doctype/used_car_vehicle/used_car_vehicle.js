@@ -239,13 +239,21 @@ function clear_vehicle_action_buttons(frm) {
     "正式交車提交前檢查",
     "檢查提交資格",
     "提交 Sales Invoice 並正式出庫",
+    "確認銷售發票並出庫",
     "建立預收款沖轉傳票草稿",
+    "建立預收款沖轉草稿",
     "提交預收款沖轉傳票",
+    "確認預收款沖轉入帳",
     "修復 Sales Invoice 草稿連結",
+    "修復銷售發票草稿連結",
     "開啟 Sales Invoice",
+    "查看銷售發票",
     "開啟預收款沖轉傳票",
+    "查看預收款沖轉傳票",
     "顯示會計技術欄位",
     "隱藏會計技術欄位",
+    "顯示文件連結",
+    "隱藏文件連結",
   ].forEach((label) => {
     frm.remove_custom_button(label);
   });
@@ -259,9 +267,9 @@ function render_accounting_status_summary(frm) {
   }
 
   const cards = [
-    ["正式交車入帳狀態", frm.doc.formal_delivery_status || "未處理"],
-    ["Sales Invoice", frm.doc.sales_invoice ? "已建立" : "未建立"],
-    ["預收款沖轉傳票", frm.doc.advance_settlement_journal_entry ? "已建立" : "未建立"],
+    ["會計文件狀態", frm.doc.formal_delivery_status || "未處理"],
+    ["銷售發票", frm.doc.sales_invoice ? "已建立" : "未建立"],
+    ["預收款沖轉", frm.doc.advance_settlement_journal_entry ? "已建立" : "未建立"],
     ["訂金", get_accounting_flow_status(frm.doc.deposit_money_flow, frm.doc.deposit_voucher_draft, frm.doc.deposit_journal_entry)],
     ["尾款", get_accounting_flow_status(frm.doc.final_money_flow, frm.doc.final_voucher_draft, frm.doc.final_journal_entry)],
     ["管理毛利", format_vehicle_currency(frm.doc.gross_margin || 0)],
@@ -269,7 +277,7 @@ function render_accounting_status_summary(frm) {
 
   field.$wrapper.html(`
     <div class="frappe-card" style="padding: 16px; margin-bottom: 12px;">
-      <div style="font-weight: 600; margin-bottom: 12px;">會計狀態摘要</div>
+      <div style="font-weight: 600; margin-bottom: 12px;">收支與會計文件摘要</div>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
         ${cards
           .map(
@@ -310,7 +318,7 @@ function apply_accounting_status_technical_field_visibility(frm) {
 
 function add_accounting_status_technical_fields_toggle_button(frm) {
   frm.add_custom_button(
-    frm._show_accounting_technical_fields ? "隱藏會計技術欄位" : "顯示會計技術欄位",
+    frm._show_accounting_technical_fields ? "隱藏文件連結" : "顯示文件連結",
     () => {
       frm._show_accounting_technical_fields = !frm._show_accounting_technical_fields;
       apply_accounting_status_technical_field_visibility(frm);
@@ -353,17 +361,15 @@ function add_submit_formal_delivery_sales_invoice_button(frm) {
     return;
   }
 
-  frm.add_custom_button("提交 Sales Invoice 並正式出庫", () => {
+  frm.add_custom_button("確認銷售發票並出庫", () => {
     frappe.confirm(
       [
-        "此操作會提交 Sales Invoice，並依 ERPNext update_stock 正式出庫。",
+        "此操作會提交銷售發票，並依 ERPNext update_stock 進行庫存出庫。",
         "",
-        "此操作可能影響收入、庫存與成本。",
-        "此操作不會自動建立 Payment Entry。",
-        "此操作不會自動完成預收款沖轉。",
-        "此操作不會完成正式交車入帳。",
+        "此操作不代表款項已收清，也不會自動建立收款紀錄。",
+        "此操作不代表實體交車 / 離場狀態已完成。",
         "",
-        "提交後 Sales Invoice 將不再是草稿。",
+        "提交後銷售發票將不再是草稿，售車核心資料會進入正式文件鎖定狀態。",
         "請確認客戶、車輛、金額、Serial No、Warehouse 與稅務資料均已確認。",
       ].join("<br>"),
       () => {
@@ -374,13 +380,13 @@ function add_submit_formal_delivery_sales_invoice_button(frm) {
             vehicle_name: frm.doc.name,
           },
           freeze: true,
-          freeze_message: "正在提交 Sales Invoice 並正式出庫...",
+          freeze_message: "正在確認銷售發票並出庫...",
           callback(response) {
             const result = response.message || {};
             frappe.show_alert({
               message:
                 result.status === "submitted"
-                  ? "Sales Invoice 已提交，預收款沖轉仍待後續處理。"
+                  ? "銷售發票已提交，預收款沖轉與後續收款仍需依實際狀態處理。"
                   : result.message || "Sales Invoice 正式提交前檢查未通過。",
               indicator: result.status === "submitted" ? "green" : "red",
             });
@@ -397,7 +403,7 @@ function add_create_advance_settlement_journal_entry_draft_button(frm) {
     return;
   }
 
-  frm.add_custom_button("建立預收款沖轉傳票草稿", () => {
+  frm.add_custom_button("建立預收款沖轉草稿", () => {
     frappe.confirm(
       [
         "此操作會建立預收款沖轉 Journal Entry 草稿。",
@@ -405,7 +411,7 @@ function add_create_advance_settlement_journal_entry_draft_button(frm) {
         "此草稿會將已入帳的訂金 / 尾款預收款沖轉至 Sales Invoice 應收帳款。",
         "此操作不會提交 Journal Entry。",
         "此操作不會建立 Payment Entry。",
-        "此操作不會完成正式交車入帳。",
+        "此操作只處理預收款沖轉，不代表款項已收清或車輛實體交付狀態已完成。",
         "建立後仍須由會計人工確認與提交。",
       ].join("<br>"),
       () => {
@@ -439,7 +445,7 @@ function add_submit_advance_settlement_journal_entry_button(frm) {
     return;
   }
 
-  frm.add_custom_button("提交預收款沖轉傳票", () => {
+  frm.add_custom_button("確認預收款沖轉入帳", () => {
     frappe.confirm(
       [
         "此操作會提交預收款沖轉 Journal Entry。",
@@ -448,8 +454,7 @@ function add_submit_advance_settlement_journal_entry_button(frm) {
         "此操作可能影響正式會計分錄。",
         "此操作不會建立 Payment Entry。",
         "此操作不會建立 Delivery Note 或 Stock Entry。",
-        "此操作不會完成正式交車入帳。",
-        "提交後仍需進行正式交車完成檢查。",
+        "此操作只處理預收款沖轉，不代表款項已收清或車輛實體交付狀態已完成。",
       ].join("<br>"),
       () => {
         frappe.call({
@@ -465,7 +470,7 @@ function add_submit_advance_settlement_journal_entry_button(frm) {
             frappe.show_alert({
               message:
                 result.status === "settlement_submitted"
-                  ? "預收款沖轉 Journal Entry 已提交，正式交車完成仍待後續確認。"
+                  ? "預收款沖轉已提交，後續收款與實體交車狀態仍需分開確認。"
                   : result.message || "預收款沖轉 Journal Entry 提交前檢查未通過。",
               indicator: result.status === "settlement_submitted" ? "green" : "red",
             });
@@ -482,7 +487,7 @@ function add_open_advance_settlement_journal_entry_button(frm) {
     return;
   }
 
-  frm.add_custom_button("開啟預收款沖轉傳票", () => {
+  frm.add_custom_button("查看預收款沖轉傳票", () => {
     frappe.set_route("Form", "Journal Entry", frm.doc.advance_settlement_journal_entry);
   });
 }
@@ -492,14 +497,15 @@ function add_open_sales_invoice_button(frm) {
     return;
   }
 
-  frm.add_custom_button("開啟 Sales Invoice", () => {
+  frm.add_custom_button("查看銷售發票", () => {
     frappe.set_route("Form", "Sales Invoice", frm.doc.sales_invoice);
   });
 }
 
 function add_recover_sales_invoice_draft_link_button(frm) {
   frm.remove_custom_button("修復 Sales Invoice 草稿連結");
-  frm.add_custom_button("修復 Sales Invoice 草稿連結", () => {
+  frm.remove_custom_button("修復銷售發票草稿連結");
+  frm.add_custom_button("修復銷售發票草稿連結", () => {
     frappe.confirm(
       "此操作只會在後端確認目前 Sales Invoice 已取消，且剛好存在一張 amended Draft Sales Invoice 時，才會修復車輛連結並回填缺失售車資料。是否繼續？",
       () => {
@@ -1122,7 +1128,7 @@ function get_sold_vehicle_primary_next_action(frm) {
   if (has_sales_invoice && [undefined, null, "", "銷售發票草稿"].includes(status)) {
     return {
       current_stage: "Sales Invoice 草稿已建立",
-      next_step: "提交 Sales Invoice 並正式出庫",
+      next_step: "確認銷售發票並出庫",
       primary_action: "submit_sales_invoice",
       related_documents: ["sales_invoice"],
     };
