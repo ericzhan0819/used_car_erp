@@ -103,6 +103,8 @@ Used Car Field Permlevel Application Phase P1-D-A 依欄位權限層級設計，
 
 Used Car Voucher Draft Line Note Permlevel Cleanup Phase P1-D-A-1 將實際存在的 `note` 欄位移至 permlevel 2，並修正設計文件中 placeholder `remarks` 與實際 fieldname 不一致的問題；本次不開放任何中古車業務角色權限、不改 runtime。
 
+Used Car DocType Permission Rows Phase P1-E-1 已依 P1-E 設計套用最小 DocType permission rows，開放中古車角色基礎 read/report 與少量低風險 write；不開放 submit/cancel/amend/delete/export，不給 Sales/Procurement/Preparation 高層級敏感欄位，高風險業務動作仍需 P1-F server-side action gates。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)

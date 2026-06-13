@@ -927,6 +927,122 @@
    "share": 1,
    "write": 1,
    "permlevel": 3
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Viewer"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Sales"
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Procurement",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Preparation"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Accounting"
+  },
+  {
+   "read": 1,
+   "role": "Used Car Accounting",
+   "permlevel": 1
+  },
+  {
+   "read": 1,
+   "role": "Used Car Accounting",
+   "permlevel": 2
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Accounting Manager"
+  },
+  {
+   "read": 1,
+   "role": "Used Car Accounting Manager",
+   "permlevel": 1
+  },
+  {
+   "read": 1,
+   "role": "Used Car Accounting Manager",
+   "permlevel": 2
+  },
+  {
+   "read": 1,
+   "role": "Used Car Accounting Manager",
+   "permlevel": 3
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Used Car Manager",
+   "permlevel": 1
+  },
+  {
+   "read": 1,
+   "role": "Used Car Manager",
+   "permlevel": 2
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Owner",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Used Car Owner",
+   "permlevel": 1
+  },
+  {
+   "read": 1,
+   "role": "Used Car Owner",
+   "permlevel": 2
+  },
+  {
+   "read": 1,
+   "role": "Used Car Owner",
+   "permlevel": 3
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Auditor"
+  },
+  {
+   "read": 1,
+   "role": "Used Car Auditor",
+   "permlevel": 1
+  },
+  {
+   "read": 1,
+   "role": "Used Car Auditor",
+   "permlevel": 2
+  },
+  {
+   "read": 1,
+   "role": "Used Car Auditor",
+   "permlevel": 3
   }
  ],
  "search_fields": "stock_no,license_plate,vin,brand,model",

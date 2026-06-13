@@ -665,6 +665,10 @@ same source document consistency
 
 ## Implementation Guidance For Future P1-E-1
 
+## Phase P1-E-1 Runtime Application Boundary
+
+P1-E-1 applies a more conservative runtime subset than parts of the design matrix. It does not grant Preparation `Vehicle Cost` create/write because `amount` is required and protected at level 1; it does not grant Sales raw Reservation creation; and it does not grant Procurement level 1 `purchase_price` visibility because that level also exposes other sensitive vehicle financial fields. These operations are intentionally deferred to P1-F server-side action gates.
+
 When implementing DocPerm rows:
 
 1. Add only the rows listed in this document.

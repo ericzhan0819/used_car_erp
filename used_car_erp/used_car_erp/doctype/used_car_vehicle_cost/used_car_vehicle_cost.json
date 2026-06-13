@@ -130,6 +130,63 @@
    "share": 1,
    "write": 1,
    "permlevel": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Preparation"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Accounting"
+  },
+  {
+   "read": 1,
+   "role": "Used Car Accounting",
+   "permlevel": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Accounting Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Used Car Accounting Manager",
+   "write": 1,
+   "permlevel": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Manager"
+  },
+  {
+   "read": 1,
+   "role": "Used Car Manager",
+   "permlevel": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Owner"
+  },
+  {
+   "read": 1,
+   "role": "Used Car Owner",
+   "permlevel": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Auditor"
+  },
+  {
+   "read": 1,
+   "role": "Used Car Auditor",
+   "permlevel": 1
   }
  ],
  "sort_field": "modified",

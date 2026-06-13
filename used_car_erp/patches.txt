@@ -1,8 +1,8 @@
 [pre_model_sync]
 # Patches added in this section will be executed before doctypes are migrated
 # Read docs to understand patches: https://frappeframework.com/docs/v14/user/en/database-migrations
+used_car_erp.patches.v1_0.create_used_car_roles
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
 used_car_erp.patches.v0_1.rename_used_car_workspace
-used_car_erp.patches.v1_0.create_used_car_roles
