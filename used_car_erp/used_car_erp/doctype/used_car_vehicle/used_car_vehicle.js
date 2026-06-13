@@ -58,20 +58,19 @@ function apply_vehicle_form_mode(frm) {
     return;
   }
 
+  if (frm.doc.status === "已售出") {
+    add_sold_vehicle_primary_action_button(frm);
+    add_sold_vehicle_related_document_buttons(frm);
+    set_vehicle_fields_read_only(frm, true);
+    allow_sold_vehicle_tax_metadata_edit(frm);
+    return;
+  }
+
   add_complete_intake_button(frm);
   add_listing_workflow_buttons(frm);
   add_create_vehicle_cost_button(frm);
   add_recalculate_cost_summary_button(frm);
   add_refresh_profit_tax_estimate_button(frm);
-
-  if (frm.doc.status === "已售出") {
-    add_sold_vehicle_primary_action_button(frm);
-    add_sold_vehicle_related_document_buttons(frm);
-    add_refresh_sold_vehicle_final_check_button(frm);
-    set_vehicle_fields_read_only(frm, true);
-    allow_sold_vehicle_tax_metadata_edit(frm);
-    return;
-  }
 
   if (frm._vehicle_edit_mode) {
     set_vehicle_fields_read_only(frm, false);
@@ -378,7 +377,7 @@ function add_refresh_sold_vehicle_final_check_button(frm) {
 }
 
 function add_create_vehicle_cost_button(frm) {
-  if (frm.is_new() || !frm.doc.name || frm.doc.status === "封存") {
+  if (frm.is_new() || !frm.doc.name || ["已售出", "封存"].includes(frm.doc.status)) {
     return;
   }
 
@@ -395,7 +394,7 @@ function add_create_vehicle_cost_button(frm) {
 }
 
 function add_recalculate_cost_summary_button(frm) {
-  if (frm.is_new() || !frm.doc.name || frm.doc.status === "封存") {
+  if (frm.is_new() || !frm.doc.name || ["已售出", "封存"].includes(frm.doc.status)) {
     return;
   }
 
@@ -420,7 +419,7 @@ function add_recalculate_cost_summary_button(frm) {
 }
 
 function add_refresh_profit_tax_estimate_button(frm) {
-  if (frm.is_new() || !frm.doc.name || frm.doc.status === "封存") {
+  if (frm.is_new() || !frm.doc.name || ["已售出", "封存"].includes(frm.doc.status)) {
     return;
   }
 
