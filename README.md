@@ -93,12 +93,15 @@ Vehicle Delivery / Payment / Accounting Boundary UI Copy Cleanup 已依交車 / 
 
 Used Car Role / Permission Boundary Spec 已規劃中古車角色與權限邊界，決策優先沿用 Frappe / ERPNext 內建 User、Role、DocType Permissions、Permission Level、Role Permission Manager、User Permissions 與模組可見性，不自建登入或權限系統。
 
+Used Car Role Permission Inventory Phase P1-A 盤點 custom DocType 目前 permission rows、敏感欄位 permlevel、client-side button hiding 與 server-side gate 現況；本階段只產出文件，不修改 runtime 或實際權限設定。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
 - [台灣中古車稅務與成本設計文件](docs/taiwan-used-car-tax-accounting-design.md)
 - [交車 / 收款 / 會計文件狀態邊界文件](docs/vehicle-delivery-payment-accounting-status-boundary-spec.md)
 - [中古車角色 / 權限邊界文件](docs/used-car-role-permission-boundary-spec.md)
+- [中古車角色 / 權限現況盤點](docs/used-car-role-permission-inventory.md)
 
 Manual QA checklist:
 
