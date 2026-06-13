@@ -43,6 +43,26 @@ const SOLD_VEHICLE_TAX_METADATA_FIELDS = [
   "tax_review_note",
 ];
 
+const SALE_WORKFLOW_FIELDS = [
+  "customer",
+  "sold_price",
+  "sold_date",
+  "delivery_date",
+  "expected_delivery_date",
+  "sales_staff",
+  "sales_note",
+  "vehicle_tax_mode",
+  "tax_review_status",
+  "tax_review_note",
+];
+
+const FORMAL_ACCOUNTING_LOCKED_STATUSES = [
+  "銷售發票已提交",
+  "預收款沖轉草稿",
+  "預收款沖轉已提交",
+  "已完成",
+];
+
 function apply_vehicle_form_mode(frm) {
   clear_vehicle_action_buttons(frm);
   set_vehicle_intake_intro(frm);
@@ -63,6 +83,7 @@ function apply_vehicle_form_mode(frm) {
     add_sold_vehicle_related_document_buttons(frm);
     set_vehicle_fields_read_only(frm, true);
     allow_sold_vehicle_tax_metadata_edit(frm);
+    allow_sold_vehicle_sale_workflow_edit(frm);
     return;
   }
 
@@ -123,6 +144,38 @@ function allow_sold_vehicle_tax_metadata_edit(frm) {
   frm.refresh_fields(SOLD_VEHICLE_TAX_METADATA_FIELDS);
 }
 
+function allow_sold_vehicle_sale_workflow_edit(frm) {
+  if (!can_edit_sold_vehicle_sale_workflow(frm)) {
+    if (is_sold_vehicle_formally_locked(frm)) {
+      frm.set_intro("正式文件已提交，售車資料已鎖定；後續需走修正 / 反轉流程。", "orange");
+    }
+    return;
+  }
+
+  SALE_WORKFLOW_FIELDS.forEach((fieldname) => {
+    if (frm.fields_dict[fieldname]) {
+      frm.set_df_property(fieldname, "read_only", 0);
+    }
+  });
+
+  frm.set_intro(
+    "此車已售出，但正式入帳鎖定前仍可修正售車資料。若已建立 Sales Invoice 草稿，儲存後會同步更新草稿。",
+    "blue"
+  );
+  frm.refresh_fields(SALE_WORKFLOW_FIELDS.filter((fieldname) => frm.fields_dict[fieldname]));
+}
+
+function can_edit_sold_vehicle_sale_workflow(frm) {
+  return Boolean(!frm.is_new() && frm.doc.status === "已售出" && !is_sold_vehicle_formally_locked(frm));
+}
+
+function is_sold_vehicle_formally_locked(frm) {
+  return Boolean(
+    FORMAL_ACCOUNTING_LOCKED_STATUSES.includes(frm.doc.formal_delivery_status) ||
+      frm.doc.formal_delivery_completed_at
+  );
+}
+
 function can_edit_sold_vehicle_tax_metadata(frm) {
   const allowed_roles = ["System Manager", "Accounts Manager", "Accounts User"];
   const user_roles = frappe.user_roles || [];
@@ -133,7 +186,7 @@ function can_edit_sold_vehicle_tax_metadata(frm) {
   return Boolean(
     !frm.is_new() &&
       frm.doc.status === "已售出" &&
-      frm.doc.formal_delivery_status !== "已完成" &&
+      !is_sold_vehicle_formally_locked(frm) &&
       has_allowed_role
   );
 }

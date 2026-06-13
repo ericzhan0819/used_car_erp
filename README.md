@@ -75,6 +75,8 @@ Used Car Vehicle Simplified UX Phase A/B 已開始將車輛頁從工程式流程
 
 Sold Vehicle Secondary Button Cleanup 已移除已售出車輛頁的成本、損益稅務估算、交車前檢查等次要工程按鈕；已售出車輛頁僅保留一個主要下一步操作與相關文件連結。
 
+Sale Workflow Editability Fix 釐清 business sold state 與 formal accounting locked state。成交價、客戶、售車日期等售車事實在正式會計鎖定前可於售車流程修正；若 Sales Invoice 草稿已存在，需同步更新草稿或阻止不一致儲存。Sales Invoice 已提交後，售車核心欄位不允許直接修改，後續需走修正 / 反轉流程。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)

@@ -2,6 +2,11 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import nowdate
 
+from used_car_erp.used_car_erp.services.vehicle_formal_delivery_service import (
+	is_vehicle_formally_accounting_locked,
+	sync_sales_invoice_draft_from_vehicle,
+)
+
 
 SALE_COMPLETION_FIELDS = (
 	"completed_reservation",
@@ -26,6 +31,19 @@ FORMAL_DELIVERY_FIELDS = (
 	"formal_delivery_note",
 )
 
+SALE_WORKFLOW_FIELDS = (
+	"customer",
+	"sold_price",
+	"sold_date",
+	"delivery_date",
+	"expected_delivery_date",
+	"sales_staff",
+	"sales_note",
+	"vehicle_tax_mode",
+	"tax_review_status",
+	"tax_review_note",
+)
+
 
 class UsedCarVehicle(Document):
 	def before_insert(self):
@@ -34,8 +52,10 @@ class UsedCarVehicle(Document):
 	def validate(self):
 		self._prevent_stock_no_change()
 		self._validate_tax_metadata()
+		self._protect_locked_sale_workflow_fields()
 		self._prevent_manual_sale_completion_change()
 		self._prevent_manual_formal_delivery_change()
+		self._sync_sales_invoice_draft_when_sale_workflow_changes()
 
 	def _prevent_stock_no_change(self):
 		if self.is_new():
@@ -74,6 +94,33 @@ class UsedCarVehicle(Document):
 				continue
 			# 正式交車入帳欄位只能由 service 寫入，避免人工建立銷售文件連結造成出庫與會計階段不一致。
 			frappe.throw("正式交車入帳欄位由正式交車流程維護，不可手動修改。")
+
+	def _protect_locked_sale_workflow_fields(self):
+		if self.is_new() or self.flags.ignore_sale_workflow_lock_validation:
+			return
+		if not is_vehicle_formally_accounting_locked(self):
+			return
+
+		meta = frappe.get_meta("Used Car Vehicle")
+		for fieldname in SALE_WORKFLOW_FIELDS:
+			if not meta.has_field(fieldname) or not self.has_value_changed(fieldname):
+				continue
+			# 已提交的正式銷售文件代表會計與庫存已鎖定，直接改售車事實會造成 IDOR 式資料不一致與會計錯帳風險。
+			frappe.throw("Sales Invoice 已提交，售車資料已正式鎖定。後續需透過修正 / 反轉流程處理。")
+
+	def _sync_sales_invoice_draft_when_sale_workflow_changes(self):
+		if self.is_new() or self.flags.ignore_sale_invoice_draft_sync:
+			return
+		if not self.sales_invoice:
+			return
+
+		meta = frappe.get_meta("Used Car Vehicle")
+		changed = any(meta.has_field(fieldname) and self.has_value_changed(fieldname) for fieldname in SALE_WORKFLOW_FIELDS)
+		if not changed:
+			return
+
+		# 只同步既有 Sales Invoice 草稿；submitted 發票會由鎖定檢查阻擋，避免繞過正式修正流程。
+		sync_sales_invoice_draft_from_vehicle(self)
 
 
 def _get_next_stock_no():
