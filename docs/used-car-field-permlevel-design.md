@@ -230,7 +230,7 @@ Tax review and repair fields should be treated as restricted accounting-control 
 | `account` | Accounting account | 2 | Accounting read/write before confirmed | Child table follows parent access. |
 | `debit` | Debit amount | 2 | Accounting read/write before confirmed | Child table follows parent access. |
 | `credit` | Credit amount | 2 | Accounting read/write before confirmed | Child table follows parent access. |
-| `remarks` | Accounting line note | 2 | Accounting read/write | Child table follows parent access. |
+| `note` | Accounting line note | 2 | Accounting read/write | Actual fieldname is `note`; child table follows parent access. |
 
 ### Used Car Reservation
 
@@ -241,7 +241,7 @@ Tax review and repair fields should be treated as restricted accounting-control 
 | `customer` | ERPNext customer | 1 | Sales/Accounting read | Customer privacy. |
 | `deposit_amount` | Deposit amount | 1 | Sales/Accounting read/write by phase | Money amount. |
 | `final_payment_amount` | Final payment amount | 1 | Sales/Accounting read by phase | Money amount. |
-| `deposit_money_flow` / `final_money_flow` | Money flow links | 2 | Accounting read | Technical links. |
+| `money_flow` / `final_money_flow` | Money flow links | 2 | Accounting read | Actual deposit-side fieldname is `money_flow`; technical links. |
 | `voucher_draft` / `final_voucher_draft` | Voucher draft links | 2 | Accounting read | Accounting links. |
 | `journal_entry` / `final_journal_entry` | Journal Entry links | 2 | Accounting read | Accounting links. |
 | completion/confirmation metadata | Completion control | 2 or 3 | Accounting/Manager read | Use level 3 if exceptional control. |
@@ -281,6 +281,14 @@ This phase applies target permlevels to sensitive fields.
 It only preserves System Manager access to higher permlevels.
 
 It does not grant Used Car business roles any DocType permissions yet.
+
+## Phase P1-D-A-1 Voucher Draft Line Note Cleanup
+
+This cleanup aligns the actual `Used Car Voucher Draft Line.note` field with the P1-C / P1-D accounting-line design.
+
+It moves the accounting line note to permlevel 2 and corrects the design documentation from the placeholder `remarks` fieldname to the real `note` fieldname.
+
+It does not change runtime, user assignments, role permissions, or non-System Manager access.
 
 ### Phase P1-C — Documentation Only
 
