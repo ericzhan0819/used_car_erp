@@ -97,6 +97,8 @@ Used Car Role Permission Inventory Phase P1-A 盤點 custom DocType 目前 permi
 
 Used Car Role Records Foundation Phase P1-B 新增中古車業務角色骨架，但不開放 custom DocType 權限、不調整 permlevel、不指派任何使用者；正式權限需等敏感欄位與 server-side action gate 設計完成後再開放。
 
+Used Car Field Permlevel Design Phase P1-C 定義中古車欄位層級：Level 0 一般營運欄位、Level 1 價格 / 成本 / 毛利欄位、Level 2 會計文件連結 / 會計金額、Level 3 稅務審核 / 例外修復欄位；本階段只產出文件，不改 DocType JSON、不開放權限。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -104,6 +106,7 @@ Decision documents:
 - [交車 / 收款 / 會計文件狀態邊界文件](docs/vehicle-delivery-payment-accounting-status-boundary-spec.md)
 - [中古車角色 / 權限邊界文件](docs/used-car-role-permission-boundary-spec.md)
 - [中古車角色 / 權限現況盤點](docs/used-car-role-permission-inventory.md)
+- [中古車欄位權限層級設計](docs/used-car-field-permlevel-design.md)
 
 Manual QA checklist:
 
