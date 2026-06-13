@@ -41,7 +41,8 @@
    "fieldname": "note",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "說明"
+   "label": "說明",
+   "permlevel": 2
   }
  ],
  "istable": 1,
