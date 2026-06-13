@@ -168,6 +168,22 @@ P1-F-2 已將 action gate 接到第一批高風險 service methods：
 
 create_deposit_voucher_draft / create_final_payment_voucher_draft 暫不接 used_car_voucher_draft.create，避免打斷 reservation → money flow → voucher draft 的現有自動流程。
 
+## P1-F-3 Controlled Write Bypass Design
+
+P1-F-3 進一步定義 controlled write bypass，但本文件只作為 action gate 邊界參照；完整規格請見：
+
+```text
+docs/used-car-controlled-write-bypass-design.md
+```
+
+Controlled write bypass 的核心限制：
+
+```text
+Action gate 通過，不等於可以任意 ignore_permissions。
+只有 service-owned、workflow-specific、field-constrained 的寫入才可被允許。
+第一批建議只處理 sales reservation flow，不碰正式會計、Sales Invoice、Stock Entry、tax metadata 或 accounting-link repair。
+```
+
 Priority candidates:
 
 ```text
