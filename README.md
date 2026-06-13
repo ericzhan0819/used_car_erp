@@ -109,6 +109,8 @@ Used Car Server-side Action Gate Foundation Phase P1-F-0/P1-F-1 新增 action-ba
 
 Used Car Server-side Action Gate Adoption Phase P1-F-2 已將 action-based server-side permission gate 接入第一批高風險 service methods，包含保留單建立 / 取消 / 成交確認、訂金與尾款金流建立、傳票草稿確認 / 退回 / 作廢；本階段只做 gate adoption，不修改 DocType JSON、不新增 Role、不新增 patch、不放寬 DocPerm、不加入 controlled write bypass。
 
+Used Car Controlled Write Bypass Design Phase P1-F-3 定義 action-gated、service-owned、workflow-specific、field-constrained controlled writes；本階段只新增設計文件，不修改 runtime，不放寬 DocPerm，不新增 patch，第一批建議只處理 sales reservation flow，不碰 Sales Invoice、Journal Entry、Stock Entry、tax metadata 或 accounting-link repair。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -118,6 +120,7 @@ Decision documents:
 - [中古車角色 / 權限現況盤點](docs/used-car-role-permission-inventory.md)
 - [中古車欄位權限層級設計](docs/used-car-field-permlevel-design.md)
 - [中古車 Server-side Action Gate 設計](docs/used-car-server-side-action-gate-design.md)
+- [中古車 Controlled Write Bypass 設計](docs/used-car-controlled-write-bypass-design.md)
 
 Manual QA checklist:
 
