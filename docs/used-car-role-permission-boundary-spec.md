@@ -310,6 +310,24 @@ Every one of these should have server-side role checks when implemented.
 
 ## Built-in First, Custom Second
 
+## Phase P1-B Role Records Foundation
+
+This phase creates native Frappe Role records only.
+
+It does not grant custom DocType permissions yet because sensitive fields are still at permlevel 0.
+
+Created roles:
+
+- Used Car Owner
+- Used Car Manager
+- Used Car Procurement
+- Used Car Sales
+- Used Car Preparation
+- Used Car Accounting
+- Used Car Accounting Manager
+- Used Car Viewer
+- Used Car Auditor
+
 Recommended implementation order:
 
 ### Phase P0 — Documentation Only

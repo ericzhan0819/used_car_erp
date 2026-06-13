@@ -95,6 +95,8 @@ Used Car Role / Permission Boundary Spec 已規劃中古車角色與權限邊界
 
 Used Car Role Permission Inventory Phase P1-A 盤點 custom DocType 目前 permission rows、敏感欄位 permlevel、client-side button hiding 與 server-side gate 現況；本階段只產出文件，不修改 runtime 或實際權限設定。
 
+Used Car Role Records Foundation Phase P1-B 新增中古車業務角色骨架，但不開放 custom DocType 權限、不調整 permlevel、不指派任何使用者；正式權限需等敏感欄位與 server-side action gate 設計完成後再開放。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
