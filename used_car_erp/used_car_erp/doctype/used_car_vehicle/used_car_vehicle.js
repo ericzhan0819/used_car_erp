@@ -63,6 +63,25 @@ const FORMAL_ACCOUNTING_LOCKED_STATUSES = [
   "已完成",
 ];
 
+const ACCOUNTING_TECHNICAL_FIELDS = [
+  "completed_reservation",
+  "completed_at",
+  "completed_by",
+  "completion_note",
+  "deposit_money_flow",
+  "deposit_voucher_draft",
+  "deposit_journal_entry",
+  "final_money_flow",
+  "final_voucher_draft",
+  "final_journal_entry",
+  "formal_delivery_posting_date",
+  "sales_invoice",
+  "advance_settlement_journal_entry",
+  "formal_delivery_completed_at",
+  "formal_delivery_completed_by",
+  "formal_delivery_note",
+];
+
 function apply_vehicle_form_mode(frm) {
   clear_vehicle_action_buttons(frm);
   set_vehicle_intake_intro(frm);
@@ -72,6 +91,9 @@ function apply_vehicle_form_mode(frm) {
   add_tax_metadata_comment(frm);
   add_vehicle_cost_summary_comment(frm);
   add_vehicle_profit_tax_estimate_comment(frm);
+  render_accounting_status_summary(frm);
+  apply_accounting_status_technical_field_visibility(frm);
+  add_accounting_status_technical_fields_toggle_button(frm);
 
   if (frm.is_new()) {
     set_vehicle_fields_read_only(frm, false);
@@ -222,9 +244,79 @@ function clear_vehicle_action_buttons(frm) {
     "修復 Sales Invoice 草稿連結",
     "開啟 Sales Invoice",
     "開啟預收款沖轉傳票",
+    "顯示會計技術欄位",
+    "隱藏會計技術欄位",
   ].forEach((label) => {
     frm.remove_custom_button(label);
   });
+}
+
+function render_accounting_status_summary(frm) {
+  const field = frm.get_field("accounting_status_summary_html");
+
+  if (!field) {
+    return;
+  }
+
+  const cards = [
+    ["正式交車入帳狀態", frm.doc.formal_delivery_status || "未處理"],
+    ["Sales Invoice", frm.doc.sales_invoice ? "已建立" : "未建立"],
+    ["預收款沖轉傳票", frm.doc.advance_settlement_journal_entry ? "已建立" : "未建立"],
+    ["訂金", get_accounting_flow_status(frm.doc.deposit_money_flow, frm.doc.deposit_voucher_draft, frm.doc.deposit_journal_entry)],
+    ["尾款", get_accounting_flow_status(frm.doc.final_money_flow, frm.doc.final_voucher_draft, frm.doc.final_journal_entry)],
+    ["管理毛利", format_vehicle_currency(frm.doc.gross_margin || 0)],
+  ];
+
+  field.$wrapper.html(`
+    <div class="frappe-card" style="padding: 16px; margin-bottom: 12px;">
+      <div style="font-weight: 600; margin-bottom: 12px;">會計狀態摘要</div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+        ${cards
+          .map(
+            ([label, value]) => `
+              <div style="border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 12px;">
+                <div class="text-muted" style="font-size: 12px; margin-bottom: 4px;">${frappe.utils.escape_html(label)}</div>
+                <div style="font-weight: 600;">${frappe.utils.escape_html(value)}</div>
+              </div>
+            `
+          )
+          .join("")}
+      </div>
+    </div>
+  `);
+}
+
+function get_accounting_flow_status(money_flow, voucher_draft, journal_entry) {
+  if (journal_entry) {
+    return "已入帳";
+  }
+  if (voucher_draft) {
+    return "傳票草稿";
+  }
+  if (money_flow) {
+    return "已記錄金流";
+  }
+  return "未記錄";
+}
+
+function apply_accounting_status_technical_field_visibility(frm) {
+  const show = Boolean(frm._show_accounting_technical_fields);
+  ACCOUNTING_TECHNICAL_FIELDS.forEach((fieldname) => {
+    if (frm.fields_dict[fieldname]) {
+      frm.toggle_display(fieldname, show);
+    }
+  });
+}
+
+function add_accounting_status_technical_fields_toggle_button(frm) {
+  frm.add_custom_button(
+    frm._show_accounting_technical_fields ? "隱藏會計技術欄位" : "顯示會計技術欄位",
+    () => {
+      frm._show_accounting_technical_fields = !frm._show_accounting_technical_fields;
+      apply_accounting_status_technical_field_visibility(frm);
+      frm.refresh_fields();
+    }
+  );
 }
 
 function add_formal_delivery_submit_preflight_button(frm) {

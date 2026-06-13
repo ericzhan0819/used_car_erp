@@ -85,6 +85,8 @@ Cancelled Sales Invoice Draft Relink Recovery 會在已售出車輛仍連到 can
 
 Hide Healthy Sales Invoice Recovery Button 讓「修復 Sales Invoice 草稿連結」只在 linked Sales Invoice 已取消且存在唯一 amended Draft 時顯示；健康 Draft 狀態不再顯示 recovery 按鈕。
 
+Used Car Vehicle Form Layout Refactor Phase B 新增會計狀態摘要，將訂金 / 尾款 / Sales Invoice / 預收款沖轉狀態以業務語言呈現，並預設隱藏技術欄位，必要時可切換顯示。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
