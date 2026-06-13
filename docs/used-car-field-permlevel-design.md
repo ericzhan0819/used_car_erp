@@ -274,6 +274,14 @@ This is a design target, not yet implemented.
 
 ## Implementation Strategy
 
+## Phase P1-D-A Application Boundary
+
+This phase applies target permlevels to sensitive fields.
+
+It only preserves System Manager access to higher permlevels.
+
+It does not grant Used Car business roles any DocType permissions yet.
+
 ### Phase P1-C — Documentation Only
 
 Current phase. Define field levels before opening permissions.

@@ -159,6 +159,12 @@ The app-level `hooks.py` contains commented Frappe `has_permission` examples onl
 
 ## 8. Recommended Phase P1-B Implementation Plan
 
+## Phase P1-D-A Follow-up
+
+Sensitive fields have been moved out of permlevel 0 according to the P1-C design.
+
+Used Car business roles still have no custom DocType permissions.
+
 ## Phase P1-B Follow-up
 
 Role records are created first. DocType permissions remain unchanged until sensitive field permlevels and server-side action gates are designed.

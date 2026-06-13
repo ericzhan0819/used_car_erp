@@ -99,6 +99,8 @@ Used Car Role Records Foundation Phase P1-B 新增中古車業務角色骨架，
 
 Used Car Field Permlevel Design Phase P1-C 定義中古車欄位層級：Level 0 一般營運欄位、Level 1 價格 / 成本 / 毛利欄位、Level 2 會計文件連結 / 會計金額、Level 3 稅務審核 / 例外修復欄位；本階段只產出文件，不改 DocType JSON、不開放權限。
 
+Used Car Field Permlevel Application Phase P1-D-A 依欄位權限層級設計，將價格 / 成本 / 毛利、會計文件連結與會計金額移出 permlevel 0；本階段只保留 System Manager 可存取高層級欄位，不開放中古車業務角色、不改 runtime。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)

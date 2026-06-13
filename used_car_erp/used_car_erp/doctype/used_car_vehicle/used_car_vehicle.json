@@ -133,131 +133,740 @@
   "notes"
  ],
  "fields": [
-   {"fieldname": "overview_tab", "fieldtype": "Tab Break", "label": "基本資料"},
-  {"fieldname": "vehicle_identity_section", "fieldtype": "Section Break", "label": "車輛識別"},
-  {"description": "系統儲存時自動產生，使用者不可手動填寫或修改。例如 VH-202606-0001。", "fieldname": "stock_no", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "車輛編號", "no_copy": 1, "read_only": 1, "unique": 1},
-  {"default": "草稿", "fieldname": "status", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "車輛狀態", "options": "草稿\n庫存中\n整備中\n上架中\n保留中\n已售出\n封存", "reqd": 1},
-  {"description": "車輛目前所在分店、車場、倉庫或整備廠。", "fieldname": "branch_location", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "分店 / 車輛位置"},
-  {"fieldname": "vehicle_identity_column", "fieldtype": "Column Break"},
-  {"fieldname": "license_plate", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "車牌"},
-  {"fieldname": "vin", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "車身號碼 / VIN", "unique": 1},
-  {"fieldname": "engine_no", "fieldtype": "Data", "label": "引擎號碼"},
-   {"fieldname": "vehicle_specs_tab", "fieldtype": "Section Break", "label": "車輛詳細規格"},
-  {"fieldname": "basic_specs_section", "fieldtype": "Section Break", "label": "基本規格"},
-  {"fieldname": "brand", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "廠牌"},
-  {"fieldname": "model", "fieldtype": "Data", "in_list_view": 1, "label": "車型"},
-  {"fieldname": "variant_trim", "fieldtype": "Data", "label": "車款等級"},
-  {"fieldname": "year", "fieldtype": "Int", "in_list_view": 1, "label": "年式"},
-  {"fieldname": "basic_specs_column", "fieldtype": "Column Break"},
-  {"fieldname": "manufacture_date", "fieldtype": "Date", "label": "出廠日期"},
-  {"fieldname": "license_date", "fieldtype": "Date", "label": "領牌日期"},
-  {"fieldname": "mileage_km", "fieldtype": "Int", "in_list_view": 1, "label": "里程 KM"},
-  {"fieldname": "color", "fieldtype": "Data", "label": "外觀顏色"},
-  {"fieldname": "interior_color", "fieldtype": "Data", "label": "內裝顏色"},
-  {"fieldname": "mechanical_specs_section", "fieldtype": "Section Break", "label": "機械規格"},
-  {"fieldname": "fuel_type", "fieldtype": "Select", "label": "燃料類型", "options": "汽油\n柴油\n油電\n電動\n其他"},
-  {"fieldname": "engine_cc", "fieldtype": "Float", "label": "排氣量 CC"},
-  {"fieldname": "transmission", "fieldtype": "Select", "label": "變速系統", "options": "自排\n手排\nCVT\n其他"},
-  {"fieldname": "mechanical_specs_column", "fieldtype": "Column Break"},
-  {"fieldname": "drivetrain", "fieldtype": "Select", "label": "驅動方式", "options": "2WD\n前驅\n後驅\nAWD\n4WD\n其他"},
-  {"fieldname": "doors", "fieldtype": "Int", "label": "車門數"},
-  {"fieldname": "seats", "fieldtype": "Int", "label": "座位數"},
-   {"fieldname": "purchase_tab", "fieldtype": "Tab Break", "label": "採購"},
-  {"fieldname": "purchase_information_section", "fieldtype": "Section Break", "label": "採購資訊"},
-  {"fieldname": "purchase_type", "fieldtype": "Select", "in_standard_filter": 1, "label": "採購類型", "options": "公司買進\n委售\n客戶換購\n拍賣\n其他"},
-  {"fieldname": "supplier", "fieldtype": "Link", "in_standard_filter": 1, "label": "供應商", "options": "Supplier"},
-  {"fieldname": "purchase_staff", "fieldtype": "Link", "label": "採購人員", "options": "User"},
-  {"fieldname": "source", "fieldtype": "Select", "label": "來源", "options": "來店\n介紹\n網路\n車商\n客戶換購\n拍賣\n其他"},
-  {"fieldname": "purchase_information_column", "fieldtype": "Column Break"},
-  {"fieldname": "purchase_date", "fieldtype": "Date", "label": "採購日期"},
-  {"fieldname": "expected_received_date", "fieldtype": "Date", "label": "預計進車日期"},
-  {"fieldname": "received_date", "fieldtype": "Date", "label": "實際進車日期"},
-    {"fieldname": "purchase_amounts_section", "fieldtype": "Section Break", "label": "採購金額"},
-     {"description": "購車價只代表買進車輛本身的價格，不包含整備、維修、美容、拍場、代辦或其他後續支出；15-1 估算僅以購車價為基礎。", "fieldname": "purchase_price", "fieldtype": "Currency", "in_list_view": 1, "label": "購車價"},
-   {"fieldname": "floor_price", "fieldtype": "Currency", "label": "底價"},
-   {"fieldname": "asking_price", "fieldtype": "Currency", "in_list_view": 1, "label": "開價"},
-    {"fieldname": "purchase_amounts_column", "fieldtype": "Column Break"},
-   {"fieldname": "purchase_commission", "fieldtype": "Currency", "label": "採購佣金"},
-   {"fieldname": "other_payable", "fieldtype": "Currency", "label": "其他應付"},
-   {"fieldname": "tax_metadata_section", "fieldtype": "Section Break", "label": "台灣稅務資訊"},
-   {"default": "個人", "description": "標記車輛來源，供後續判斷 15-1、一般進項、拍場需確認。", "fieldname": "purchase_source_type", "fieldtype": "Select", "label": "車源類型", "options": "個人\n同業\n拍場\n其他"},
-   {"default": "未取得", "description": "記錄買車時取得的主要憑證類型。", "fieldname": "purchase_document_type", "fieldtype": "Select", "label": "買入憑證類型", "options": "買賣合約\n讓渡書\n統一發票\n拍場單據\n匯款紀錄\n收據\n其他\n未取得"},
-   {"description": "填發票號碼、合約編號、拍場單號、匯款摘要或其他可追蹤資訊。", "fieldname": "purchase_document_no", "fieldtype": "Data", "label": "買入憑證號碼 / 備註"},
-   {"fieldname": "tax_metadata_column", "fieldtype": "Column Break"},
-   {"fieldname": "original_owner_referral_section", "fieldtype": "Section Break", "label": "原車主 / 介紹人"},
-   {"fieldname": "original_owner_name", "fieldtype": "Data", "label": "原車主姓名"},
-   {"fieldname": "original_owner_phone", "fieldtype": "Data", "label": "原車主電話"},
-   {"fieldname": "original_owner_referral_column", "fieldtype": "Column Break"},
-   {"fieldname": "referral_name", "fieldtype": "Data", "label": "介紹人姓名"},
-   {"fieldname": "referral_phone", "fieldtype": "Data", "label": "介紹人電話"},
-   {"fieldname": "purchase_note", "fieldtype": "Small Text", "label": "採購備註"},
-   {"fieldname": "sales_tab", "fieldtype": "Tab Break", "label": "售車"},
-   {"fieldname": "sales_information_section", "fieldtype": "Section Break", "label": "銷售資訊"},
-   {"fieldname": "customer", "fieldtype": "Link", "label": "客戶", "options": "Customer"},
-    {"description": "成交價屬於售車流程，不屬於採購建檔；Sales Invoice 草稿階段可修正，正式提交後需走修正 / 反轉流程。", "fieldname": "sold_price", "fieldtype": "Currency", "label": "成交價"},
-   {"fieldname": "reserved_date", "fieldtype": "Date", "label": "保留日期"},
-   {"fieldname": "sold_date", "fieldtype": "Date", "label": "成交日期"},
-   {"fieldname": "expected_delivery_date", "fieldtype": "Date", "label": "預計交車日期"},
-   {"fieldname": "delivery_date", "fieldtype": "Date", "label": "交車日期"},
-  {"fieldname": "sales_information_column", "fieldtype": "Column Break"},
-  {"fieldname": "sales_staff", "fieldtype": "Link", "label": "銷售人員", "options": "User"},
-  {"fieldname": "sales_note", "fieldtype": "Small Text", "label": "銷售備註"},
-    {"fieldname": "sales_tax_section", "fieldtype": "Section Break", "label": "售車稅務"},
-    {"default": "待確認", "description": "售車稅務模式供 15-1 / 一般扣抵 / 不可扣抵等初步判斷使用，正式申報仍以會計確認為準。", "fieldname": "vehicle_tax_mode", "fieldtype": "Select", "label": "稅務模式", "options": "待確認\n15-1 特殊扣抵\n一般發票扣抵\n不可扣抵\n拍場需確認"},
-   {"default": "待確認", "description": "標記這台車的稅務資料確認狀態；正式申報前仍需確認。", "fieldname": "tax_review_status", "fieldtype": "Select", "label": "稅務確認狀態", "options": "待補資料\n待確認\n已初步判斷\n已確認\n已調整\n已鎖定"},
-   {"description": "記錄稅務模式、憑證、15-1 適用性、拍場拆分或後續調整備註。", "fieldname": "tax_review_note", "fieldtype": "Small Text", "label": "稅務確認備註"},
-     {"fieldname": "accounting_status_tab", "fieldtype": "Tab Break", "label": "收支 / 會計狀態"},
-    {"fieldname": "accounting_status_summary_html", "fieldtype": "HTML", "label": "會計狀態摘要"},
-    {"fieldname": "sale_completion_section", "fieldtype": "Section Break", "label": "成交與金流摘要"},
-  {"fieldname": "completed_reservation", "fieldtype": "Link", "label": "成交保留單", "options": "Used Car Reservation", "read_only": 1},
-  {"fieldname": "completed_at", "fieldtype": "Datetime", "label": "成交確認時間", "read_only": 1},
-  {"fieldname": "completed_by", "fieldtype": "Link", "label": "成交確認人員", "options": "User", "read_only": 1},
-  {"fieldname": "completion_note", "fieldtype": "Small Text", "label": "成交確認備註", "read_only": 1},
-  {"fieldname": "sale_completion_column", "fieldtype": "Column Break"},
-  {"fieldname": "deposit_money_flow", "fieldtype": "Link", "label": "訂金金流紀錄", "options": "Used Car Money Flow", "read_only": 1},
-  {"fieldname": "deposit_voucher_draft", "fieldtype": "Link", "label": "訂金傳票草稿", "options": "Used Car Voucher Draft", "read_only": 1},
-  {"fieldname": "deposit_journal_entry", "fieldtype": "Link", "label": "訂金正式會計傳票", "options": "Journal Entry", "read_only": 1},
-  {"fieldname": "final_money_flow", "fieldtype": "Link", "label": "尾款金流紀錄", "options": "Used Car Money Flow", "read_only": 1},
-  {"fieldname": "final_voucher_draft", "fieldtype": "Link", "label": "尾款傳票草稿", "options": "Used Car Voucher Draft", "read_only": 1},
-  {"fieldname": "final_journal_entry", "fieldtype": "Link", "label": "尾款正式會計傳票", "options": "Journal Entry", "read_only": 1},
-   {"fieldname": "formal_delivery_section", "fieldtype": "Section Break", "label": "會計文件 / 銷售文件"},
-    {"default": "未處理", "fieldname": "formal_delivery_status", "fieldtype": "Select", "label": "會計文件狀態", "options": "未處理\n銷售發票草稿\n銷售發票已提交\n預收款沖轉草稿\n預收款沖轉已提交\n已完成", "read_only": 1},
-    {"fieldname": "formal_delivery_posting_date", "fieldtype": "Date", "label": "會計文件處理日期", "read_only": 1},
-    {"fieldname": "sales_invoice", "fieldtype": "Link", "label": "Sales Invoice", "options": "Sales Invoice", "read_only": 1},
-   {"fieldname": "advance_settlement_journal_entry", "fieldtype": "Link", "label": "預收款沖轉傳票", "options": "Journal Entry", "read_only": 1},
-   {"fieldname": "formal_delivery_column", "fieldtype": "Column Break"},
-    {"fieldname": "formal_delivery_completed_at", "fieldtype": "Datetime", "label": "會計文件完成時間", "read_only": 1},
-    {"fieldname": "formal_delivery_completed_by", "fieldtype": "Link", "label": "會計文件完成人員", "options": "User", "read_only": 1},
-    {"fieldname": "formal_delivery_note", "fieldtype": "Small Text", "label": "會計文件備註", "read_only": 1},
-    {"description": "預留給未來自動計算車輛累計成本。", "fieldname": "total_cost", "fieldtype": "Currency", "label": "累計支出", "read_only": 1},
-    {"description": "預留給未來自動計算毛利。", "fieldname": "gross_margin", "fieldtype": "Currency", "label": "管理毛利", "read_only": 1},
-   {"fieldname": "compliance_tab", "fieldtype": "Tab Break", "label": "證件 / 稅費"},
-  {"fieldname": "tax_registration_flags_section", "fieldtype": "Section Break", "label": "稅務 / 監理旗標"},
-  {"fieldname": "license_tax_paid", "fieldtype": "Check", "label": "牌照稅已繳"},
-  {"fieldname": "fuel_tax_paid", "fieldtype": "Check", "label": "燃料稅已繳"},
-  {"fieldname": "has_unpaid_loan", "fieldtype": "Check", "label": "有未清償貸款"},
-  {"fieldname": "has_tax_penalty", "fieldtype": "Check", "label": "有欠稅 / 罰款"},
-  {"fieldname": "tax_registration_flags_column", "fieldtype": "Column Break"},
-  {"fieldname": "registration_restricted", "fieldtype": "Check", "label": "禁止異動"},
-  {"fieldname": "insurance_cancelled", "fieldtype": "Check", "label": "動保已註銷"},
-  {"fieldname": "plate_cancelled", "fieldtype": "Check", "label": "已繳銷牌照"},
-  {"fieldname": "need_document_check", "fieldtype": "Check", "label": "需要證件確認"},
-  {"fieldname": "compliance_dates_section", "fieldtype": "Section Break", "label": "稅費與保險日期"},
-  {"fieldname": "license_tax_due_date", "fieldtype": "Date", "label": "牌照稅到期日"},
-  {"fieldname": "fuel_tax_due_date", "fieldtype": "Date", "label": "燃料稅到期日"},
-  {"fieldname": "insurance_expiry_date", "fieldtype": "Date", "label": "保險到期日"},
-  {"fieldname": "registration_note", "fieldtype": "Small Text", "label": "監理 / 稅務備註"},
-   {"fieldname": "erpnext_links_tab", "fieldtype": "Tab Break", "label": "系統連結"},
-  {"fieldname": "system_links_section", "fieldtype": "Section Break", "label": "系統連結"},
-  {"description": "此車輛連結的 ERPNext Item，由系統自動建立與維護，用於後續入庫、庫存、銷售與會計流程。", "fieldname": "item", "fieldtype": "Link", "label": "ERPNext 商品", "options": "Item", "read_only": 1},
-  {"description": "此車輛正式入庫後連結的 ERPNext Serial No，通常對應 VIN / 車身號碼，由系統入庫流程回寫。", "fieldname": "serial_no", "fieldtype": "Link", "label": "ERPNext 序號", "options": "Serial No", "read_only": 1},
-  {"description": "正式入庫時使用的 ERPNext Warehouse。", "fieldname": "stock_warehouse", "fieldtype": "Link", "in_standard_filter": 1, "label": "入庫倉庫", "options": "Warehouse"},
-  {"fieldname": "system_links_column", "fieldtype": "Column Break"},
-  {"description": "此車輛正式入庫時建立的 ERPNext Stock Entry，由系統入庫流程回寫。", "fieldname": "stock_entry", "fieldtype": "Link", "label": "入庫單", "options": "Stock Entry", "read_only": 1},
-  {"fieldname": "purchase_invoice", "fieldtype": "Link", "label": "採購發票", "options": "Purchase Invoice", "read_only": 1},
-  {"fieldname": "notes_tab", "fieldtype": "Tab Break", "label": "備註"},
-  {"fieldname": "internal_notes_section", "fieldtype": "Section Break", "label": "內部備註"},
-  {"fieldname": "notes", "fieldtype": "Small Text", "label": "備註"}
+  {
+   "fieldname": "overview_tab",
+   "fieldtype": "Tab Break",
+   "label": "基本資料"
+  },
+  {
+   "fieldname": "vehicle_identity_section",
+   "fieldtype": "Section Break",
+   "label": "車輛識別"
+  },
+  {
+   "description": "系統儲存時自動產生，使用者不可手動填寫或修改。例如 VH-202606-0001。",
+   "fieldname": "stock_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "車輛編號",
+   "no_copy": 1,
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "default": "草稿",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "車輛狀態",
+   "options": "草稿\n庫存中\n整備中\n上架中\n保留中\n已售出\n封存",
+   "reqd": 1
+  },
+  {
+   "description": "車輛目前所在分店、車場、倉庫或整備廠。",
+   "fieldname": "branch_location",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "分店 / 車輛位置"
+  },
+  {
+   "fieldname": "vehicle_identity_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "license_plate",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "車牌"
+  },
+  {
+   "fieldname": "vin",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "車身號碼 / VIN",
+   "unique": 1
+  },
+  {
+   "fieldname": "engine_no",
+   "fieldtype": "Data",
+   "label": "引擎號碼"
+  },
+  {
+   "fieldname": "vehicle_specs_tab",
+   "fieldtype": "Section Break",
+   "label": "車輛詳細規格"
+  },
+  {
+   "fieldname": "basic_specs_section",
+   "fieldtype": "Section Break",
+   "label": "基本規格"
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "廠牌"
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "車型"
+  },
+  {
+   "fieldname": "variant_trim",
+   "fieldtype": "Data",
+   "label": "車款等級"
+  },
+  {
+   "fieldname": "year",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "年式"
+  },
+  {
+   "fieldname": "basic_specs_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "manufacture_date",
+   "fieldtype": "Date",
+   "label": "出廠日期"
+  },
+  {
+   "fieldname": "license_date",
+   "fieldtype": "Date",
+   "label": "領牌日期"
+  },
+  {
+   "fieldname": "mileage_km",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "里程 KM"
+  },
+  {
+   "fieldname": "color",
+   "fieldtype": "Data",
+   "label": "外觀顏色"
+  },
+  {
+   "fieldname": "interior_color",
+   "fieldtype": "Data",
+   "label": "內裝顏色"
+  },
+  {
+   "fieldname": "mechanical_specs_section",
+   "fieldtype": "Section Break",
+   "label": "機械規格"
+  },
+  {
+   "fieldname": "fuel_type",
+   "fieldtype": "Select",
+   "label": "燃料類型",
+   "options": "汽油\n柴油\n油電\n電動\n其他"
+  },
+  {
+   "fieldname": "engine_cc",
+   "fieldtype": "Float",
+   "label": "排氣量 CC"
+  },
+  {
+   "fieldname": "transmission",
+   "fieldtype": "Select",
+   "label": "變速系統",
+   "options": "自排\n手排\nCVT\n其他"
+  },
+  {
+   "fieldname": "mechanical_specs_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "drivetrain",
+   "fieldtype": "Select",
+   "label": "驅動方式",
+   "options": "2WD\n前驅\n後驅\nAWD\n4WD\n其他"
+  },
+  {
+   "fieldname": "doors",
+   "fieldtype": "Int",
+   "label": "車門數"
+  },
+  {
+   "fieldname": "seats",
+   "fieldtype": "Int",
+   "label": "座位數"
+  },
+  {
+   "fieldname": "purchase_tab",
+   "fieldtype": "Tab Break",
+   "label": "採購"
+  },
+  {
+   "fieldname": "purchase_information_section",
+   "fieldtype": "Section Break",
+   "label": "採購資訊"
+  },
+  {
+   "fieldname": "purchase_type",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "採購類型",
+   "options": "公司買進\n委售\n客戶換購\n拍賣\n其他"
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "供應商",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "purchase_staff",
+   "fieldtype": "Link",
+   "label": "採購人員",
+   "options": "User"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "來源",
+   "options": "來店\n介紹\n網路\n車商\n客戶換購\n拍賣\n其他"
+  },
+  {
+   "fieldname": "purchase_information_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "purchase_date",
+   "fieldtype": "Date",
+   "label": "採購日期"
+  },
+  {
+   "fieldname": "expected_received_date",
+   "fieldtype": "Date",
+   "label": "預計進車日期"
+  },
+  {
+   "fieldname": "received_date",
+   "fieldtype": "Date",
+   "label": "實際進車日期"
+  },
+  {
+   "fieldname": "purchase_amounts_section",
+   "fieldtype": "Section Break",
+   "label": "採購金額"
+  },
+  {
+   "description": "購車價只代表買進車輛本身的價格，不包含整備、維修、美容、拍場、代辦或其他後續支出；15-1 估算僅以購車價為基礎。",
+   "fieldname": "purchase_price",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "購車價",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "floor_price",
+   "fieldtype": "Currency",
+   "label": "底價",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "asking_price",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "開價"
+  },
+  {
+   "fieldname": "purchase_amounts_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "purchase_commission",
+   "fieldtype": "Currency",
+   "label": "採購佣金"
+  },
+  {
+   "fieldname": "other_payable",
+   "fieldtype": "Currency",
+   "label": "其他應付"
+  },
+  {
+   "fieldname": "tax_metadata_section",
+   "fieldtype": "Section Break",
+   "label": "台灣稅務資訊"
+  },
+  {
+   "default": "個人",
+   "description": "標記車輛來源，供後續判斷 15-1、一般進項、拍場需確認。",
+   "fieldname": "purchase_source_type",
+   "fieldtype": "Select",
+   "label": "車源類型",
+   "options": "個人\n同業\n拍場\n其他"
+  },
+  {
+   "default": "未取得",
+   "description": "記錄買車時取得的主要憑證類型。",
+   "fieldname": "purchase_document_type",
+   "fieldtype": "Select",
+   "label": "買入憑證類型",
+   "options": "買賣合約\n讓渡書\n統一發票\n拍場單據\n匯款紀錄\n收據\n其他\n未取得"
+  },
+  {
+   "description": "填發票號碼、合約編號、拍場單號、匯款摘要或其他可追蹤資訊。",
+   "fieldname": "purchase_document_no",
+   "fieldtype": "Data",
+   "label": "買入憑證號碼 / 備註"
+  },
+  {
+   "fieldname": "tax_metadata_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "original_owner_referral_section",
+   "fieldtype": "Section Break",
+   "label": "原車主 / 介紹人"
+  },
+  {
+   "fieldname": "original_owner_name",
+   "fieldtype": "Data",
+   "label": "原車主姓名"
+  },
+  {
+   "fieldname": "original_owner_phone",
+   "fieldtype": "Data",
+   "label": "原車主電話"
+  },
+  {
+   "fieldname": "original_owner_referral_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "referral_name",
+   "fieldtype": "Data",
+   "label": "介紹人姓名"
+  },
+  {
+   "fieldname": "referral_phone",
+   "fieldtype": "Data",
+   "label": "介紹人電話"
+  },
+  {
+   "fieldname": "purchase_note",
+   "fieldtype": "Small Text",
+   "label": "採購備註"
+  },
+  {
+   "fieldname": "sales_tab",
+   "fieldtype": "Tab Break",
+   "label": "售車"
+  },
+  {
+   "fieldname": "sales_information_section",
+   "fieldtype": "Section Break",
+   "label": "銷售資訊"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "客戶",
+   "options": "Customer"
+  },
+  {
+   "description": "成交價屬於售車流程，不屬於採購建檔；Sales Invoice 草稿階段可修正，正式提交後需走修正 / 反轉流程。",
+   "fieldname": "sold_price",
+   "fieldtype": "Currency",
+   "label": "成交價",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "reserved_date",
+   "fieldtype": "Date",
+   "label": "保留日期"
+  },
+  {
+   "fieldname": "sold_date",
+   "fieldtype": "Date",
+   "label": "成交日期"
+  },
+  {
+   "fieldname": "expected_delivery_date",
+   "fieldtype": "Date",
+   "label": "預計交車日期"
+  },
+  {
+   "fieldname": "delivery_date",
+   "fieldtype": "Date",
+   "label": "交車日期"
+  },
+  {
+   "fieldname": "sales_information_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sales_staff",
+   "fieldtype": "Link",
+   "label": "銷售人員",
+   "options": "User"
+  },
+  {
+   "fieldname": "sales_note",
+   "fieldtype": "Small Text",
+   "label": "銷售備註"
+  },
+  {
+   "fieldname": "sales_tax_section",
+   "fieldtype": "Section Break",
+   "label": "售車稅務"
+  },
+  {
+   "default": "待確認",
+   "description": "售車稅務模式供 15-1 / 一般扣抵 / 不可扣抵等初步判斷使用，正式申報仍以會計確認為準。",
+   "fieldname": "vehicle_tax_mode",
+   "fieldtype": "Select",
+   "label": "稅務模式",
+   "options": "待確認\n15-1 特殊扣抵\n一般發票扣抵\n不可扣抵\n拍場需確認",
+   "permlevel": 3
+  },
+  {
+   "default": "待確認",
+   "description": "標記這台車的稅務資料確認狀態；正式申報前仍需確認。",
+   "fieldname": "tax_review_status",
+   "fieldtype": "Select",
+   "label": "稅務確認狀態",
+   "options": "待補資料\n待確認\n已初步判斷\n已確認\n已調整\n已鎖定",
+   "permlevel": 3
+  },
+  {
+   "description": "記錄稅務模式、憑證、15-1 適用性、拍場拆分或後續調整備註。",
+   "fieldname": "tax_review_note",
+   "fieldtype": "Small Text",
+   "label": "稅務確認備註",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "accounting_status_tab",
+   "fieldtype": "Tab Break",
+   "label": "收支 / 會計狀態"
+  },
+  {
+   "fieldname": "accounting_status_summary_html",
+   "fieldtype": "HTML",
+   "label": "會計狀態摘要"
+  },
+  {
+   "fieldname": "sale_completion_section",
+   "fieldtype": "Section Break",
+   "label": "成交與金流摘要"
+  },
+  {
+   "fieldname": "completed_reservation",
+   "fieldtype": "Link",
+   "label": "成交保留單",
+   "options": "Used Car Reservation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "成交確認時間",
+   "read_only": 1
+  },
+  {
+   "fieldname": "completed_by",
+   "fieldtype": "Link",
+   "label": "成交確認人員",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "completion_note",
+   "fieldtype": "Small Text",
+   "label": "成交確認備註",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sale_completion_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "deposit_money_flow",
+   "fieldtype": "Link",
+   "label": "訂金金流紀錄",
+   "options": "Used Car Money Flow",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "deposit_voucher_draft",
+   "fieldtype": "Link",
+   "label": "訂金傳票草稿",
+   "options": "Used Car Voucher Draft",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "deposit_journal_entry",
+   "fieldtype": "Link",
+   "label": "訂金正式會計傳票",
+   "options": "Journal Entry",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "final_money_flow",
+   "fieldtype": "Link",
+   "label": "尾款金流紀錄",
+   "options": "Used Car Money Flow",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "final_voucher_draft",
+   "fieldtype": "Link",
+   "label": "尾款傳票草稿",
+   "options": "Used Car Voucher Draft",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "final_journal_entry",
+   "fieldtype": "Link",
+   "label": "尾款正式會計傳票",
+   "options": "Journal Entry",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "formal_delivery_section",
+   "fieldtype": "Section Break",
+   "label": "會計文件 / 銷售文件"
+  },
+  {
+   "default": "未處理",
+   "fieldname": "formal_delivery_status",
+   "fieldtype": "Select",
+   "label": "會計文件狀態",
+   "options": "未處理\n銷售發票草稿\n銷售發票已提交\n預收款沖轉草稿\n預收款沖轉已提交\n已完成",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "formal_delivery_posting_date",
+   "fieldtype": "Date",
+   "label": "會計文件處理日期",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "advance_settlement_journal_entry",
+   "fieldtype": "Link",
+   "label": "預收款沖轉傳票",
+   "options": "Journal Entry",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "formal_delivery_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "formal_delivery_completed_at",
+   "fieldtype": "Datetime",
+   "label": "會計文件完成時間",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "formal_delivery_completed_by",
+   "fieldtype": "Link",
+   "label": "會計文件完成人員",
+   "options": "User",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "formal_delivery_note",
+   "fieldtype": "Small Text",
+   "label": "會計文件備註",
+   "read_only": 1
+  },
+  {
+   "description": "預留給未來自動計算車輛累計成本。",
+   "fieldname": "total_cost",
+   "fieldtype": "Currency",
+   "label": "累計支出",
+   "read_only": 1,
+   "permlevel": 1
+  },
+  {
+   "description": "預留給未來自動計算毛利。",
+   "fieldname": "gross_margin",
+   "fieldtype": "Currency",
+   "label": "管理毛利",
+   "read_only": 1,
+   "permlevel": 1
+  },
+  {
+   "fieldname": "compliance_tab",
+   "fieldtype": "Tab Break",
+   "label": "證件 / 稅費"
+  },
+  {
+   "fieldname": "tax_registration_flags_section",
+   "fieldtype": "Section Break",
+   "label": "稅務 / 監理旗標"
+  },
+  {
+   "fieldname": "license_tax_paid",
+   "fieldtype": "Check",
+   "label": "牌照稅已繳"
+  },
+  {
+   "fieldname": "fuel_tax_paid",
+   "fieldtype": "Check",
+   "label": "燃料稅已繳"
+  },
+  {
+   "fieldname": "has_unpaid_loan",
+   "fieldtype": "Check",
+   "label": "有未清償貸款"
+  },
+  {
+   "fieldname": "has_tax_penalty",
+   "fieldtype": "Check",
+   "label": "有欠稅 / 罰款"
+  },
+  {
+   "fieldname": "tax_registration_flags_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "registration_restricted",
+   "fieldtype": "Check",
+   "label": "禁止異動"
+  },
+  {
+   "fieldname": "insurance_cancelled",
+   "fieldtype": "Check",
+   "label": "動保已註銷"
+  },
+  {
+   "fieldname": "plate_cancelled",
+   "fieldtype": "Check",
+   "label": "已繳銷牌照"
+  },
+  {
+   "fieldname": "need_document_check",
+   "fieldtype": "Check",
+   "label": "需要證件確認"
+  },
+  {
+   "fieldname": "compliance_dates_section",
+   "fieldtype": "Section Break",
+   "label": "稅費與保險日期"
+  },
+  {
+   "fieldname": "license_tax_due_date",
+   "fieldtype": "Date",
+   "label": "牌照稅到期日"
+  },
+  {
+   "fieldname": "fuel_tax_due_date",
+   "fieldtype": "Date",
+   "label": "燃料稅到期日"
+  },
+  {
+   "fieldname": "insurance_expiry_date",
+   "fieldtype": "Date",
+   "label": "保險到期日"
+  },
+  {
+   "fieldname": "registration_note",
+   "fieldtype": "Small Text",
+   "label": "監理 / 稅務備註"
+  },
+  {
+   "fieldname": "erpnext_links_tab",
+   "fieldtype": "Tab Break",
+   "label": "系統連結"
+  },
+  {
+   "fieldname": "system_links_section",
+   "fieldtype": "Section Break",
+   "label": "系統連結"
+  },
+  {
+   "description": "此車輛連結的 ERPNext Item，由系統自動建立與維護，用於後續入庫、庫存、銷售與會計流程。",
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "ERPNext 商品",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "description": "此車輛正式入庫後連結的 ERPNext Serial No，通常對應 VIN / 車身號碼，由系統入庫流程回寫。",
+   "fieldname": "serial_no",
+   "fieldtype": "Link",
+   "label": "ERPNext 序號",
+   "options": "Serial No",
+   "read_only": 1
+  },
+  {
+   "description": "正式入庫時使用的 ERPNext Warehouse。",
+   "fieldname": "stock_warehouse",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "入庫倉庫",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "system_links_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "此車輛正式入庫時建立的 ERPNext Stock Entry，由系統入庫流程回寫。",
+   "fieldname": "stock_entry",
+   "fieldtype": "Link",
+   "label": "入庫單",
+   "options": "Stock Entry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "purchase_invoice",
+   "fieldtype": "Link",
+   "label": "採購發票",
+   "options": "Purchase Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes_tab",
+   "fieldtype": "Tab Break",
+   "label": "備註"
+  },
+  {
+   "fieldname": "internal_notes_section",
+   "fieldtype": "Section Break",
+   "label": "內部備註"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "備註"
+  }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
@@ -268,7 +877,57 @@
  "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1,
+   "permlevel": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1,
+   "permlevel": 2
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1,
+   "permlevel": 3
+  }
  ],
  "search_fields": "stock_no,license_plate,vin,brand,model",
  "show_name_in_global_search": 1,

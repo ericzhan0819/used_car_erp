@@ -18,17 +18,84 @@
   "notes"
  ],
  "fields": [
-  {"fieldname": "vehicle", "fieldtype": "Link", "in_list_view": 1, "in_standard_filter": 1, "label": "車輛", "options": "Used Car Vehicle", "reqd": 1},
-  {"default": "Today", "fieldname": "cost_date", "fieldtype": "Date", "in_list_view": 1, "label": "成本日期", "reqd": 1},
-  {"fieldname": "cost_category", "fieldtype": "Select", "in_list_view": 1, "label": "成本類型", "options": "整備\n維修\n板金\n烤漆\n美容\n拖車\n拍場費\n過戶相關\n零件\n工資\n其他", "reqd": 1},
-  {"fieldname": "amount", "fieldtype": "Currency", "in_list_view": 1, "label": "金額", "reqd": 1},
-  {"default": "單車成本", "fieldname": "capitalization_mode", "fieldtype": "Select", "in_list_view": 1, "label": "成本歸屬", "options": "單車成本\n一般營業費用\n代收代付\n不列入成本\n待確認", "reqd": 1},
-  {"fieldname": "vendor_name", "fieldtype": "Data", "label": "廠商 / 付款對象"},
-  {"default": "無憑證", "fieldname": "document_type", "fieldtype": "Select", "label": "憑證類型", "options": "統一發票\n收據\n估價單\n匯款紀錄\n拍場單據\n合約\n無憑證\n其他"},
-  {"fieldname": "document_no", "fieldtype": "Data", "label": "憑證號碼 / 備註"},
-  {"default": "待確認", "fieldname": "tax_deductibility", "fieldtype": "Select", "label": "進項稅狀態", "options": "待確認\n可扣抵\n不可扣抵\n無進項稅\n15-1 不適用此筆"},
-  {"default": "待確認", "fieldname": "review_status", "fieldtype": "Select", "label": "成本確認狀態", "options": "待補資料\n待確認\n已初步判斷\n已確認\n已調整\n已鎖定"},
-  {"fieldname": "notes", "fieldtype": "Small Text", "label": "備註"}
+  {
+   "fieldname": "vehicle",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "車輛",
+   "options": "Used Car Vehicle",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "cost_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "成本日期",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cost_category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "成本類型",
+   "options": "整備\n維修\n板金\n烤漆\n美容\n拖車\n拍場費\n過戶相關\n零件\n工資\n其他",
+   "reqd": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "金額",
+   "reqd": 1,
+   "permlevel": 1
+  },
+  {
+   "default": "單車成本",
+   "fieldname": "capitalization_mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "成本歸屬",
+   "options": "單車成本\n一般營業費用\n代收代付\n不列入成本\n待確認",
+   "reqd": 1
+  },
+  {
+   "fieldname": "vendor_name",
+   "fieldtype": "Data",
+   "label": "廠商 / 付款對象"
+  },
+  {
+   "default": "無憑證",
+   "fieldname": "document_type",
+   "fieldtype": "Select",
+   "label": "憑證類型",
+   "options": "統一發票\n收據\n估價單\n匯款紀錄\n拍場單據\n合約\n無憑證\n其他"
+  },
+  {
+   "fieldname": "document_no",
+   "fieldtype": "Data",
+   "label": "憑證號碼 / 備註"
+  },
+  {
+   "default": "待確認",
+   "fieldname": "tax_deductibility",
+   "fieldtype": "Select",
+   "label": "進項稅狀態",
+   "options": "待確認\n可扣抵\n不可扣抵\n無進項稅\n15-1 不適用此筆"
+  },
+  {
+   "default": "待確認",
+   "fieldname": "review_status",
+   "fieldtype": "Select",
+   "label": "成本確認狀態",
+   "options": "待補資料\n待確認\n已初步判斷\n已確認\n已調整\n已鎖定"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "備註"
+  }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 0,
@@ -39,7 +106,31 @@
  "name": "Used Car Vehicle Cost",
  "owner": "Administrator",
  "permissions": [
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1,
+   "permlevel": 1
+  }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",

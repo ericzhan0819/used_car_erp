@@ -51,49 +51,286 @@
   "created_by_service"
  ],
  "fields": [
-  {"fieldname": "basic_section", "fieldtype": "Section Break", "label": "基本資料"},
-  {"fieldname": "reservation_no", "fieldtype": "Data", "in_list_view": 1, "label": "保留單號", "no_copy": 1, "read_only": 1, "unique": 1},
-  {"default": "有效", "fieldname": "status", "fieldtype": "Select", "in_list_view": 1, "label": "保留狀態", "options": "有效\n已取消\n已完成", "read_only": 1},
-  {"fieldname": "vehicle", "fieldtype": "Link", "in_list_view": 1, "label": "車輛", "options": "Used Car Vehicle", "reqd": 1},
-  {"fieldname": "basic_column", "fieldtype": "Column Break"},
-  {"fieldname": "stock_no", "fieldtype": "Data", "in_list_view": 1, "label": "車輛編號", "read_only": 1},
-  {"fieldname": "vehicle_title", "fieldtype": "Data", "label": "車輛名稱", "read_only": 1},
-  {"fieldname": "customer_section", "fieldtype": "Section Break", "label": "客戶資料"},
-  {"fieldname": "customer", "fieldtype": "Link", "in_list_view": 1, "label": "ERPNext 客戶", "options": "Customer", "read_only": 1},
-  {"fieldname": "customer_column", "fieldtype": "Column Break"},
-  {"fieldname": "customer_name", "fieldtype": "Data", "in_list_view": 1, "label": "客戶姓名", "reqd": 1},
-  {"fieldname": "customer_phone", "fieldtype": "Data", "in_list_view": 1, "label": "客戶電話", "reqd": 1},
-  {"fieldname": "deposit_section", "fieldtype": "Section Break", "label": "訂金資料"},
-  {"fieldname": "deposit_amount", "fieldtype": "Currency", "in_list_view": 1, "label": "訂金金額", "reqd": 1},
-  {"default": "Today", "fieldname": "deposit_date", "fieldtype": "Date", "label": "訂金日期", "reqd": 1},
-  {"fieldname": "payment_method", "fieldtype": "Select", "label": "付款方式", "options": "現金\n匯款\n信用卡\n其他", "reqd": 1},
-  {"fieldname": "deposit_column", "fieldtype": "Column Break"},
-  {"fieldname": "payment_reference", "fieldtype": "Data", "label": "付款備註 / 末五碼"},
-  {"fieldname": "notes", "fieldtype": "Small Text", "label": "備註"},
-  {"fieldname": "final_payment_section", "fieldtype": "Section Break", "label": "尾款資料"},
-  {"fieldname": "final_payment_amount", "fieldtype": "Currency", "in_list_view": 1, "label": "尾款金額", "read_only": 1},
-  {"fieldname": "final_payment_date", "fieldtype": "Date", "label": "尾款日期", "read_only": 1},
-  {"fieldname": "final_payment_method", "fieldtype": "Select", "label": "尾款付款方式", "options": "現金\n匯款\n信用卡\n其他", "read_only": 1},
-  {"fieldname": "final_payment_column", "fieldtype": "Column Break"},
-  {"fieldname": "final_payment_reference", "fieldtype": "Data", "label": "尾款付款備註 / 末五碼", "read_only": 1},
-  {"fieldname": "final_payment_notes", "fieldtype": "Small Text", "label": "尾款備註", "read_only": 1},
-  {"fieldname": "accounting_section", "fieldtype": "Section Break", "label": "金流與會計"},
-  {"fieldname": "money_flow", "fieldtype": "Link", "in_list_view": 1, "label": "訂金金流紀錄", "options": "Used Car Money Flow", "read_only": 1},
-  {"fieldname": "voucher_draft", "fieldtype": "Link", "in_list_view": 1, "label": "訂金傳票草稿", "options": "Used Car Voucher Draft", "read_only": 1},
-  {"fieldname": "journal_entry", "fieldtype": "Link", "label": "訂金正式會計傳票", "options": "Journal Entry", "read_only": 1},
-  {"fieldname": "final_money_flow", "fieldtype": "Link", "in_list_view": 1, "label": "尾款金流紀錄", "options": "Used Car Money Flow", "read_only": 1},
-  {"fieldname": "final_voucher_draft", "fieldtype": "Link", "in_list_view": 1, "label": "尾款傳票草稿", "options": "Used Car Voucher Draft", "read_only": 1},
-  {"fieldname": "final_journal_entry", "fieldtype": "Link", "label": "尾款正式會計傳票", "options": "Journal Entry", "read_only": 1},
-  {"fieldname": "completion_section", "fieldtype": "Section Break", "label": "成交確認"},
-  {"fieldname": "completed_at", "fieldtype": "Datetime", "label": "成交確認時間", "read_only": 1},
-  {"fieldname": "completed_by", "fieldtype": "Link", "label": "成交確認人員", "options": "User", "read_only": 1},
-  {"fieldname": "completion_note", "fieldtype": "Small Text", "label": "成交確認備註", "read_only": 1},
-  {"fieldname": "cancellation_section", "fieldtype": "Section Break", "label": "取消資料"},
-  {"fieldname": "cancellation_reason", "fieldtype": "Small Text", "label": "取消原因", "read_only": 1},
-  {"fieldname": "cancelled_at", "fieldtype": "Datetime", "label": "取消時間", "read_only": 1},
-  {"fieldname": "cancelled_by", "fieldtype": "Link", "label": "取消人員", "options": "User", "read_only": 1},
-  {"fieldname": "system_section", "fieldtype": "Section Break", "label": "系統欄位"},
-  {"default": "1", "fieldname": "created_by_service", "fieldtype": "Check", "label": "由系統流程建立", "read_only": 1}
+  {
+   "fieldname": "basic_section",
+   "fieldtype": "Section Break",
+   "label": "基本資料"
+  },
+  {
+   "fieldname": "reservation_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "保留單號",
+   "no_copy": 1,
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "default": "有效",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "保留狀態",
+   "options": "有效\n已取消\n已完成",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vehicle",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "車輛",
+   "options": "Used Car Vehicle",
+   "reqd": 1
+  },
+  {
+   "fieldname": "basic_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "stock_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "車輛編號",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vehicle_title",
+   "fieldtype": "Data",
+   "label": "車輛名稱",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_section",
+   "fieldtype": "Section Break",
+   "label": "客戶資料"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "ERPNext 客戶",
+   "options": "Customer",
+   "read_only": 1,
+   "permlevel": 1
+  },
+  {
+   "fieldname": "customer_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "客戶姓名",
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer_phone",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "客戶電話",
+   "reqd": 1
+  },
+  {
+   "fieldname": "deposit_section",
+   "fieldtype": "Section Break",
+   "label": "訂金資料"
+  },
+  {
+   "fieldname": "deposit_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "訂金金額",
+   "reqd": 1,
+   "permlevel": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "deposit_date",
+   "fieldtype": "Date",
+   "label": "訂金日期",
+   "reqd": 1
+  },
+  {
+   "fieldname": "payment_method",
+   "fieldtype": "Select",
+   "label": "付款方式",
+   "options": "現金\n匯款\n信用卡\n其他",
+   "reqd": 1
+  },
+  {
+   "fieldname": "deposit_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payment_reference",
+   "fieldtype": "Data",
+   "label": "付款備註 / 末五碼"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "備註"
+  },
+  {
+   "fieldname": "final_payment_section",
+   "fieldtype": "Section Break",
+   "label": "尾款資料"
+  },
+  {
+   "fieldname": "final_payment_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "尾款金額",
+   "read_only": 1,
+   "permlevel": 1
+  },
+  {
+   "fieldname": "final_payment_date",
+   "fieldtype": "Date",
+   "label": "尾款日期",
+   "read_only": 1
+  },
+  {
+   "fieldname": "final_payment_method",
+   "fieldtype": "Select",
+   "label": "尾款付款方式",
+   "options": "現金\n匯款\n信用卡\n其他",
+   "read_only": 1
+  },
+  {
+   "fieldname": "final_payment_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "final_payment_reference",
+   "fieldtype": "Data",
+   "label": "尾款付款備註 / 末五碼",
+   "read_only": 1
+  },
+  {
+   "fieldname": "final_payment_notes",
+   "fieldtype": "Small Text",
+   "label": "尾款備註",
+   "read_only": 1
+  },
+  {
+   "fieldname": "accounting_section",
+   "fieldtype": "Section Break",
+   "label": "金流與會計"
+  },
+  {
+   "fieldname": "money_flow",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "訂金金流紀錄",
+   "options": "Used Car Money Flow",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "voucher_draft",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "訂金傳票草稿",
+   "options": "Used Car Voucher Draft",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "journal_entry",
+   "fieldtype": "Link",
+   "label": "訂金正式會計傳票",
+   "options": "Journal Entry",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "final_money_flow",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "尾款金流紀錄",
+   "options": "Used Car Money Flow",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "final_voucher_draft",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "尾款傳票草稿",
+   "options": "Used Car Voucher Draft",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "final_journal_entry",
+   "fieldtype": "Link",
+   "label": "尾款正式會計傳票",
+   "options": "Journal Entry",
+   "read_only": 1,
+   "permlevel": 2
+  },
+  {
+   "fieldname": "completion_section",
+   "fieldtype": "Section Break",
+   "label": "成交確認"
+  },
+  {
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "成交確認時間",
+   "read_only": 1
+  },
+  {
+   "fieldname": "completed_by",
+   "fieldtype": "Link",
+   "label": "成交確認人員",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "completion_note",
+   "fieldtype": "Small Text",
+   "label": "成交確認備註",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancellation_section",
+   "fieldtype": "Section Break",
+   "label": "取消資料"
+  },
+  {
+   "fieldname": "cancellation_reason",
+   "fieldtype": "Small Text",
+   "label": "取消原因",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancelled_at",
+   "fieldtype": "Datetime",
+   "label": "取消時間",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancelled_by",
+   "fieldtype": "Link",
+   "label": "取消人員",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "system_section",
+   "fieldtype": "Section Break",
+   "label": "系統欄位"
+  },
+  {
+   "default": "1",
+   "fieldname": "created_by_service",
+   "fieldtype": "Check",
+   "label": "由系統流程建立",
+   "read_only": 1
+  }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 0,
@@ -105,7 +342,44 @@
  "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1,
+   "permlevel": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1,
+   "permlevel": 2
+  }
  ],
  "search_fields": "reservation_no,vehicle,customer_name,customer_phone,status",
  "show_name_in_global_search": 1,
