@@ -77,6 +77,8 @@ Sold Vehicle Secondary Button Cleanup 已移除已售出車輛頁的成本、損
 
 Sale Workflow Editability Fix 釐清 business sold state 與 formal accounting locked state。成交價、客戶、售車日期等售車事實在正式會計鎖定前可於售車流程修正；若 Sales Invoice 草稿已存在，需同步更新草稿或阻止不一致儲存。Sales Invoice 已提交後，售車核心欄位不允許直接修改，後續需走修正 / 反轉流程。
 
+Cancelled Sales Invoice Draft Relink Recovery 會在已售出車輛仍連到 cancelled Sales Invoice、但存在 amended Draft Sales Invoice 時，提供安全修復流程，將 vehicle.sales_invoice relink 到 replacement draft，並在必要時回填 customer / sold_price，避免售車流程編輯被錯誤鎖定。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)

@@ -30,12 +30,16 @@ FORMAL_ACCOUNTING_LOCKED_STATUSES = {
 SUBMIT_ALLOWED_ROLES = {"System Manager", "Accounts Manager", "Accounts User"}
 SETTLEMENT_DRAFT_ALLOWED_ROLES = {"System Manager", "Accounts Manager", "Accounts User"}
 SETTLEMENT_SUBMIT_ALLOWED_ROLES = {"System Manager", "Accounts Manager", "Accounts User"}
+RECOVERY_ALLOWED_ROLES = {"System Manager", "Accounts Manager", "Accounts User"}
 SETTLEMENT_BLOCKED_MESSAGE = "預收款沖轉傳票草稿建立前檢查未通過。"
 SETTLEMENT_SUBMIT_BLOCKED_MESSAGE = "預收款沖轉 Journal Entry 提交前檢查未通過。"
 SETTLEMENT_LINK_BLOCKED_REASON = "訂金或尾款入帳連結尚未完整，無法建立預收款沖轉草稿。"
 SETTLEMENT_STRUCTURE_BLOCKED_REASON = "預收款沖轉 Journal Entry 分錄結構與 Phase 3C 草稿規格不一致。"
 SETTLEMENT_RECEIVABLE_BLOCKED_REASON = "預收款沖轉 Journal Entry 應收帳款科目與 Sales Invoice 不一致。"
 SETTLEMENT_AMOUNT_BLOCKED_REASON = "預收款沖轉 Journal Entry 金額與 Sales Invoice 不一致，請先人工確認。"
+SUBMITTED_SALES_INVOICE_LOCKED_MESSAGE = "Sales Invoice 已提交，售車資料已正式鎖定。後續需透過修正 / 反轉流程處理。"
+CANCELLED_SALES_INVOICE_RELINK_MESSAGE = "Linked Sales Invoice 已取消。請先修復 Sales Invoice 草稿連結，再修改售車資料。"
+MISSING_SALES_INVOICE_LINK_MESSAGE = "Sales Invoice 連結不存在，請先人工確認正式交車資料。"
 
 
 def is_vehicle_formally_accounting_locked(vehicle) -> bool:
@@ -64,15 +68,15 @@ def is_vehicle_sale_workflow_editable(vehicle) -> bool:
 
 def sync_sales_invoice_draft_from_vehicle(vehicle) -> dict:
 	if not is_vehicle_sale_workflow_editable(vehicle):
-		frappe.throw("Sales Invoice 已提交，售車資料已正式鎖定。後續需透過修正 / 反轉流程處理。")
+		frappe.throw(_get_sales_invoice_draft_sync_block_message(vehicle))
 	if not vehicle.get("sales_invoice"):
 		return {"synced": False, "reason": "no_sales_invoice"}
 	if not frappe.db.exists("Sales Invoice", vehicle.sales_invoice):
-		frappe.throw("Sales Invoice 草稿不存在，請先人工確認正式交車資料。")
+		frappe.throw(MISSING_SALES_INVOICE_LINK_MESSAGE)
 
 	invoice = frappe.get_doc("Sales Invoice", vehicle.sales_invoice)
 	if invoice.docstatus != 0:
-		frappe.throw("Sales Invoice 已提交，售車資料已正式鎖定。後續需透過修正 / 反轉流程處理。")
+		frappe.throw(_get_sales_invoice_docstatus_block_message(invoice.docstatus))
 	if not invoice.items or len(invoice.items) != 1:
 		frappe.throw("Sales Invoice 草稿 item 結構不符合單車銷售同步條件，請先人工確認草稿。")
 
@@ -107,6 +111,80 @@ def sync_sales_invoice_draft_from_vehicle(vehicle) -> dict:
 		"customer": invoice.customer,
 		"sold_price": sold_price,
 	}
+
+
+def recover_cancelled_sales_invoice_draft_link(vehicle_name: str) -> dict:
+	permission_blocked = _require_cancelled_sales_invoice_recovery_permission()
+	if permission_blocked:
+		return _blocked_recovery_result(vehicle_name, [permission_blocked])
+
+	vehicle = frappe.get_doc("Used Car Vehicle", vehicle_name)
+	blocked_reasons = _validate_cancelled_sales_invoice_recovery_vehicle_gate(vehicle)
+	if blocked_reasons:
+		return _blocked_recovery_result(vehicle.name, blocked_reasons, vehicle=vehicle)
+
+	old_sales_invoice_name = vehicle.sales_invoice
+	old_sales_invoice = frappe.get_doc("Sales Invoice", old_sales_invoice_name)
+	if old_sales_invoice.docstatus == 1:
+		return _blocked_recovery_result(vehicle.name, [SUBMITTED_SALES_INVOICE_LOCKED_MESSAGE], vehicle=vehicle)
+	if old_sales_invoice.docstatus != 2 or old_sales_invoice.status != "Cancelled":
+		return _blocked_recovery_result(vehicle.name, ["Linked Sales Invoice 不是已取消狀態，無法執行草稿連結修復。"], vehicle=vehicle)
+
+	replacement_drafts = _find_replacement_sales_invoice_drafts(old_sales_invoice_name)
+	if not replacement_drafts:
+		return _blocked_recovery_result(vehicle.name, ["找不到 replacement Draft Sales Invoice。"], vehicle=vehicle)
+	if len(replacement_drafts) > 1:
+		return _blocked_recovery_result(vehicle.name, ["找到多張 replacement Draft，需人工確認。"], vehicle=vehicle)
+
+	replacement_draft = replacement_drafts[0]
+	before = {
+		"sales_invoice": vehicle.sales_invoice,
+		"customer": vehicle.customer,
+		"sold_price": flt(vehicle.sold_price),
+		"sold_date": vehicle.sold_date,
+		"formal_delivery_status": vehicle.formal_delivery_status,
+	}
+
+	vehicle.sales_invoice = replacement_draft.name
+	if not vehicle.customer and replacement_draft.customer:
+		vehicle.customer = replacement_draft.customer
+	if flt(vehicle.sold_price) <= 0 and flt(replacement_draft.grand_total) > 0:
+		vehicle.sold_price = replacement_draft.grand_total
+	if not vehicle.sold_date and replacement_draft.posting_date:
+		vehicle.sold_date = replacement_draft.posting_date
+	vehicle.formal_delivery_status = "銷售發票草稿"
+	# 此修復只把 cancelled SI 改連到 ERPNext amended draft；使用正式 flags 避免被人工欄位保護誤判為手動竄改。
+	vehicle.flags.ignore_formal_delivery_validation = True
+	vehicle.flags.ignore_sale_invoice_draft_sync = True
+	vehicle.save()
+
+	_add_formal_delivery_comment(
+		vehicle.name,
+		f"Cancelled Sales Invoice Draft Relink Recovery 已將 Sales Invoice {old_sales_invoice_name} 改連至草稿 {replacement_draft.name}。",
+	)
+
+	return {
+		"vehicle": vehicle.name,
+		"status": "recovered",
+		"recovered": True,
+		"old_sales_invoice": old_sales_invoice_name,
+		"new_sales_invoice": replacement_draft.name,
+		"replacement_customer": replacement_draft.customer,
+		"replacement_grand_total": flt(replacement_draft.grand_total),
+		"before": before,
+		"after": {
+			"sales_invoice": vehicle.sales_invoice,
+			"customer": vehicle.customer,
+			"sold_price": flt(vehicle.sold_price),
+			"sold_date": vehicle.sold_date,
+			"formal_delivery_status": vehicle.formal_delivery_status,
+		},
+	}
+
+
+@frappe.whitelist()
+def recover_sales_invoice_draft_link_for_vehicle(vehicle_name: str):
+	return recover_cancelled_sales_invoice_draft_link(vehicle_name)
 
 
 def preflight_formal_delivery_submit(vehicle_name: str) -> dict:
@@ -477,6 +555,75 @@ def verify_sale_workflow_editability_service():
 		frappe.db.commit()
 
 
+def verify_cancelled_sales_invoice_draft_relink_service():
+	vehicle_names = []
+	sales_invoice_names = []
+	base = frappe.generate_hash(length=8)
+
+	try:
+		cancelled_si = _insert_verify_sales_invoice_stub(f"VERIFY-CANCELLED-{base}", 2, "Cancelled")
+		draft_si = _insert_verify_sales_invoice_stub(
+			f"VERIFY-CANCELLED-{base}-1",
+			0,
+			"Draft",
+			amended_from=cancelled_si.name,
+			customer="小美",
+			grand_total=310000,
+		)
+		vehicle = _insert_verify_relink_vehicle(f"VERIFY-RELINK-{base}", cancelled_si.name, customer=None, sold_price=0)
+		vehicle_names.append(vehicle.name)
+		sales_invoice_names.extend([cancelled_si.name, draft_si.name])
+
+		result = recover_cancelled_sales_invoice_draft_link(vehicle.name)
+		vehicle.reload()
+		if not result.get("recovered") or vehicle.sales_invoice != draft_si.name:
+			frappe.throw("Cancelled Sales Invoice recovery should relink vehicle to the only amended draft.")
+		if vehicle.customer != "小美" or flt(vehicle.sold_price) != 310000:
+			frappe.throw("Cancelled Sales Invoice recovery should backfill empty customer and sold_price.")
+
+		submitted_si = _insert_verify_sales_invoice_stub(f"VERIFY-SUBMITTED-{base}", 1, "Submitted")
+		submitted_vehicle = _insert_verify_relink_vehicle(f"VERIFY-RELINK-SUBMITTED-{base}", submitted_si.name)
+		vehicle_names.append(submitted_vehicle.name)
+		sales_invoice_names.append(submitted_si.name)
+		submitted_result = recover_cancelled_sales_invoice_draft_link(submitted_vehicle.name)
+		if submitted_result.get("status") != "blocked" or submitted_result.get("recovered"):
+			frappe.throw("Submitted Sales Invoice recovery should be blocked.")
+
+		missing_cancelled_si = _insert_verify_sales_invoice_stub(f"VERIFY-MISSING-{base}", 2, "Cancelled")
+		missing_vehicle = _insert_verify_relink_vehicle(f"VERIFY-RELINK-MISSING-{base}", missing_cancelled_si.name)
+		vehicle_names.append(missing_vehicle.name)
+		sales_invoice_names.append(missing_cancelled_si.name)
+		missing_result = recover_cancelled_sales_invoice_draft_link(missing_vehicle.name)
+		if missing_result.get("status") != "blocked":
+			frappe.throw("Missing amended draft recovery should be blocked.")
+
+		multi_cancelled_si = _insert_verify_sales_invoice_stub(f"VERIFY-MULTI-{base}", 2, "Cancelled")
+		multi_draft_1 = _insert_verify_sales_invoice_stub(f"VERIFY-MULTI-{base}-1", 0, "Draft", amended_from=multi_cancelled_si.name)
+		multi_draft_2 = _insert_verify_sales_invoice_stub(f"VERIFY-MULTI-{base}-2", 0, "Draft", amended_from=multi_cancelled_si.name)
+		multi_vehicle = _insert_verify_relink_vehicle(f"VERIFY-RELINK-MULTI-{base}", multi_cancelled_si.name)
+		vehicle_names.append(multi_vehicle.name)
+		sales_invoice_names.extend([multi_cancelled_si.name, multi_draft_1.name, multi_draft_2.name])
+		multi_result = recover_cancelled_sales_invoice_draft_link(multi_vehicle.name)
+		if multi_result.get("status") != "blocked":
+			frappe.throw("Multiple amended draft recovery should be blocked.")
+
+		return {
+			"status": "passed",
+			"relink_success": result,
+			"submitted_blocked": submitted_result,
+			"missing_draft_blocked": missing_result,
+			"multiple_draft_blocked": multi_result,
+			"cleaned_up": True,
+		}
+	finally:
+		for vehicle_name in vehicle_names:
+			if frappe.db.exists("Used Car Vehicle", vehicle_name):
+				frappe.delete_doc("Used Car Vehicle", vehicle_name, force=True, ignore_permissions=True)
+		for sales_invoice_name in sales_invoice_names:
+			frappe.db.delete("Sales Invoice", {"name": sales_invoice_name})
+		frappe.db.commit()
+
+
 def verify_advance_settlement_journal_entry_draft_service():
 	vehicle_name = None
 	before_counts = _settlement_restricted_doc_counts()
@@ -598,6 +745,114 @@ def _require_advance_settlement_submit_permission():
 		return None
 	# 未來應改用 formal_delivery.submit_settlement 權限鍵；目前先用會計層級角色避免 Sales 角色提交會計沖轉傳票。
 	return "只有 Administrator、System Manager、Accounts Manager 或 Accounts User 可提交預收款沖轉 Journal Entry。"
+
+
+def _require_cancelled_sales_invoice_recovery_permission():
+	if frappe.session.user == "Administrator":
+		return None
+	user_roles = set(frappe.get_roles(frappe.session.user))
+	if user_roles.intersection(RECOVERY_ALLOWED_ROLES):
+		return None
+	# recovery 會改寫正式文件連結，限制於系統管理與會計角色以降低錯連發票造成的會計資料風險。
+	return "只有 Administrator、System Manager、Accounts Manager 或 Accounts User 可修復 Sales Invoice 草稿連結。"
+
+
+def _validate_cancelled_sales_invoice_recovery_vehicle_gate(vehicle):
+	reasons = []
+	if vehicle.status != "已售出":
+		reasons.append("車輛狀態必須為已售出。")
+	if vehicle.formal_delivery_status not in UNLOCKED_SALE_WORKFLOW_STATUSES:
+		reasons.append("正式交車入帳狀態必須為未處理或銷售發票草稿。")
+	if not vehicle.sales_invoice:
+		reasons.append("車輛尚未連結 Sales Invoice。")
+	elif not frappe.db.exists("Sales Invoice", vehicle.sales_invoice):
+		reasons.append(MISSING_SALES_INVOICE_LINK_MESSAGE)
+	return reasons
+
+
+def _find_replacement_sales_invoice_drafts(old_sales_invoice_name):
+	return frappe.get_all(
+		"Sales Invoice",
+		filters={"amended_from": old_sales_invoice_name, "docstatus": 0},
+		fields=["name", "grand_total", "customer", "posting_date", "docstatus"],
+		order_by="modified desc",
+		limit=2,
+	)
+
+
+def _blocked_recovery_result(vehicle_name, blocked_reasons, vehicle=None):
+	if vehicle:
+		_add_formal_delivery_comment(vehicle.name, f"Sales Invoice 草稿連結修復未執行。 {' '.join(blocked_reasons)}")
+	return {
+		"vehicle": vehicle.name if vehicle else vehicle_name,
+		"status": "blocked",
+		"recovered": False,
+		"message": "Sales Invoice 草稿連結修復未執行。",
+		"blocked_reasons": blocked_reasons,
+	}
+
+
+def _get_sales_invoice_draft_sync_block_message(vehicle):
+	if not vehicle.get("sales_invoice"):
+		return MISSING_SALES_INVOICE_LINK_MESSAGE
+	if not frappe.db.exists("Sales Invoice", vehicle.sales_invoice):
+		return MISSING_SALES_INVOICE_LINK_MESSAGE
+	docstatus = frappe.db.get_value("Sales Invoice", vehicle.sales_invoice, "docstatus")
+	return _get_sales_invoice_docstatus_block_message(docstatus)
+
+
+def _get_sales_invoice_docstatus_block_message(docstatus):
+	if docstatus == 1:
+		return SUBMITTED_SALES_INVOICE_LOCKED_MESSAGE
+	if docstatus == 2:
+		return CANCELLED_SALES_INVOICE_RELINK_MESSAGE
+	return "Sales Invoice 草稿狀態不允許同步，請先人工確認正式交車資料。"
+
+
+def _insert_verify_sales_invoice_stub(name, docstatus, status, amended_from=None, customer="小美", grand_total=310000):
+	invoice = frappe.get_doc(
+		{
+			"doctype": "Sales Invoice",
+			"name": name,
+			"docstatus": docstatus,
+			"status": status,
+			"customer": customer,
+			"grand_total": grand_total,
+			"posting_date": now_datetime().date(),
+			"amended_from": amended_from,
+		}
+	)
+	invoice.db_insert()
+	return frappe._dict(
+		name=name,
+		docstatus=docstatus,
+		status=status,
+		customer=customer,
+		grand_total=grand_total,
+		posting_date=now_datetime().date(),
+		amended_from=amended_from,
+	)
+
+
+def _insert_verify_relink_vehicle(name, sales_invoice, customer="既有客戶", sold_price=1):
+	vehicle = frappe.get_doc(
+		{
+			"doctype": "Used Car Vehicle",
+			"brand": "Toyota",
+			"model": "Altis",
+			"year": 2020,
+			"license_plate": f"{name}-PLATE",
+			"vin": f"{name}-{frappe.generate_hash(length=6)}",
+			"status": "已售出",
+			"formal_delivery_status": "銷售發票草稿",
+			"sales_invoice": sales_invoice,
+			"customer": customer,
+			"sold_price": sold_price,
+			"purchase_price": 500000,
+		}
+	)
+	vehicle.flags.ignore_formal_delivery_validation = True
+	return vehicle.insert(ignore_links=True)
 
 
 def _validate_advance_settlement_preconditions(vehicle, sales_invoice):

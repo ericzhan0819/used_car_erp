@@ -3,6 +3,9 @@ from frappe.model.document import Document
 from frappe.utils import nowdate
 
 from used_car_erp.used_car_erp.services.vehicle_formal_delivery_service import (
+	CANCELLED_SALES_INVOICE_RELINK_MESSAGE,
+	MISSING_SALES_INVOICE_LINK_MESSAGE,
+	SUBMITTED_SALES_INVOICE_LOCKED_MESSAGE,
 	is_vehicle_formally_accounting_locked,
 	sync_sales_invoice_draft_from_vehicle,
 )
@@ -106,7 +109,7 @@ class UsedCarVehicle(Document):
 			if not meta.has_field(fieldname) or not self.has_value_changed(fieldname):
 				continue
 			# 已提交的正式銷售文件代表會計與庫存已鎖定，直接改售車事實會造成 IDOR 式資料不一致與會計錯帳風險。
-			frappe.throw("Sales Invoice 已提交，售車資料已正式鎖定。後續需透過修正 / 反轉流程處理。")
+			frappe.throw(_get_locked_sale_workflow_message(self))
 
 	def _sync_sales_invoice_draft_when_sale_workflow_changes(self):
 		if self.is_new() or self.flags.ignore_sale_invoice_draft_sync:
@@ -145,6 +148,15 @@ def _get_next_stock_no():
 			continue
 
 	return f"{prefix}{max_number + 1:04d}"
+
+
+def _get_locked_sale_workflow_message(vehicle):
+	if not vehicle.get("sales_invoice") or not frappe.db.exists("Sales Invoice", vehicle.sales_invoice):
+		return MISSING_SALES_INVOICE_LINK_MESSAGE
+	docstatus = frappe.db.get_value("Sales Invoice", vehicle.sales_invoice, "docstatus")
+	if docstatus == 2:
+		return CANCELLED_SALES_INVOICE_RELINK_MESSAGE
+	return SUBMITTED_SALES_INVOICE_LOCKED_MESSAGE
 
 
 def verify_test_vehicle_insert():
