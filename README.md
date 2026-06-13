@@ -113,6 +113,8 @@ Used Car Controlled Write Bypass Design Phase P1-F-3 定義 action-gated、servi
 
 Used Car Controlled Write Bypass Phase P1-F-3-A 已將 sales reservation flow 接上 service-controlled writes，使通過 action gate 的 Sales / Manager / Owner 可透過服務流程建立保留單、訂金 / 尾款金流、自動產生對應傳票草稿、取消保留與確認成交；本階段仍不放寬 DocPerm、不修改 DocType JSON、不新增 Role、不碰 Sales Invoice / Journal Entry / Stock Entry / 稅務 / 成本敏感流程。
 
+Sales Reservation Controlled Write Manual QA Phase P1-F-3-A-QA 新增 sales reservation flow 手動 QA 清單，用於驗證 Sales / Manager / Owner 可透過 service workflow 完成保留、金流、取消與成交確認，同時確認 Sales 不能越權確認傳票、建立 Sales Invoice、修改敏感欄位或直接操作會計 / 庫存文件。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -128,6 +130,7 @@ Manual QA checklist:
 
 - [訂金保留到會計入帳手動 QA 清單](docs/deposit-accounting-manual-qa-checklist.md)
 - [尾款收款金流手動 QA 清單](docs/final-payment-money-flow-manual-qa-checklist.md)
+- [Sales Reservation Controlled Write 手動 QA 清單](docs/sales-reservation-controlled-write-manual-qa-checklist.md)
 
 ### Installation
 
