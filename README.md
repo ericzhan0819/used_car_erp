@@ -79,6 +79,8 @@ Sale Workflow Editability Fix 釐清 business sold state 與 formal accounting l
 
 Used Car Vehicle Form Layout Refactor Phase A 已將車輛表單改為業務導向分區：基本資料、採購、售車、收支 / 會計狀態、證件 / 稅費、系統連結；成交價移至售車區，購車價 / 底價 / 開價移至採購區，Sales Invoice / Journal Entry 等技術連結集中於收支 / 會計狀態區。
 
+Used Car Vehicle Layout Order Cleanup 已同步 field_order 與 fields[] 實際順序，移除基本資料中的價格摘要殘留，確保購車價 / 底價 / 開價位於採購區、成交價位於售車區、累計支出 / 管理毛利位於收支 / 會計狀態區。
+
 Cancelled Sales Invoice Draft Relink Recovery 會在已售出車輛仍連到 cancelled Sales Invoice、但存在 amended Draft Sales Invoice 時，提供安全修復流程，將 vehicle.sales_invoice relink 到 replacement draft，並在必要時回填 customer / sold_price，避免售車流程編輯被錯誤鎖定。
 
 Hide Healthy Sales Invoice Recovery Button 讓「修復 Sales Invoice 草稿連結」只在 linked Sales Invoice 已取消且存在唯一 amended Draft 時顯示；健康 Draft 狀態不再顯示 recovery 按鈕。
