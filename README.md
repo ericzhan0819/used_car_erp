@@ -121,6 +121,8 @@ Used Car Vehicle Reserved Status Source Fix Phase P1-UX-1A 修正保留中狀態
 
 P1-TAX-0：Simplified Vehicle Tax Evidence Boundary 已將車輛頁稅務邊界簡化為買入憑證判斷：`purchase_document_type = 統一發票` 推導 `一般發票扣抵`；未取得、買賣合約、讓渡書、匯款紀錄、收據推導 `15-1 特殊扣抵`；拍場、其他或空值會阻擋 Sales Invoice 草稿建立直到會計確認。車輛頁不再把稅額估算作為主要 workflow card 顯示，且本階段尚未 wiring Sales Invoice tax template，保留給 P1-TAX-1。
 
+P1-ACC-1：Taiwan Accounting Item Code DocType + MVP Seed 新增台灣官方會計項目代號 master data，使用官方 code 作為唯一鍵，允許相同中文名稱對應不同代號，例如 `0100005 營業成本` 與 `0300090 營業成本` 可同時存在；本階段不修改 ERPNext Chart of Accounts、不 disable root account、不建立 Account mapping、不影響 Sales Invoice / Journal Entry runtime。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -131,6 +133,7 @@ Decision documents:
 - [中古車欄位權限層級設計](docs/used-car-field-permlevel-design.md)
 - [中古車 Server-side Action Gate 設計](docs/used-car-server-side-action-gate-design.md)
 - [中古車 Controlled Write Bypass 設計](docs/used-car-controlled-write-bypass-design.md)
+- [台灣會計項目代號 Seed 設計](docs/taiwan-accounting-item-code-seed-design.md)
 
 Manual QA checklist:
 

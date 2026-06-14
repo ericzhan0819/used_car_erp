@@ -2,11 +2,20 @@
 
 Last reviewed: 2026-06-14
 
-Phase: `P1-ACC-0`
+Phase: `P1-ACC-1`
 
 本文件定義如何把「113年度會計項目代號名稱對照表」用在 `used_car_erp`，作為台灣報表 / 申報分類的種子資料設計。
 
 本階段只做文件設計，不建立 DocType、不新增 fixture、不修改 ERPNext Account、不修改 runtime。
+
+P1-ACC-1 implementation note:
+
+```text
+Taiwan Accounting Item Code uses `code` as document name and unique key.
+Duplicate item_name is allowed.
+`0100005 營業成本` and `0300090 營業成本` must coexist.
+Seed patch must be idempotent by code.
+```
 
 ---
 

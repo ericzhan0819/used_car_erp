@@ -1,0 +1,146 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:code",
+ "creation": "2026-06-14 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "code",
+  "item_name",
+  "category",
+  "statement_type",
+  "normal_balance",
+  "is_group_like",
+  "is_active",
+  "source_year",
+  "source_note"
+ ],
+ "fields": [
+  {
+   "description": "官方會計項目代號；同名項目可能有不同代號，因此 code 是唯一識別。",
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "會計項目代號",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "description": "官方項目中文名稱；不可作為唯一鍵，因為不同代號可能有相同或相似名稱。",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "項目中文名稱",
+   "reqd": 1
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "分類",
+   "options": "Income\nCost\nExpense\nAsset\nLiability\nEquity\nInventoryCost\nManufacturingExpense\nRAndDExpense\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "statement_type",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "報表類型",
+   "options": "Profit and Loss\nBalance Sheet\nCost Statement\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "normal_balance",
+   "fieldtype": "Select",
+   "label": "常態借貸方向",
+   "options": "Debit\nCredit\nNone"
+  },
+  {
+   "default": "0",
+   "description": "官方總額、小計或分類項目；通常不應直接 mapping 到單一 ERPNext posting account。",
+   "fieldname": "is_group_like",
+   "fieldtype": "Check",
+   "label": "類彙總項目"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "啟用"
+  },
+  {
+   "default": "113",
+   "fieldname": "source_year",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "來源年度",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_note",
+   "fieldtype": "Small Text",
+   "label": "來源備註"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-14 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Used Car ERP",
+ "name": "Taiwan Accounting Item Code",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Accounting"
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Accounting Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Manager"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Owner"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Auditor"
+  }
+ ],
+ "search_fields": "code,item_name",
+ "show_name_in_global_search": 1,
+ "sort_field": "code",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "item_name",
+ "track_changes": 1
+}
