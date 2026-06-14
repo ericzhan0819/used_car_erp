@@ -29,7 +29,7 @@ def get_vehicle_profit_tax_estimate(vehicle_name: str) -> dict:
 	estimated_general_input_credit = 0
 	estimated_input_credit = 0
 	tax_estimate_status = "可估算" if sale_price_tax_inclusive > 0 else "資料不足"
-	tax_estimate_note = "此摘要只作管理估算，不是正式申報或會計入帳。"
+	tax_estimate_note = "此摘要只作內部估算 / 報稅輔助，不是 Sales Invoice 正式稅額、正式申報或會計入帳。"
 
 	if vehicle_tax_mode == "15-1 特殊扣抵":
 		estimated_15_1_input_credit_raw = _included_vat(purchase_price)
@@ -45,9 +45,9 @@ def get_vehicle_profit_tax_estimate(vehicle_name: str) -> dict:
 		if sale_price_tax_inclusive <= 0:
 			tax_estimate_note = "成交價尚未填寫，預估銷項稅、應納營業稅與扣稅後管理毛利資料不足。"
 	else:
-		# 稅務模式未確認時不得樂觀估列進項扣抵，避免管理數字被誤認為正式可申報稅額。
+		# 稅務模式未確認時不得樂觀估列進項扣抵，避免內部估算被誤認為 Sales Invoice 正式稅額。
 		tax_estimate_status = "需確認"
-		tax_estimate_note = "稅務模式尚未確認，預估可扣抵稅額暫列 0。此摘要只作管理估算，不是正式申報或會計入帳。"
+		tax_estimate_note = "稅務模式尚未確認，預估可扣抵稅額暫列 0。此摘要只作內部估算 / 報稅輔助，不是 Sales Invoice 正式稅額、正式申報或會計入帳。"
 
 	estimated_vat_payable = max(estimated_output_vat - estimated_input_credit, 0)
 	estimated_margin_after_vat = gross_margin - estimated_vat_payable

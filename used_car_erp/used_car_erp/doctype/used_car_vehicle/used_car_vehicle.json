@@ -399,7 +399,7 @@
   {
    "fieldname": "tax_metadata_section",
    "fieldtype": "Section Break",
-   "label": "台灣稅務資訊"
+   "label": "買入憑證"
   },
   {
    "default": "個人",
@@ -411,10 +411,10 @@
   },
   {
    "default": "未取得",
-   "description": "記錄買車時取得的主要憑證類型。",
+   "description": "用來判斷買入時是否取得可扣抵統一發票。有統一發票走一般發票扣抵；未取得可扣抵發票則作為 15-1 特殊扣抵的初步判斷依據。拍場、其他或不明憑證需由會計確認。",
    "fieldname": "purchase_document_type",
    "fieldtype": "Select",
-   "label": "買入憑證類型",
+   "label": "買入憑證 / 可扣抵發票",
    "options": "買賣合約\n讓渡書\n統一發票\n拍場單據\n匯款紀錄\n收據\n其他\n未取得"
   },
   {
@@ -522,6 +522,7 @@
   {
    "fieldname": "sales_tax_section",
    "fieldtype": "Section Break",
+   "hidden": 1,
    "label": "售車稅務"
   },
   {
@@ -529,6 +530,7 @@
    "description": "售車稅務模式供 15-1 / 一般扣抵 / 不可扣抵等初步判斷使用，正式申報仍以會計確認為準。",
    "fieldname": "vehicle_tax_mode",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "稅務模式",
    "options": "待確認\n15-1 特殊扣抵\n一般發票扣抵\n不可扣抵\n拍場需確認",
    "permlevel": 3
@@ -538,6 +540,7 @@
    "description": "標記這台車的稅務資料確認狀態；正式申報前仍需確認。",
    "fieldname": "tax_review_status",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "稅務確認狀態",
    "options": "待補資料\n待確認\n已初步判斷\n已確認\n已調整\n已鎖定",
    "permlevel": 3
@@ -546,6 +549,7 @@
    "description": "記錄稅務模式、憑證、15-1 適用性、拍場拆分或後續調整備註。",
    "fieldname": "tax_review_note",
    "fieldtype": "Small Text",
+   "hidden": 1,
    "label": "稅務確認備註",
    "permlevel": 3
   },

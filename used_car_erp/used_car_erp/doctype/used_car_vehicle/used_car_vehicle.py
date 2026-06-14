@@ -47,6 +47,23 @@ SALE_WORKFLOW_FIELDS = (
 	"tax_review_note",
 )
 
+VAT_DEDUCTIBLE_PURCHASE_DOCUMENT_TYPES = {"統一發票"}
+
+ARTICLE_15_1_PURCHASE_DOCUMENT_TYPES = {
+	"買賣合約",
+	"讓渡書",
+	"匯款紀錄",
+	"收據",
+	"未取得",
+}
+
+TAX_REVIEW_REQUIRED_PURCHASE_DOCUMENT_TYPES = {
+	"拍場單據",
+	"其他",
+	None,
+	"",
+}
+
 
 class UsedCarVehicle(Document):
 	def before_insert(self):
@@ -55,6 +72,7 @@ class UsedCarVehicle(Document):
 	def validate(self):
 		self._prevent_stock_no_change()
 		self._validate_tax_metadata()
+		self._derive_tax_mode_from_purchase_evidence()
 		self._protect_locked_sale_workflow_fields()
 		self._prevent_manual_sale_completion_change()
 		self._prevent_manual_formal_delivery_change()
@@ -75,6 +93,21 @@ class UsedCarVehicle(Document):
 		if self.purchase_price is not None and self.purchase_price < 0:
 			# 買入金額是後續稅務估算基礎，先阻擋負數以避免產生錯誤的營業稅與毛利資料。
 			frappe.throw("買入金額不可為負數。")
+
+	def _derive_tax_mode_from_purchase_evidence(self):
+		meta = frappe.get_meta("Used Car Vehicle")
+		if not meta.has_field("vehicle_tax_mode") or not meta.has_field("purchase_document_type"):
+			return
+
+		tax_mode, review_status = derive_vehicle_tax_mode_from_purchase_document_type(
+			self.get("purchase_document_type")
+		)
+
+		# 車輛頁只記錄買入憑證，稅務模式由後端推導，避免使用者在車輛頁手動處理正式稅務。
+		self.vehicle_tax_mode = tax_mode
+
+		if meta.has_field("tax_review_status"):
+			self.tax_review_status = review_status
 
 	def _prevent_manual_sale_completion_change(self):
 		if self.is_new() or self.flags.ignore_sale_completion_validation:
@@ -148,6 +181,16 @@ def _get_next_stock_no():
 			continue
 
 	return f"{prefix}{max_number + 1:04d}"
+
+
+def derive_vehicle_tax_mode_from_purchase_document_type(purchase_document_type: str | None) -> tuple[str, str]:
+	if purchase_document_type in VAT_DEDUCTIBLE_PURCHASE_DOCUMENT_TYPES:
+		return "一般發票扣抵", "已初步判斷"
+
+	if purchase_document_type in ARTICLE_15_1_PURCHASE_DOCUMENT_TYPES:
+		return "15-1 特殊扣抵", "已初步判斷"
+
+	return "待確認", "待確認"
 
 
 def _get_locked_sale_workflow_message(vehicle):

@@ -10,6 +10,9 @@ from used_car_erp.used_car_erp.services.used_car_controlled_write_service import
 from used_car_erp.used_car_erp.services.vehicle_intake_service import VehicleIntakeService
 from used_car_erp.used_car_erp.services.vehicle_listing_service import VehicleListingService
 from used_car_erp.used_car_erp.services.vehicle_money_flow_service import VehicleMoneyFlowService
+from used_car_erp.used_car_erp.doctype.used_car_vehicle.used_car_vehicle import (
+	derive_vehicle_tax_mode_from_purchase_document_type,
+)
 
 
 VALID_PAYMENT_METHODS = ("現金", "匯款", "信用卡", "其他")
@@ -308,6 +311,7 @@ class VehicleReservationService:
 				frappe.throw("此車輛已完成正式交車入帳，不可重複建立 Sales Invoice 草稿。")
 			if not reservation.customer:
 				frappe.throw("保留單缺少 Customer，無法建立 Sales Invoice 草稿。")
+			tax_mode, tax_review_status = self._validate_purchase_evidence_for_sales_invoice_draft(vehicle)
 
 			resolved_company = self._resolve_company_for_sales_invoice(vehicle)
 			resolved_warehouse = self._resolve_vehicle_sales_warehouse(vehicle)
@@ -321,7 +325,7 @@ class VehicleReservationService:
 					"posting_date": posting_date,
 					"due_date": posting_date,
 					"update_stock": 1,
-					"remarks": self._build_sales_invoice_draft_remarks(vehicle, reservation),
+					"remarks": self._build_sales_invoice_draft_remarks(vehicle, reservation, tax_mode),
 					"items": [
 						{
 							"item_code": vehicle.item,
@@ -356,8 +360,21 @@ class VehicleReservationService:
 			"sales_invoice_status": "Draft",
 			"formal_delivery_status": "銷售發票草稿",
 			"sales_amount": sales_amount,
+			"vehicle_tax_mode": tax_mode,
+			"tax_review_status": tax_review_status,
 			"message": "已建立 Sales Invoice 草稿，請先人工檢查後再進入正式提交與沖轉階段。",
 		}
+
+	def _validate_purchase_evidence_for_sales_invoice_draft(self, vehicle):
+		purchase_document_type = vehicle.get("purchase_document_type")
+		tax_mode, review_status = derive_vehicle_tax_mode_from_purchase_document_type(purchase_document_type)
+
+		if tax_mode == "待確認":
+			frappe.throw(
+				"買入憑證尚待會計確認，無法建立 Sales Invoice 草稿。請先確認此車是否取得可扣抵統一發票，或是否適用 15-1。"
+			)
+
+		return tax_mode, review_status
 
 	def _resolve_company_for_sales_invoice(self, vehicle):
 		if frappe.get_meta("Used Car Vehicle").has_field("company") and vehicle.get("company"):
@@ -867,7 +884,7 @@ class VehicleReservationService:
 
 		frappe.throw("找不到車輛庫存倉，無法建立 Sales Invoice 草稿。")
 
-	def _build_sales_invoice_draft_remarks(self, vehicle, reservation):
+	def _build_sales_invoice_draft_remarks(self, vehicle, reservation, tax_mode=None):
 		return "\n".join(
 			str(part)
 			for part in (
@@ -875,6 +892,7 @@ class VehicleReservationService:
 				f"車輛：{vehicle.name}",
 				f"庫存編號：{vehicle.stock_no}",
 				f"保留單：{reservation.name}",
+				f"中古車稅務判斷：{tax_mode}" if tax_mode else None,
 				f"訂金金流：{vehicle.deposit_money_flow}",
 				f"尾款金流：{vehicle.final_money_flow}",
 			)

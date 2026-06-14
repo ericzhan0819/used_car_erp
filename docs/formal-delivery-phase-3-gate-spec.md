@@ -118,6 +118,8 @@ tax_review_status in 已確認 / 已鎖定
 
 ## 7. Sales Invoice gate
 
+Sales Invoice draft creation now requires purchase evidence classification not to be `待確認`.
+
 The linked Sales Invoice must exist and remain draft:
 
 ```text
