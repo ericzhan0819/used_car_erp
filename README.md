@@ -117,6 +117,8 @@ Sales Reservation Controlled Write Manual QA Phase P1-F-3-A-QA 新增 sales rese
 
 Used Car Vehicle Reserved State UX Cleanup Phase P1-UX-1 簡化保留中車輛頁，將畫面聚焦於目前狀態、下一步、建立尾款收款、取消保留，以及會計確認後才顯示成交前檢查 / 確認成交；本階段只改前端表單 UX，不改 runtime service、DocType JSON、DocPerm、Role、patch 或 ERPNext core。
 
+Used Car Vehicle Reserved Status Source Fix Phase P1-UX-1A 修正保留中狀態卡資料來源，改由 active Used Car Reservation 解析訂金 / 尾款金流、傳票草稿與 Journal Entry 狀態，不再用 Vehicle completion summary 欄位誤判保留中階段的入帳狀態；本階段不改 DocType JSON、不改 permission、不改 controlled write、不回填 Vehicle 成交摘要。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)

@@ -112,8 +112,7 @@ function apply_vehicle_form_mode(frm) {
   }
 
   if (is_reserved_vehicle(frm)) {
-    add_reserved_vehicle_status_comment(frm);
-    add_reserved_vehicle_primary_action_button(frm);
+    load_active_reservation_for_reserved_vehicle(frm);
     add_reserved_vehicle_secondary_buttons(frm);
     set_vehicle_fields_read_only(frm, true);
 
@@ -341,11 +340,21 @@ function is_reserved_vehicle(frm) {
   return Boolean(!frm.is_new() && frm.doc.status === "保留中");
 }
 
-function get_reserved_vehicle_next_step(frm) {
-  const has_deposit_journal_entry = Boolean(frm.doc.deposit_journal_entry);
-  const has_final_money_flow = Boolean(frm.doc.final_money_flow);
-  const has_final_voucher_draft = Boolean(frm.doc.final_voucher_draft);
-  const has_final_journal_entry = Boolean(frm.doc.final_journal_entry);
+function get_reserved_vehicle_next_step(frm, active_reservation) {
+  const has_deposit_journal_entry = Boolean(active_reservation && active_reservation.journal_entry);
+  const has_final_money_flow = Boolean(active_reservation && active_reservation.final_money_flow);
+  const has_final_voucher_draft = Boolean(active_reservation && active_reservation.final_voucher_draft);
+  const has_final_journal_entry = Boolean(active_reservation && active_reservation.final_journal_entry);
+
+  if (!active_reservation) {
+    return {
+      current_stage: "保留中，但找不到有效保留單",
+      next_step: "請檢查保留資料",
+      primary_action: null,
+      can_check_delivery: false,
+      can_complete_sale: false,
+    };
+  }
 
   if (!has_final_money_flow || !has_final_voucher_draft) {
     return {
@@ -376,24 +385,45 @@ function get_reserved_vehicle_next_step(frm) {
   };
 }
 
-function add_reserved_vehicle_status_comment(frm) {
+function load_active_reservation_for_reserved_vehicle(frm) {
+  if (!is_reserved_vehicle(frm)) {
+    return;
+  }
+
+  frappe.call({
+    method:
+      "used_car_erp.used_car_erp.services.vehicle_reservation_service.get_active_reservation_for_vehicle",
+    args: {
+      vehicle_name: frm.doc.name,
+    },
+    callback(response) {
+      frm._active_reservation = response.message || null;
+      render_reserved_vehicle_status(frm);
+      refresh_reserved_vehicle_action_buttons(frm);
+    },
+    error() {
+      // 保留中狀態來源必須是 active Reservation；讀取失敗時採安全預設，不用 Vehicle 成交摘要誤判。
+      frm._active_reservation = null;
+      render_reserved_vehicle_status(frm);
+      refresh_reserved_vehicle_action_buttons(frm);
+    },
+  });
+}
+
+function render_reserved_vehicle_status(frm) {
   if (!is_reserved_vehicle(frm) || !frm.dashboard) {
     return;
   }
 
-  const next_step = get_reserved_vehicle_next_step(frm);
-  const customer = frm.doc.customer || "未填";
+  const active_reservation = frm._active_reservation || null;
+  const next_step = get_reserved_vehicle_next_step(frm, active_reservation);
+  const customer =
+    (active_reservation && (active_reservation.customer_name || active_reservation.customer)) ||
+    frm.doc.customer ||
+    "未填";
   const sold_price = format_vehicle_currency(frm.doc.sold_price || 0);
-  const deposit_status = get_accounting_flow_status(
-    frm.doc.deposit_money_flow,
-    frm.doc.deposit_voucher_draft,
-    frm.doc.deposit_journal_entry
-  );
-  const final_status = get_accounting_flow_status(
-    frm.doc.final_money_flow,
-    frm.doc.final_voucher_draft,
-    frm.doc.final_journal_entry
-  );
+  const deposit_status = (active_reservation && active_reservation.deposit_status) || "讀取中";
+  const final_status = (active_reservation && active_reservation.final_status) || "讀取中";
 
   const message = [
     "目前狀態：保留中",
@@ -407,8 +437,8 @@ function add_reserved_vehicle_status_comment(frm) {
   frm.dashboard.add_comment(message.join("<br>"), "blue", true);
 }
 
-function add_reserved_vehicle_primary_action_button(frm) {
-  const next_step = get_reserved_vehicle_next_step(frm);
+function add_reserved_vehicle_primary_action_button(frm, active_reservation) {
+  const next_step = get_reserved_vehicle_next_step(frm, active_reservation);
 
   if (next_step.primary_action === "create_final_payment") {
     add_final_payment_button(frm);
@@ -422,6 +452,18 @@ function add_reserved_vehicle_primary_action_button(frm) {
   if (next_step.can_complete_sale) {
     add_complete_reservation_button(frm);
   }
+}
+
+function refresh_reserved_vehicle_action_buttons(frm) {
+  if (!is_reserved_vehicle(frm)) {
+    return;
+  }
+
+  frm.remove_custom_button("建立尾款收款");
+  frm.remove_custom_button("成交前檢查");
+  frm.remove_custom_button("確認成交");
+
+  add_reserved_vehicle_primary_action_button(frm, frm._active_reservation || null);
 }
 
 function add_reserved_vehicle_secondary_buttons(frm) {

@@ -578,6 +578,18 @@ class VehicleReservationService:
 
 		reservation = frappe.get_doc("Used Car Reservation", reservation_name)
 		reservation.check_permission("read")
+		deposit_status = self._build_reservation_flow_status_payload(
+			reservation,
+			money_flow_field="money_flow",
+			voucher_draft_field="voucher_draft",
+			flow_type="訂金收款",
+		)
+		final_status = self._build_reservation_flow_status_payload(
+			reservation,
+			money_flow_field="final_money_flow",
+			voucher_draft_field="final_voucher_draft",
+			flow_type="尾款收款",
+		)
 		return {
 			"reservation": reservation.name,
 			"customer": reservation.customer,
@@ -586,10 +598,63 @@ class VehicleReservationService:
 			"deposit_amount": reservation.deposit_amount,
 			"payment_method": reservation.payment_method,
 			"deposit_date": reservation.deposit_date,
-			"final_money_flow": reservation.get("final_money_flow"),
-			"final_voucher_draft": reservation.get("final_voucher_draft"),
+			"money_flow": deposit_status["money_flow"],
+			"voucher_draft": deposit_status["voucher_draft"],
+			"journal_entry": deposit_status["journal_entry"],
+			"deposit_status": deposit_status["status"],
+			"final_money_flow": final_status["money_flow"],
+			"final_voucher_draft": final_status["voucher_draft"],
+			"final_journal_entry": final_status["journal_entry"],
 			"final_payment_amount": reservation.get("final_payment_amount"),
+			"final_payment_date": reservation.get("final_payment_date"),
+			"final_payment_method": reservation.get("final_payment_method"),
+			"final_status": final_status["status"],
 		}
+
+	def _build_reservation_flow_status_payload(
+		self,
+		reservation,
+		*,
+		money_flow_field: str,
+		voucher_draft_field: str,
+		flow_type: str,
+	):
+		money_flow = self._resolve_money_flow(reservation, money_flow_field, flow_type)
+		voucher_draft = self._resolve_voucher_draft(reservation, voucher_draft_field, money_flow) if money_flow else None
+		journal_entry = self._resolve_posted_journal_entry_for_status(money_flow, voucher_draft)
+
+		return {
+			"money_flow": money_flow,
+			"voucher_draft": voucher_draft,
+			"journal_entry": journal_entry,
+			"status": self._format_reservation_flow_status(money_flow, voucher_draft, journal_entry),
+		}
+
+	def _resolve_posted_journal_entry_for_status(self, money_flow_name: str | None, voucher_draft_name: str | None):
+		if not money_flow_name and not voucher_draft_name:
+			return None
+
+		journal_entry = None
+
+		if voucher_draft_name and frappe.db.exists("Used Car Voucher Draft", voucher_draft_name):
+			journal_entry = frappe.db.get_value("Used Car Voucher Draft", voucher_draft_name, "journal_entry")
+
+		if not journal_entry and money_flow_name and frappe.db.exists("Used Car Money Flow", money_flow_name):
+			journal_entry = frappe.db.get_value("Used Car Money Flow", money_flow_name, "journal_entry")
+
+		if journal_entry and frappe.db.exists("Journal Entry", journal_entry):
+			return journal_entry
+
+		return None
+
+	def _format_reservation_flow_status(self, money_flow_name, voucher_draft_name, journal_entry_name):
+		if journal_entry_name:
+			return "已入帳"
+		if voucher_draft_name:
+			return "傳票草稿"
+		if money_flow_name:
+			return "已記錄金流"
+		return "未記錄"
 
 	def _resolve_completed_reservation_for_vehicle(self, vehicle):
 		reservation_name = vehicle.get("completed_reservation")

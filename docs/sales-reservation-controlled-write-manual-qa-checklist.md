@@ -462,6 +462,7 @@ Journal Entry count increases only when accounting confirms deposit/final paymen
 - 成本摘要、損益與稅務估算不應在保留中頁面上方預設顯示。
 - 文件連結、成本重算、損益稅務重算等工程 / 管理操作不應擠在保留中主操作列。
 - 訂金與尾款都入帳後，才可顯示成交前檢查 / 確認成交。
+- 保留中狀態卡必須以 active Reservation 為資料來源；若訂金 / 尾款已建立或已入帳，畫面不得因 Vehicle completion summary 尚未回填而顯示未記錄。
 
 ## Pass Criteria
 
