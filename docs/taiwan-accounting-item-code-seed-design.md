@@ -17,6 +17,16 @@ Duplicate item_name is allowed.
 Seed patch must be idempotent by code.
 ```
 
+P1-ACC-2 implementation note:
+
+```text
+Taiwan Accounting Item Account Mapping links ERPNext Account to Taiwan Accounting Item Code by code/document name.
+Duplicate item_name remains allowed.
+Mapping validation must not use item_name as unique key.
+`0100005 營業成本` and `0300090 營業成本` can both be mapped.
+This phase does not modify Chart of Accounts or accounting runtime.
+```
+
 ---
 
 ## 1. Source document

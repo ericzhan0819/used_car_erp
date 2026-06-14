@@ -1,0 +1,120 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-06-14 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "account",
+  "taiwan_accounting_item_code",
+  "mapping_purpose",
+  "is_default",
+  "is_active",
+  "note"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "公司",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "description": "ERPNext 實際記帳科目；必須是同公司、非群組、未停用 Account。",
+   "fieldname": "account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "ERPNext 科目",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "description": "使用官方 code / document name 作為 mapping key；不可用中文名稱作為唯一判斷。",
+   "fieldname": "taiwan_accounting_item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "台灣會計項目代號",
+   "options": "Taiwan Accounting Item Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "mapping_purpose",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "對應用途",
+   "options": "Sales Revenue\nCOGS\nInventory\nAccounts Receivable\nAccounts Payable\nOutput VAT\nInput VAT\nVAT Retained Credit\nAdvance Received\nCash\nBank\nExpense\nOther",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "同一公司同一 mapping purpose 僅允許一筆 active default mapping。",
+   "fieldname": "is_default",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "預設對應"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "啟用"
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "備註"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-14 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Used Car ERP",
+ "name": "Taiwan Accounting Item Account Mapping",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Accounting Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Accounting"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Used Car Auditor"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
