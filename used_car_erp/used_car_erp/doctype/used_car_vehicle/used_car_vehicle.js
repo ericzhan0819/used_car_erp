@@ -89,11 +89,12 @@ function apply_vehicle_form_mode(frm) {
   add_sold_vehicle_final_check_comment(frm);
   add_formal_delivery_submit_preflight_comment(frm);
   add_tax_metadata_comment(frm);
-  add_vehicle_cost_summary_comment(frm);
-  add_vehicle_profit_tax_estimate_comment(frm);
+  if (!is_reserved_vehicle(frm)) {
+    add_vehicle_cost_summary_comment(frm);
+    add_vehicle_profit_tax_estimate_comment(frm);
+  }
   render_accounting_status_summary(frm);
   apply_accounting_status_technical_field_visibility(frm);
-  add_accounting_status_technical_fields_toggle_button(frm);
 
   if (frm.is_new()) {
     set_vehicle_fields_read_only(frm, false);
@@ -101,6 +102,7 @@ function apply_vehicle_form_mode(frm) {
   }
 
   if (frm.doc.status === "已售出") {
+    add_accounting_status_technical_fields_toggle_button(frm);
     add_sold_vehicle_primary_action_button(frm);
     add_sold_vehicle_related_document_buttons(frm);
     set_vehicle_fields_read_only(frm, true);
@@ -108,6 +110,34 @@ function apply_vehicle_form_mode(frm) {
     allow_sold_vehicle_sale_workflow_edit(frm);
     return;
   }
+
+  if (is_reserved_vehicle(frm)) {
+    add_reserved_vehicle_status_comment(frm);
+    add_reserved_vehicle_primary_action_button(frm);
+    add_reserved_vehicle_secondary_buttons(frm);
+    set_vehicle_fields_read_only(frm, true);
+
+    if (frm._vehicle_edit_mode) {
+      set_vehicle_fields_read_only(frm, false);
+
+      frm.add_custom_button("取消編輯", () => {
+        frm._vehicle_edit_mode = false;
+        frm.reload_doc();
+      });
+
+      return;
+    }
+
+    frm.add_custom_button("編輯資料", () => {
+      frm._vehicle_edit_mode = true;
+      set_vehicle_fields_read_only(frm, false);
+      frm.refresh_fields();
+    });
+
+    return;
+  }
+
+  add_accounting_status_technical_fields_toggle_button(frm);
 
   add_complete_intake_button(frm);
   add_listing_workflow_buttons(frm);
@@ -305,6 +335,97 @@ function get_accounting_flow_status(money_flow, voucher_draft, journal_entry) {
     return "已記錄金流";
   }
   return "未記錄";
+}
+
+function is_reserved_vehicle(frm) {
+  return Boolean(!frm.is_new() && frm.doc.status === "保留中");
+}
+
+function get_reserved_vehicle_next_step(frm) {
+  const has_deposit_journal_entry = Boolean(frm.doc.deposit_journal_entry);
+  const has_final_money_flow = Boolean(frm.doc.final_money_flow);
+  const has_final_voucher_draft = Boolean(frm.doc.final_voucher_draft);
+  const has_final_journal_entry = Boolean(frm.doc.final_journal_entry);
+
+  if (!has_final_money_flow || !has_final_voucher_draft) {
+    return {
+      current_stage: "已保留，等待建立尾款收款",
+      next_step: "建立尾款收款",
+      primary_action: "create_final_payment",
+      can_check_delivery: false,
+      can_complete_sale: false,
+    };
+  }
+
+  if (!has_deposit_journal_entry || !has_final_journal_entry) {
+    return {
+      current_stage: "尾款已建立，等待會計確認入帳",
+      next_step: "等待會計確認訂金與尾款傳票",
+      primary_action: null,
+      can_check_delivery: false,
+      can_complete_sale: false,
+    };
+  }
+
+  return {
+    current_stage: "訂金與尾款已入帳",
+    next_step: "成交前檢查 / 確認成交",
+    primary_action: "complete_sale_ready",
+    can_check_delivery: true,
+    can_complete_sale: true,
+  };
+}
+
+function add_reserved_vehicle_status_comment(frm) {
+  if (!is_reserved_vehicle(frm) || !frm.dashboard) {
+    return;
+  }
+
+  const next_step = get_reserved_vehicle_next_step(frm);
+  const customer = frm.doc.customer || "未填";
+  const sold_price = format_vehicle_currency(frm.doc.sold_price || 0);
+  const deposit_status = get_accounting_flow_status(
+    frm.doc.deposit_money_flow,
+    frm.doc.deposit_voucher_draft,
+    frm.doc.deposit_journal_entry
+  );
+  const final_status = get_accounting_flow_status(
+    frm.doc.final_money_flow,
+    frm.doc.final_voucher_draft,
+    frm.doc.final_journal_entry
+  );
+
+  const message = [
+    "目前狀態：保留中",
+    `客戶：${frappe.utils.escape_html(customer)}`,
+    `成交價：${frappe.utils.escape_html(sold_price)}`,
+    `訂金狀態：${frappe.utils.escape_html(deposit_status)}`,
+    `尾款狀態：${frappe.utils.escape_html(final_status)}`,
+    `下一步：${frappe.utils.escape_html(next_step.next_step)}`,
+  ];
+
+  frm.dashboard.add_comment(message.join("<br>"), "blue", true);
+}
+
+function add_reserved_vehicle_primary_action_button(frm) {
+  const next_step = get_reserved_vehicle_next_step(frm);
+
+  if (next_step.primary_action === "create_final_payment") {
+    add_final_payment_button(frm);
+    return;
+  }
+
+  if (next_step.can_check_delivery) {
+    add_delivery_preflight_button(frm);
+  }
+
+  if (next_step.can_complete_sale) {
+    add_complete_reservation_button(frm);
+  }
+}
+
+function add_reserved_vehicle_secondary_buttons(frm) {
+  add_cancel_reservation_button(frm);
 }
 
 function apply_accounting_status_technical_field_visibility(frm) {
@@ -739,10 +860,7 @@ function add_listing_workflow_buttons(frm) {
   }
 
   if (frm.doc.status === "保留中") {
-    add_final_payment_button(frm);
-    add_delivery_preflight_button(frm);
-    add_complete_reservation_button(frm);
-    add_cancel_reservation_button(frm);
+    return;
   }
 }
 

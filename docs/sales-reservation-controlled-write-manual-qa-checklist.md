@@ -452,6 +452,17 @@ Stock Entry count unchanged except records intentionally created before QA setup
 Journal Entry count increases only when accounting confirms deposit/final payment voucher drafts.
 ```
 
+## Reserved Vehicle UX Check
+
+保留中車輛頁預期：
+
+- 預設主動作只顯示建立尾款收款。
+- 取消保留可見，但不是主流程重點。
+- 成交前檢查 / 確認成交在訂金與尾款未入帳前不應顯示。
+- 成本摘要、損益與稅務估算不應在保留中頁面上方預設顯示。
+- 文件連結、成本重算、損益稅務重算等工程 / 管理操作不應擠在保留中主操作列。
+- 訂金與尾款都入帳後，才可顯示成交前檢查 / 確認成交。
+
 ## Pass Criteria
 
 P1-F-3-A passes manual QA only if:
