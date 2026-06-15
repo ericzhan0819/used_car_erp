@@ -1,0 +1,204 @@
+{
+  "company": "OO",
+  "generated_at": "2026-06-15T18:44:51.369444+00:00",
+  "counts": [
+    {
+      "doctype": "Company",
+      "exists": true,
+      "count": 1,
+      "draft_count": 1,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": null
+    },
+    {
+      "doctype": "Account",
+      "exists": true,
+      "count": 421,
+      "draft_count": 421,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": null
+    },
+    {
+      "doctype": "GL Entry",
+      "exists": true,
+      "count": 288,
+      "draft_count": 0,
+      "submitted_count": 288,
+      "cancelled_count": 0,
+      "warning": null
+    },
+    {
+      "doctype": "Sales Invoice",
+      "exists": true,
+      "count": 3,
+      "draft_count": 1,
+      "submitted_count": 1,
+      "cancelled_count": 1,
+      "warning": null
+    },
+    {
+      "doctype": "Purchase Invoice",
+      "exists": true,
+      "count": 1,
+      "draft_count": 1,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": null
+    },
+    {
+      "doctype": "Payment Entry",
+      "exists": true,
+      "count": 0,
+      "draft_count": 0,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": null
+    },
+    {
+      "doctype": "Journal Entry",
+      "exists": true,
+      "count": 30,
+      "draft_count": 0,
+      "submitted_count": 4,
+      "cancelled_count": 26,
+      "warning": null
+    },
+    {
+      "doctype": "Stock Ledger Entry",
+      "exists": true,
+      "count": 87,
+      "draft_count": 0,
+      "submitted_count": 87,
+      "cancelled_count": 0,
+      "warning": null
+    },
+    {
+      "doctype": "Stock Entry",
+      "exists": true,
+      "count": 43,
+      "draft_count": 0,
+      "submitted_count": 2,
+      "cancelled_count": 41,
+      "warning": null
+    },
+    {
+      "doctype": "Delivery Note",
+      "exists": true,
+      "count": 0,
+      "draft_count": 0,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": null
+    },
+    {
+      "doctype": "Purchase Receipt",
+      "exists": true,
+      "count": 0,
+      "draft_count": 0,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": null
+    },
+    {
+      "doctype": "Item",
+      "exists": true,
+      "count": 3,
+      "draft_count": 3,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": null
+    },
+    {
+      "doctype": "Warehouse",
+      "exists": true,
+      "count": 5,
+      "draft_count": 5,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": null
+    },
+    {
+      "doctype": "Sales Taxes and Charges Template",
+      "exists": true,
+      "count": 1,
+      "draft_count": 1,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": null
+    },
+    {
+      "doctype": "Purchase Taxes and Charges Template",
+      "exists": true,
+      "count": 1,
+      "draft_count": 1,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": null
+    },
+    {
+      "doctype": "Used Car Vehicle",
+      "exists": true,
+      "count": 2,
+      "draft_count": 2,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": "No company field; count is site-wide."
+    },
+    {
+      "doctype": "Used Car Reservation",
+      "exists": true,
+      "count": 2,
+      "draft_count": 2,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": "No company field; count is site-wide."
+    },
+    {
+      "doctype": "Used Car Money Flow",
+      "exists": true,
+      "count": 4,
+      "draft_count": 4,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": "No company field; count is site-wide."
+    },
+    {
+      "doctype": "Used Car Voucher Draft",
+      "exists": true,
+      "count": 4,
+      "draft_count": 4,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": "No company field; count is site-wide."
+    },
+    {
+      "doctype": "Used Car Vehicle Cost",
+      "exists": true,
+      "count": 0,
+      "draft_count": 0,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": "No company field; count is site-wide."
+    },
+    {
+      "doctype": "Taiwan Accounting Item Code",
+      "exists": true,
+      "count": 26,
+      "draft_count": 26,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": null
+    },
+    {
+      "doctype": "Taiwan Accounting Item Account Mapping",
+      "exists": true,
+      "count": 0,
+      "draft_count": 0,
+      "submitted_count": 0,
+      "cancelled_count": 0,
+      "warning": null
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "company": "OO",
+  "company_exists": true,
+  "company_abbr": "O",
+  "generated_at": "2026-06-15T18:44:51.379596+00:00",
+  "status": "warning",
+  "can_import_chart_of_accounts": false,
+  "required_manual_confirmation": true,
+  "gates": [
+    {
+      "name": "company_exists",
+      "status": "pass",
+      "details": "Company OO exists."
+    },
+    {
+      "name": "company_abbr",
+      "status": "pass",
+      "details": "Company abbreviation is O."
+    },
+    {
+      "name": "preview_json_exists",
+      "status": "pass",
+      "details": "exports/chart_of_accounts/taiwan_used_car_full_coa_113_preview.json exists."
+    },
+    {
+      "name": "importer_csv_exists",
+      "status": "pass",
+      "details": "exports/chart_of_accounts/taiwan_used_car_full_coa_113.csv exists."
+    },
+    {
+      "name": "disable_plan_exists",
+      "status": "pass",
+      "details": "exports/chart_of_accounts/taiwan_used_car_full_coa_113_post_import_disable_plan.json exists."
+    },
+    {
+      "name": "importer_validation",
+      "status": "pass",
+      "details": "P1-ACC-5 importer validation passed."
+    },
+    {
+      "name": "current_account_backup_generated",
+      "status": "pass",
+      "details": "current_account_backup.csv has been generated."
+    },
+    {
+      "name": "accounting_data_counts_generated",
+      "status": "pass",
+      "details": "accounting_data_counts.json has been generated."
+    }
+  ],
+  "warnings": [
+    "Account draft count is greater than 0; manual confirmation is required.",
+    "Company draft count is greater than 0; manual confirmation is required.",
+    "ERPNext Chart of Accounts Importer does not support disabled; post-import disable plan is required.",
+    "GL Entry count is greater than 0.",
+    "Item draft count is greater than 0; manual confirmation is required.",
+    "Purchase Invoice draft count is greater than 0; manual confirmation is required.",
+    "Purchase Taxes and Charges Template draft count is greater than 0; manual confirmation is required.",
+    "Sales Invoice draft count is greater than 0; manual confirmation is required.",
+    "Sales Taxes and Charges Template draft count is greater than 0; manual confirmation is required.",
+    "Stock Ledger Entry count is greater than 0.",
+    "Submitted Journal Entry count is greater than 0.",
+    "Submitted Sales Invoice count is greater than 0.",
+    "Submitted Stock Entry count is greater than 0.",
+    "Taiwan Accounting Item Code draft count is greater than 0; manual confirmation is required.",
+    "Used Car Money Flow count is greater than 0; dev site overwrite requires manual review.",
+    "Used Car Money Flow draft count is greater than 0; manual confirmation is required.",
+    "Used Car Money Flow: No company field; count is site-wide.",
+    "Used Car Reservation count is greater than 0; dev site overwrite requires manual review.",
+    "Used Car Reservation draft count is greater than 0; manual confirmation is required.",
+    "Used Car Reservation: No company field; count is site-wide.",
+    "Used Car Vehicle Cost: No company field; count is site-wide.",
+    "Used Car Vehicle count is greater than 0; dev site overwrite requires manual review.",
+    "Used Car Vehicle draft count is greater than 0; manual confirmation is required.",
+    "Used Car Vehicle: No company field; count is site-wide.",
+    "Used Car Voucher Draft count is greater than 0; dev site overwrite requires manual review.",
+    "Used Car Voucher Draft draft count is greater than 0; manual confirmation is required.",
+    "Used Car Voucher Draft: No company field; count is site-wide.",
+    "Warehouse draft count is greater than 0; manual confirmation is required."
+  ],
+  "errors": [],
+  "artefacts": {
+    "current_account_backup_csv": "exports/chart_of_accounts/preflight/current_account_backup.csv",
+    "accounting_data_counts_json": "exports/chart_of_accounts/preflight/accounting_data_counts.json",
+    "pre_import_gate_report_json": "exports/chart_of_accounts/preflight/pre_import_gate_report.json",
+    "preview_json": "exports/chart_of_accounts/taiwan_used_car_full_coa_113_preview.json",
+    "importer_csv": "exports/chart_of_accounts/taiwan_used_car_full_coa_113.csv",
+    "disable_plan": "exports/chart_of_accounts/taiwan_used_car_full_coa_113_post_import_disable_plan.json"
+  }
+}
