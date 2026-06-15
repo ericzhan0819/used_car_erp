@@ -127,6 +127,8 @@ P1-ACC-2：Taiwan Accounting Item Account Mapping DocType 新增 ERPNext Account
 
 P1-ACC-4：Taiwan Full Chart of Accounts Source Catalog 新增 113 年度台灣會計項目完整 source catalog 設計與驗證，準備後續產生 ERPNext Chart of Accounts Importer 檔案；本階段不匯入 Chart of Accounts、不停用 Account、不修改 tabAccount、不影響 Sales Invoice / Journal Entry / GL runtime。
 
+P1-ACC-5：Taiwan Full Chart of Accounts Importer File 依 P1-ACC-4 source catalog 產生 ERPNext Chart of Accounts Importer 檔案與 preview / validation；本階段只產出檔案，不執行匯入、不停用 Account、不修改 tabAccount、不影響 Sales Invoice / Journal Entry / GL runtime。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -141,6 +143,7 @@ Decision documents:
 - [台灣會計項目代號 Account Mapping 設計](docs/taiwan-accounting-item-account-mapping-design.md)
 - [台灣完整 Chart of Accounts 匯入設計](docs/taiwan-full-chart-of-accounts-import-design.md)
 - [台灣完整 Chart of Accounts Source Catalog](docs/taiwan-full-chart-of-accounts-source-catalog.md)
+- [台灣完整 Chart of Accounts Importer 檔案](docs/taiwan-full-chart-of-accounts-importer-file.md)
 
 Manual QA checklist:
 
