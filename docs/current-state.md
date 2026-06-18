@@ -312,7 +312,13 @@ ERPNext `Item` / `Serial No` / `Stock Entry` 由系統背後處理。
 * 會計分錄。
 * 報表。
 
-## 9. 驗證指令
+## 9. P1-ACC-6E Minimal Accounting / Stock Setup QA
+
+P1-ACC-6E 新增獨立 QA service，針對 `erpnext-coa.test` / `OO` 檢查最小會計與庫存 master data，並只建立 Draft Sales Invoice 作為驗證。此階段不 submit、不建立 Payment Entry / Journal Entry / Delivery Note / Stock Entry、不產生 GL Entry 或 Stock Ledger Entry、不修改 COA。
+
+文件：`docs/p1-acc-6e-minimal-accounting-stock-setup-qa.md`。
+
+## 10. 驗證指令
 
 目前常用驗證指令：
 
@@ -333,7 +339,7 @@ bench --site erpnext.localhost execute used_car_erp.used_car_erp.services.vehicl
 
 如果 `run-tests` 顯示 `Testing is disabled for the site`，不要為了本次文件修改而更動站台測試設定。
 
-## 10. Commit 歷史參考
+## 11. Commit 歷史參考
 
 最近穩定 commits：
 
