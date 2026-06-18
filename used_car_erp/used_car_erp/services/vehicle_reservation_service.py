@@ -16,6 +16,9 @@ from used_car_erp.used_car_erp.doctype.used_car_vehicle.used_car_vehicle import 
 
 
 VALID_PAYMENT_METHODS = ("現金", "匯款", "信用卡", "其他")
+SALES_TAX_TEMPLATE = "台灣營業稅 5%（含稅） - O"
+SALES_TAX_ACCOUNT = "0202134 - 銷項稅額 - O"
+SALES_TAX_RATE = 5
 RESTRICTED_ACCOUNTING_DOCTYPES = (
 	"Stock Entry",
 	"Purchase Invoice",
@@ -316,6 +319,7 @@ class VehicleReservationService:
 			resolved_company = self._resolve_company_for_sales_invoice(vehicle)
 			resolved_warehouse = self._resolve_vehicle_sales_warehouse(vehicle)
 			resolved_income_account = self._resolve_sales_income_account(vehicle.item, resolved_company)
+			tax_row = self._build_sales_tax_row_from_template(resolved_company)
 			sales_amount = flt(preflight.get("sales_amount"))
 			sales_invoice = frappe.get_doc(
 				{
@@ -325,6 +329,7 @@ class VehicleReservationService:
 					"posting_date": posting_date,
 					"due_date": posting_date,
 					"update_stock": 1,
+					"taxes_and_charges": SALES_TAX_TEMPLATE,
 					"remarks": self._build_sales_invoice_draft_remarks(vehicle, reservation, tax_mode),
 					"items": [
 						{
@@ -336,6 +341,7 @@ class VehicleReservationService:
 							"income_account": resolved_income_account,
 						}
 					],
+					"taxes": [tax_row],
 				}
 			).insert()
 
@@ -362,6 +368,8 @@ class VehicleReservationService:
 			"sales_amount": sales_amount,
 			"vehicle_tax_mode": tax_mode,
 			"tax_review_status": tax_review_status,
+			"taxes_and_charges": SALES_TAX_TEMPLATE,
+			"tax_account": tax_row["account_head"],
 			"message": "已建立 Sales Invoice 草稿，請先人工檢查後再進入正式提交與沖轉階段。",
 		}
 
@@ -433,6 +441,43 @@ class VehicleReservationService:
 		if account_doc.disabled:
 			frappe.throw(f"{label} {account} 已停用，不能用於 Sales Invoice。")
 		return account
+
+	def _build_sales_tax_row_from_template(self, company: str):
+		template, row = self._resolve_sales_tax_template(company)
+		return {
+			"charge_type": row.charge_type,
+			"account_head": row.account_head,
+			"rate": row.rate,
+			"included_in_print_rate": row.included_in_print_rate,
+			"description": getattr(row, "description", None) or "營業稅 5%（含稅）",
+		}
+
+	def _resolve_sales_tax_template(self, company: str):
+		if not frappe.db.exists("Sales Taxes and Charges Template", SALES_TAX_TEMPLATE):
+			frappe.throw(f"找不到 Sales Taxes and Charges Template：{SALES_TAX_TEMPLATE}。")
+
+		template = frappe.get_doc("Sales Taxes and Charges Template", SALES_TAX_TEMPLATE)
+		if template.company != company:
+			frappe.throw(f"Sales Taxes and Charges Template {SALES_TAX_TEMPLATE} 不屬於公司 {company}。")
+		if int(getattr(template, "disabled", 0) or 0):
+			frappe.throw(f"Sales Taxes and Charges Template {SALES_TAX_TEMPLATE} 已停用。")
+
+		taxes = list(getattr(template, "taxes", []) or [])
+		if len(taxes) != 1:
+			frappe.throw(f"Sales Taxes and Charges Template {SALES_TAX_TEMPLATE} 必須有且只有一筆稅項。")
+
+		row = taxes[0]
+		if row.charge_type != "On Net Total":
+			frappe.throw(f"Sales Taxes and Charges Template {SALES_TAX_TEMPLATE} charge_type 必須是 On Net Total。")
+		if row.account_head != SALES_TAX_ACCOUNT:
+			frappe.throw(f"Sales Taxes and Charges Template {SALES_TAX_TEMPLATE} account_head 必須是 {SALES_TAX_ACCOUNT}。")
+		if flt(row.rate) != SALES_TAX_RATE:
+			frappe.throw(f"Sales Taxes and Charges Template {SALES_TAX_TEMPLATE} rate 必須是 {SALES_TAX_RATE}。")
+		if int(getattr(row, "included_in_print_rate", 0) or 0) != 1:
+			frappe.throw(f"Sales Taxes and Charges Template {SALES_TAX_TEMPLATE} included_in_print_rate 必須是 1。")
+
+		self._validate_account_for_company(SALES_TAX_ACCOUNT, company, "銷項稅額科目")
+		return template, row
 
 	def complete_active_reservation(self, vehicle_name: str, completion_note: str | None = None):
 		assert_can_perform_used_car_action(

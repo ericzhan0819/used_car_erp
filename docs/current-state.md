@@ -324,7 +324,13 @@ P1-ACC-6F-A 新增獨立只讀 preflight service，檢查既有 Draft Sales Invo
 
 文件：`docs/p1-acc-6f-a-submitted-sales-invoice-preflight.md`。
 
-## 11. 驗證指令
+## 11. P1-TAX-1-A / P1-ACC-6F-B Sales Invoice Tax Template Runtime
+
+正式 Used Car Vehicle flow 的 `create_sales_invoice_draft_for_vehicle()` 會在建立 Draft Sales Invoice 時固定套用 `台灣營業稅 5%（含稅） - O`，並複製一筆 `0202134 - 銷項稅額 - O`、`rate = 5`、`included_in_print_rate = 1` 的 tax row。此階段只修 Sales Invoice 草稿稅務 payload；不 submit、不建立 GL Entry、不建立 Stock Ledger Entry、不建立 Payment Entry、不建立 Journal Entry、不建立 Delivery Note / Stock Entry、不修改 COA。15-1 仍只作內部扣抵估算，不寫入 Sales Invoice taxes table。
+
+文件：`docs/p1-tax-1-a-sales-invoice-tax-template-runtime.md`。
+
+## 12. 驗證指令
 
 目前常用驗證指令。以下站台以 `erpnext-coa.test` 為準；早期 `erpnext.localhost` 指令屬舊資料，後續不要照抄使用。
 
@@ -345,7 +351,7 @@ bench --site erpnext-coa.test execute used_car_erp.used_car_erp.services.vehicle
 
 如果 `run-tests` 顯示 `Testing is disabled for the site`，不要為了本次文件修改而更動站台測試設定。
 
-## 12. Commit 歷史參考
+## 13. Commit 歷史參考
 
 最近穩定 commits：
 

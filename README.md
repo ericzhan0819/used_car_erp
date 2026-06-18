@@ -135,6 +135,8 @@ P1-ACC-6E：Minimal Accounting / Stock Setup QA 新增 `erpnext-coa.test` / `OO`
 
 P1-ACC-6F-A：Submitted Sales Invoice Preflight Only 新增 Draft Sales Invoice 提交前只讀檢查，確認 Sales Invoice / item / serial_no / warehouse / tax / account 與 baseline counts；不 submit、不建立 GL Entry、不建立 Stock Ledger Entry、不補 serial_no、不修改正式流程。
 
+P1-TAX-1-A / P1-ACC-6F-B：正式 Used Car Vehicle 流程建立 Sales Invoice 草稿時，固定套用 `台灣營業稅 5%（含稅） - O`，並從 Sales Taxes and Charges Template 複製單筆銷項稅 row；若 template 或 tax account 設定錯誤會阻擋草稿建立，由人工修 master data，不由 runtime 自動修。本階段仍不 submit、不建立 GL Entry / Stock Ledger Entry、不建立 Payment Entry / Journal Entry / Delivery Note / Stock Entry、不修改 COA。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -153,6 +155,7 @@ Decision documents:
 - [台灣 Chart of Accounts 匯入前檢查](docs/taiwan-chart-of-accounts-import-preflight.md)
 - [P1-ACC-6E Minimal Accounting / Stock Setup QA](docs/p1-acc-6e-minimal-accounting-stock-setup-qa.md)
 - [P1-ACC-6F-A Submitted Sales Invoice Preflight Only](docs/p1-acc-6f-a-submitted-sales-invoice-preflight.md)
+- [P1-TAX-1-A Sales Invoice Tax Template Runtime](docs/p1-tax-1-a-sales-invoice-tax-template-runtime.md)
 
 Manual QA checklist:
 
