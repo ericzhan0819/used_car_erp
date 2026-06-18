@@ -133,6 +133,8 @@ P1-ACC-6A：Chart of Accounts Import Preflight 新增匯入前只讀檢查、現
 
 P1-ACC-6E：Minimal Accounting / Stock Setup QA 新增 `erpnext-coa.test` / `OO` 最小會計與庫存設定檢查，僅建立 Draft Sales Invoice 驗證 master data；不 submit、不產生 GL Entry、不產生 Stock Ledger Entry、不修改 COA。
 
+P1-ACC-6F-A：Submitted Sales Invoice Preflight Only 新增 Draft Sales Invoice 提交前只讀檢查，確認 Sales Invoice / item / serial_no / warehouse / tax / account 與 baseline counts；不 submit、不建立 GL Entry、不建立 Stock Ledger Entry、不補 serial_no、不修改正式流程。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -150,6 +152,7 @@ Decision documents:
 - [台灣完整 Chart of Accounts Importer 檔案](docs/taiwan-full-chart-of-accounts-importer-file.md)
 - [台灣 Chart of Accounts 匯入前檢查](docs/taiwan-chart-of-accounts-import-preflight.md)
 - [P1-ACC-6E Minimal Accounting / Stock Setup QA](docs/p1-acc-6e-minimal-accounting-stock-setup-qa.md)
+- [P1-ACC-6F-A Submitted Sales Invoice Preflight Only](docs/p1-acc-6f-a-submitted-sales-invoice-preflight.md)
 
 Manual QA checklist:
 
