@@ -658,7 +658,8 @@ function add_accounting_status_technical_fields_toggle_button(frm) {
       frm._show_accounting_technical_fields = !frm._show_accounting_technical_fields;
       apply_accounting_status_technical_field_visibility(frm);
       frm.refresh_fields();
-    }
+    },
+    "更多資訊"
   );
 }
 
@@ -822,9 +823,13 @@ function add_open_advance_settlement_journal_entry_button(frm) {
     return;
   }
 
-  frm.add_custom_button("查看預收款沖轉傳票", () => {
-    frappe.set_route("Form", "Journal Entry", frm.doc.advance_settlement_journal_entry);
-  });
+  frm.add_custom_button(
+    "查看預收款沖轉傳票",
+    () => {
+      frappe.set_route("Form", "Journal Entry", frm.doc.advance_settlement_journal_entry);
+    },
+    "文件連結"
+  );
 }
 
 function add_open_sales_invoice_button(frm) {
@@ -832,41 +837,49 @@ function add_open_sales_invoice_button(frm) {
     return;
   }
 
-  frm.add_custom_button("查看銷售發票", () => {
-    frappe.set_route("Form", "Sales Invoice", frm.doc.sales_invoice);
-  });
+  frm.add_custom_button(
+    "查看銷售發票",
+    () => {
+      frappe.set_route("Form", "Sales Invoice", frm.doc.sales_invoice);
+    },
+    "文件連結"
+  );
 }
 
 function add_recover_sales_invoice_draft_link_button(frm) {
   frm.remove_custom_button("修復 Sales Invoice 草稿連結");
   frm.remove_custom_button("修復銷售發票草稿連結");
-  frm.add_custom_button("修復銷售發票草稿連結", () => {
-    frappe.confirm(
-      "此操作只會在後端確認目前 Sales Invoice 已取消，且剛好存在一張 amended Draft Sales Invoice 時，才會修復車輛連結並回填缺失售車資料。是否繼續？",
-      () => {
-        frappe.call({
-          method:
-            "used_car_erp.used_car_erp.services.vehicle_formal_delivery_service.recover_sales_invoice_draft_link_for_vehicle",
-          args: {
-            vehicle_name: frm.doc.name,
-          },
-          freeze: true,
-          freeze_message: "正在修復 Sales Invoice 草稿連結...",
-          callback(response) {
-            const result = response.message || {};
-            const blockedReasons = result.blocked_reasons || [];
-            frappe.show_alert({
-              message: result.recovered
-                ? "已修復連結"
-                : blockedReasons.join(" ") || result.message || "Sales Invoice 草稿連結修復未執行。",
-              indicator: result.recovered ? "green" : "red",
-            });
-            frm.reload_doc();
-          },
-        });
-      }
-    );
-  });
+  frm.add_custom_button(
+    "修復銷售發票草稿連結",
+    () => {
+      frappe.confirm(
+        "此操作只會在後端確認目前 Sales Invoice 已取消，且剛好存在一張 amended Draft Sales Invoice 時，才會修復車輛連結並回填缺失售車資料。是否繼續？",
+        () => {
+          frappe.call({
+            method:
+              "used_car_erp.used_car_erp.services.vehicle_formal_delivery_service.recover_sales_invoice_draft_link_for_vehicle",
+            args: {
+              vehicle_name: frm.doc.name,
+            },
+            freeze: true,
+            freeze_message: "正在修復 Sales Invoice 草稿連結...",
+            callback(response) {
+              const result = response.message || {};
+              const blockedReasons = result.blocked_reasons || [];
+              frappe.show_alert({
+                message: result.recovered
+                  ? "已修復連結"
+                  : blockedReasons.join(" ") || result.message || "Sales Invoice 草稿連結修復未執行。",
+                indicator: result.recovered ? "green" : "red",
+              });
+              frm.reload_doc();
+            },
+          });
+        }
+      );
+    },
+    "技術維護"
+  );
 }
 
 function add_recover_sales_invoice_draft_link_button_if_needed(frm) {

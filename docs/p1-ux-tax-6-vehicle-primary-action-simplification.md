@@ -4,7 +4,7 @@ Last reviewed: 2026-06-20
 
 Phase: `P1-UX-TAX-6`
 
-Status: Step 2 JS-only non-sold / reserved primary-action cleanup implemented
+Status: Step 3 JS-only sold vehicle secondary-action grouping implemented
 
 ## 1. Background
 
@@ -455,7 +455,49 @@ controlled write gates
 permission gates
 ```
 
-## 10. Non-goals For P1-UX-TAX-6 Step 1
+## 10. Step 3 Implementation
+
+Step 3 has implemented a JS-only grouping cleanup for sold-vehicle secondary actions.
+
+Changed file:
+
+```text
+used_car_erp/used_car_erp/doctype/used_car_vehicle/used_car_vehicle.js
+```
+
+Detailed step document:
+
+```text
+docs/p1-ux-tax-6-step-3-sold-vehicle-secondary-action-grouping.md
+```
+
+Implemented changes:
+
+```text
+顯示 / 隱藏文件連結 is grouped under 更多資訊.
+查看銷售發票 and 查看預收款沖轉傳票 are grouped under 文件連結.
+修復銷售發票草稿連結 is grouped under 技術維護.
+Sold-vehicle primary action flow still uses get_sold_vehicle_primary_next_action.
+No backend runtime or gate behavior changed.
+```
+
+Step 3 did not change:
+
+```text
+Python service logic
+DocType JSON
+hooks.py
+Workspace JSON
+ERPNext core
+accounting runtime
+15-1 tax runtime
+management profit runtime
+controlled write gates
+permission gates
+formal sale accounting sequence
+```
+
+## 11. Non-goals For P1-UX-TAX-6 Step 1
 
 Step 1 does not do:
 
@@ -478,7 +520,7 @@ No GL Entry mutation
 No Stock Ledger Entry mutation
 ```
 
-## 11. Acceptance Criteria
+## 12. Acceptance Criteria
 
 Step 1 is complete when:
 
