@@ -50,6 +50,23 @@ class FakeDB:
 			return None
 		return None
 
+	def get_all(self, doctype, filters=None, fields=None, order_by=None, limit=None):
+		if doctype != "Used Car Vehicle":
+			return []
+		vehicles = [vehicle for vehicle in self.vehicles.values() if getattr(vehicle, "sales_invoice", None)]
+		vehicles.sort(key=lambda vehicle: getattr(vehicle, "modified", ""), reverse=True)
+		rows = []
+		for vehicle in vehicles[:limit]:
+			rows.append(
+				{
+					"name": vehicle.name,
+					"sales_invoice": vehicle.sales_invoice,
+					"status": getattr(vehicle, "status", None),
+					"formal_delivery_status": getattr(vehicle, "formal_delivery_status", None),
+				}
+			)
+		return rows
+
 	def count(self, doctype, filters=None):
 		key = (doctype, tuple(sorted((filters or {}).items())))
 		return self.counts.get(key, 0)
@@ -148,6 +165,42 @@ def _invoice(**overrides):
 				included_in_print_rate=1,
 			)
 		],
+	}
+	data.update(overrides)
+	return UnsafeDoc(**data)
+
+
+def _formal_invoice(name="ACC-SINV-FORMAL-00001", **overrides):
+	data = {
+		"name": name,
+		"remarks": "中古車正式銷售草稿",
+		"customer": "CUST-P1-ACC-6E",
+		"items": [
+			UnsafeDoc(
+				item_code=service.ITEM_CODE,
+				qty=1,
+				rate=1000000,
+				serial_no="VIN-FORMAL-001",
+				warehouse=service.WAREHOUSE,
+				income_account=service.INCOME_ACCOUNT,
+				expense_account=service.EXPENSE_ACCOUNT,
+			)
+		],
+	}
+	data.update(overrides)
+	return _invoice(**data)
+
+
+def _vehicle(name="UCV-FORMAL-001", sales_invoice="ACC-SINV-FORMAL-00001", **overrides):
+	data = {
+		"name": name,
+		"sales_invoice": sales_invoice,
+		"status": "已售出",
+		"formal_delivery_status": "銷售發票草稿",
+		"item": service.ITEM_CODE,
+		"serial_no": "VIN-FORMAL-001",
+		"stock_warehouse": service.WAREHOUSE,
+		"modified": "2026-06-19 12:00:00",
 	}
 	data.update(overrides)
 	return UnsafeDoc(**data)
@@ -270,3 +323,92 @@ def test_preflight_does_not_call_writing_methods(monkeypatch):
 
 	assert report["status"] == "pass"
 	assert report["ready_to_submit"] is True
+
+
+def test_latest_formal_vehicle_preflight_selects_linked_draft(monkeypatch):
+	fake_db, _ = _fake_environment(monkeypatch)
+	formal = _formal_invoice()
+	fake_db.sales_invoices[formal.name] = formal
+	fake_db.vehicles["UCV-FORMAL-001"] = _vehicle()
+	fake_db.serial_nos["VIN-FORMAL-001"] = UnsafeDoc(
+		name="VIN-FORMAL-001",
+		item_code=service.ITEM_CODE,
+		status="Active",
+		warehouse=service.WAREHOUSE,
+	)
+
+	report = service.run_latest_formal_vehicle_sales_invoice_preflight()
+
+	assert report["sales_invoice"] == formal.name
+	assert "Sales Invoice 可由 Used Car Vehicle.sales_invoice 反查正式車輛流程草稿。" in report["validations"]
+
+
+def test_latest_formal_vehicle_preflight_ignores_qa_draft(monkeypatch):
+	fake_db, _ = _fake_environment(monkeypatch)
+	formal = _formal_invoice()
+	fake_db.sales_invoices[formal.name] = formal
+	fake_db.vehicles["UCV-QA"] = _vehicle(
+		name="UCV-QA",
+		sales_invoice="ACC-SINV-2026-00002",
+		modified="2026-06-19 13:00:00",
+	)
+	fake_db.vehicles["UCV-FORMAL-001"] = _vehicle(modified="2026-06-19 12:00:00")
+	fake_db.serial_nos["VIN-FORMAL-001"] = UnsafeDoc(
+		name="VIN-FORMAL-001",
+		item_code=service.ITEM_CODE,
+		status="Active",
+		warehouse=service.WAREHOUSE,
+	)
+
+	report = service.run_latest_formal_vehicle_sales_invoice_preflight()
+
+	assert report["sales_invoice"] == formal.name
+
+
+def test_latest_formal_vehicle_preflight_not_found_with_only_qa(monkeypatch):
+	_fake_environment(monkeypatch)
+
+	report = service.run_latest_formal_vehicle_sales_invoice_preflight()
+
+	assert report["status"] == "fail"
+	assert report["ready_to_submit"] is False
+	assert "找不到正式車輛流程 Draft Sales Invoice。" in report["blocking_errors"]
+
+
+def test_latest_formal_vehicle_preflight_skips_non_draft_invoice(monkeypatch):
+	fake_db, _ = _fake_environment(monkeypatch)
+	formal = _formal_invoice(docstatus=1)
+	fake_db.sales_invoices[formal.name] = formal
+	fake_db.vehicles["UCV-FORMAL-001"] = _vehicle()
+
+	report = service.run_latest_formal_vehicle_sales_invoice_preflight()
+
+	assert report["status"] == "fail"
+	assert "找不到正式車輛流程 Draft Sales Invoice。" in report["blocking_errors"]
+
+
+def test_latest_formal_vehicle_preflight_does_not_call_writing_methods(monkeypatch):
+	fake_db, _ = _fake_environment(monkeypatch)
+	formal = _formal_invoice()
+	fake_db.sales_invoices[formal.name] = formal
+	fake_db.vehicles["UCV-FORMAL-001"] = _vehicle()
+	fake_db.serial_nos["VIN-FORMAL-001"] = UnsafeDoc(
+		name="VIN-FORMAL-001",
+		item_code=service.ITEM_CODE,
+		status="Active",
+		warehouse=service.WAREHOUSE,
+	)
+
+	report = service.run_latest_formal_vehicle_sales_invoice_preflight()
+
+	assert report["status"] == "pass"
+	assert report["ready_to_submit"] is True
+
+
+def test_default_qa_preflight_behavior_is_preserved(monkeypatch):
+	_fake_environment(monkeypatch)
+
+	report = service.run_submitted_sales_invoice_preflight()
+
+	assert report["sales_invoice"] == "ACC-SINV-2026-00002"
+	assert "Sales Invoice remarks 包含 P1-ACC-6E QA 標記。" in report["validations"]

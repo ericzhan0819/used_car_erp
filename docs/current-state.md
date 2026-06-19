@@ -330,7 +330,13 @@ P1-ACC-6F-A 新增獨立只讀 preflight service，檢查既有 Draft Sales Invo
 
 文件：`docs/p1-tax-1-a-sales-invoice-tax-template-runtime.md`。
 
-## 12. 驗證指令
+## 12. P1-ACC-6F-B-1 Formal Vehicle Sales Invoice Preflight Target
+
+P1-ACC-6F-B-1 新增正式 Used Car Vehicle flow 的 Draft Sales Invoice 只讀 preflight target。新的 runner 只從 `Used Car Vehicle.sales_invoice` 反查 `OO` 的 Draft Sales Invoice，排除 P1-ACC-6E QA draft remarks，找到後沿用既有 `SubmittedSalesInvoicePreflightService().run(sales_invoice=...)` 檢查。沒有 formal draft 時回傳 fail / not found，這是 P1-ACC-6F-C 前的安全 blocked 狀態；本階段不建立資料、不修資料、不 submit、不建立 GL Entry / Stock Ledger Entry。
+
+文件：`docs/p1-acc-6f-b-1-formal-vehicle-sales-invoice-preflight-target.md`。
+
+## 13. 驗證指令
 
 目前常用驗證指令。以下站台以 `erpnext-coa.test` 為準；早期 `erpnext.localhost` 指令屬舊資料，後續不要照抄使用。
 
@@ -351,7 +357,7 @@ bench --site erpnext-coa.test execute used_car_erp.used_car_erp.services.vehicle
 
 如果 `run-tests` 顯示 `Testing is disabled for the site`，不要為了本次文件修改而更動站台測試設定。
 
-## 13. Commit 歷史參考
+## 14. Commit 歷史參考
 
 最近穩定 commits：
 

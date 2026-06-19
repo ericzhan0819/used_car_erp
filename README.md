@@ -137,6 +137,8 @@ P1-ACC-6F-A：Submitted Sales Invoice Preflight Only 新增 Draft Sales Invoice 
 
 P1-TAX-1-A / P1-ACC-6F-B：正式 Used Car Vehicle 流程建立 Sales Invoice 草稿時，固定套用 `台灣營業稅 5%（含稅） - O`，並從 Sales Taxes and Charges Template 複製單筆銷項稅 row；若 template 或 tax account 設定錯誤會阻擋草稿建立，由人工修 master data，不由 runtime 自動修。本階段仍不 submit、不建立 GL Entry / Stock Ledger Entry、不建立 Payment Entry / Journal Entry / Delivery Note / Stock Entry、不修改 COA。
 
+P1-ACC-6F-B-1：新增正式 Used Car Vehicle flow 的 Draft Sales Invoice 只讀 preflight target，可從 `Used Car Vehicle.sales_invoice` 找到最新 formal draft 並排除 P1-ACC-6E QA draft；找不到時回傳 fail / not found，不建立資料、不修資料、不 submit。P1-ACC-6F-C 前仍不建立 GL Entry / Stock Ledger Entry。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -156,6 +158,7 @@ Decision documents:
 - [P1-ACC-6E Minimal Accounting / Stock Setup QA](docs/p1-acc-6e-minimal-accounting-stock-setup-qa.md)
 - [P1-ACC-6F-A Submitted Sales Invoice Preflight Only](docs/p1-acc-6f-a-submitted-sales-invoice-preflight.md)
 - [P1-TAX-1-A Sales Invoice Tax Template Runtime](docs/p1-tax-1-a-sales-invoice-tax-template-runtime.md)
+- [P1-ACC-6F-B-1 Formal Vehicle Sales Invoice Preflight Target](docs/p1-acc-6f-b-1-formal-vehicle-sales-invoice-preflight-target.md)
 
 Manual QA checklist:
 

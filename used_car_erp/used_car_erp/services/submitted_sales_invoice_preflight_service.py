@@ -108,6 +108,19 @@ class SubmittedSalesInvoicePreflightService:
 			order_by="modified desc",
 		)
 
+	def _find_latest_formal_vehicle_sales_invoice(self):
+		for vehicle in _get_formal_vehicle_sales_invoice_candidates(limit=50):
+			invoice_name = vehicle.get("sales_invoice")
+			if invoice_name:
+				return invoice_name
+		return None
+
+	def _new_not_found_report(self, message):
+		self._read_baseline_counts()
+		self._block(message)
+		self._set_status()
+		return self.report
+
 	def _read_baseline_counts(self):
 		self.report["gl_entry_count"] = frappe.db.count("GL Entry", {"company": COMPANY})
 		self.report["stock_ledger_entry_count"] = frappe.db.count("Stock Ledger Entry", {"company": COMPANY})
@@ -292,6 +305,66 @@ class SubmittedSalesInvoicePreflightService:
 		self.report["ready_to_submit"] = self.report["status"] == "pass"
 
 
+def _is_qa_sales_invoice(invoice):
+	remarks = getattr(invoice, "remarks", None) or ""
+	return QA_REMARKS_MARKER in remarks
+
+
+def _get_formal_vehicle_sales_invoice_candidates(limit=10):
+	vehicles = frappe.db.get_all(
+		"Used Car Vehicle",
+		filters={"sales_invoice": ["is", "set"]},
+		fields=("name", "sales_invoice", "status", "formal_delivery_status"),
+		order_by="modified desc",
+		limit=limit,
+	)
+	results = []
+	for vehicle in vehicles:
+		invoice_name = vehicle.get("sales_invoice")
+		if not invoice_name or not frappe.db.exists("Sales Invoice", invoice_name):
+			continue
+
+		invoice = frappe.get_doc("Sales Invoice", invoice_name)
+		if getattr(invoice, "company", None) != COMPANY:
+			continue
+		if int(getattr(invoice, "docstatus", 0) or 0) != 0:
+			continue
+		if _is_qa_sales_invoice(invoice):
+			continue
+
+		row = (list(getattr(invoice, "items", []) or []) or [None])[0]
+		results.append(
+			{
+				"vehicle": vehicle.get("name"),
+				"sales_invoice": invoice_name,
+				"vehicle_status": vehicle.get("status"),
+				"formal_delivery_status": vehicle.get("formal_delivery_status"),
+				"customer": getattr(invoice, "customer", None),
+				"docstatus": getattr(invoice, "docstatus", None),
+				"item_code": getattr(row, "item_code", None) if row else None,
+				"serial_no": getattr(row, "serial_no", None) if row else None,
+				"warehouse": getattr(row, "warehouse", None) if row else None,
+				"taxes_and_charges": getattr(invoice, "taxes_and_charges", None),
+				"modified": getattr(invoice, "modified", None),
+			}
+		)
+	return results
+
+
 @frappe.whitelist()
 def run_submitted_sales_invoice_preflight(sales_invoice=None):
 	return SubmittedSalesInvoicePreflightService().run(sales_invoice=sales_invoice)
+
+
+@frappe.whitelist()
+def run_latest_formal_vehicle_sales_invoice_preflight():
+	service = SubmittedSalesInvoicePreflightService()
+	invoice_name = service._find_latest_formal_vehicle_sales_invoice()
+	if not invoice_name:
+		return service._new_not_found_report("找不到正式車輛流程 Draft Sales Invoice。")
+	return service.run(sales_invoice=invoice_name)
+
+
+@frappe.whitelist()
+def find_formal_vehicle_sales_invoice_preflight_candidates(limit=10):
+	return _get_formal_vehicle_sales_invoice_candidates(limit=limit)
