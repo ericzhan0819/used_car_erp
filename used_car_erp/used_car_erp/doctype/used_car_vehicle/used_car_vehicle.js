@@ -86,12 +86,6 @@ function apply_vehicle_form_mode(frm) {
   clear_vehicle_action_buttons(frm);
   set_vehicle_intake_intro(frm);
   apply_tax_fields_visibility(frm);
-  add_sold_vehicle_progress_comment(frm);
-  add_sold_vehicle_final_check_comment(frm);
-  add_formal_delivery_submit_preflight_comment(frm);
-  if (!is_reserved_vehicle(frm)) {
-    add_vehicle_cost_summary_comment(frm);
-  }
   render_accounting_status_summary(frm);
   apply_accounting_status_technical_field_visibility(frm);
 

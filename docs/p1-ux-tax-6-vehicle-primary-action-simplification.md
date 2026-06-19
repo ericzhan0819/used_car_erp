@@ -4,7 +4,7 @@ Last reviewed: 2026-06-20
 
 Phase: `P1-UX-TAX-6`
 
-Status: Step 3 JS-only sold vehicle secondary-action grouping implemented
+Status: Step 4 dashboard legacy comment producer cleanup implemented
 
 ## 1. Background
 
@@ -497,7 +497,51 @@ permission gates
 formal sale accounting sequence
 ```
 
-## 11. Non-goals For P1-UX-TAX-6 Step 1
+## 11. Step 4 Implementation
+
+Step 4 has implemented a JS-only cleanup for legacy duplicate dashboard comment producers.
+
+Changed file:
+
+```text
+used_car_erp/used_car_erp/doctype/used_car_vehicle/used_car_vehicle.js
+```
+
+Detailed step document:
+
+```text
+docs/p1-ux-tax-6-step-4-dashboard-legacy-comment-producer-cleanup.md
+```
+
+Implemented changes:
+
+```text
+apply_vehicle_form_mode no longer calls add_sold_vehicle_progress_comment.
+apply_vehicle_form_mode no longer calls add_sold_vehicle_final_check_comment.
+apply_vehicle_form_mode no longer calls add_formal_delivery_submit_preflight_comment.
+apply_vehicle_form_mode no longer calls add_vehicle_cost_summary_comment.
+render_accounting_status_summary is now the active read-only summary entry.
+Reserved vehicle active reservation dashboard status remains preserved.
+used_car_vehicle_dashboard_comment_cleanup.js no longer calls frm.dashboard.clear_comment on refresh, preventing flash-then-disappear behavior.
+```
+
+Step 4 did not change:
+
+```text
+Python service logic
+DocType JSON
+hooks.py
+Workspace JSON
+ERPNext core
+accounting runtime
+15-1 tax runtime
+management profit runtime
+controlled write gates
+permission gates
+formal sale accounting sequence
+```
+
+## 12. Non-goals For P1-UX-TAX-6 Step 1
 
 Step 1 does not do:
 
@@ -520,7 +564,7 @@ No GL Entry mutation
 No Stock Ledger Entry mutation
 ```
 
-## 12. Acceptance Criteria
+## 13. Acceptance Criteria
 
 Step 1 is complete when:
 

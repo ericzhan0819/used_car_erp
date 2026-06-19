@@ -30,22 +30,9 @@
     frm._used_car_dashboard_comment_cleanup_applied = true;
   }
 
-  function clear_initial_duplicate_dashboard_comment(frm) {
-    if (!frm.dashboard || frm.is_new() || frm.doc.status === "保留中") {
-      return;
-    }
-
-    // The main Used Car Vehicle script may already have rendered a synchronous
-    // legacy cost / progress dashboard comment before this cleanup hook runs.
-    // The Step 3 summary HTML now owns those read-only numbers and next-step
-    // labels, so clear the dashboard headline for non-reserved vehicles only.
-    frm.dashboard.clear_comment();
-  }
-
   frappe.ui.form.on("Used Car Vehicle", {
     refresh(frm) {
       patch_vehicle_dashboard_comment(frm);
-      clear_initial_duplicate_dashboard_comment(frm);
     },
   });
 })();
