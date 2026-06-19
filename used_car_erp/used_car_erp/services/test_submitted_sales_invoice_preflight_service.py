@@ -313,6 +313,8 @@ def test_report_schema_is_stable(monkeypatch):
 	assert isinstance(report["validations"], list)
 	assert isinstance(report["warnings"], list)
 	assert isinstance(report["blocking_errors"], list)
+	assert report["target_mode"] == "qa_draft"
+	assert report["baseline_mode"] == "clean_site_expected"
 
 
 def test_preflight_does_not_call_writing_methods(monkeypatch):
@@ -341,6 +343,8 @@ def test_latest_formal_vehicle_preflight_selects_linked_draft(monkeypatch):
 
 	assert report["sales_invoice"] == formal.name
 	assert "Sales Invoice 可由 Used Car Vehicle.sales_invoice 反查正式車輛流程草稿。" in report["validations"]
+	assert report["target_mode"] == "formal_vehicle_draft"
+	assert report["baseline_mode"] == "formal_flow_observe_only"
 
 
 def test_latest_formal_vehicle_preflight_ignores_qa_draft(monkeypatch):
@@ -412,3 +416,87 @@ def test_default_qa_preflight_behavior_is_preserved(monkeypatch):
 
 	assert report["sales_invoice"] == "ACC-SINV-2026-00002"
 	assert "Sales Invoice remarks 包含 P1-ACC-6E QA 標記。" in report["validations"]
+	assert report["target_mode"] == "qa_draft"
+	assert report["baseline_mode"] == "clean_site_expected"
+
+
+def test_qa_draft_gl_entry_baseline_warning(monkeypatch):
+	fake_db, _ = _fake_environment(monkeypatch)
+	fake_db.counts[("GL Entry", (("company", service.COMPANY),))] = 1
+
+	report = service.SubmittedSalesInvoicePreflightService().run(sales_invoice="ACC-SINV-2026-00002")
+
+	assert report["status"] == "warning"
+	assert any("GL Entry count 為 0" in warning for warning in report["warnings"])
+
+
+def test_qa_draft_stock_ledger_entry_baseline_warning(monkeypatch):
+	fake_db, _ = _fake_environment(monkeypatch)
+	fake_db.counts[("Stock Ledger Entry", (("company", service.COMPANY),))] = 1
+
+	report = service.SubmittedSalesInvoicePreflightService().run(sales_invoice="ACC-SINV-2026-00002")
+
+	assert report["status"] == "warning"
+	assert any("Stock Ledger Entry count 為 0" in warning for warning in report["warnings"])
+
+
+def test_formal_draft_gl_entry_baseline_is_observe_only(monkeypatch):
+	fake_db, _ = _fake_environment(monkeypatch)
+	formal = _formal_invoice()
+	fake_db.sales_invoices[formal.name] = formal
+	fake_db.vehicles["UCV-FORMAL-001"] = _vehicle()
+	fake_db.serial_nos["VIN-FORMAL-001"] = UnsafeDoc(name="VIN-FORMAL-001", item_code=service.ITEM_CODE, status="Active", warehouse=service.WAREHOUSE)
+	fake_db.counts[("GL Entry", (("company", service.COMPANY),))] = 2
+
+	report = service.SubmittedSalesInvoicePreflightService().run(sales_invoice=formal.name)
+
+	assert report["status"] == "pass"
+	assert report["gl_entry_count"] == 2
+	assert not any("GL Entry count 為 0" in warning for warning in report["warnings"])
+	assert any("formal flow baseline observed: GL Entry count = 2" in validation for validation in report["validations"])
+
+
+def test_formal_draft_stock_ledger_entry_baseline_is_observe_only(monkeypatch):
+	fake_db, _ = _fake_environment(monkeypatch)
+	formal = _formal_invoice()
+	fake_db.sales_invoices[formal.name] = formal
+	fake_db.vehicles["UCV-FORMAL-001"] = _vehicle()
+	fake_db.serial_nos["VIN-FORMAL-001"] = UnsafeDoc(name="VIN-FORMAL-001", item_code=service.ITEM_CODE, status="Active", warehouse=service.WAREHOUSE)
+	fake_db.counts[("Stock Ledger Entry", (("company", service.COMPANY),))] = 3
+
+	report = service.SubmittedSalesInvoicePreflightService().run(sales_invoice=formal.name)
+
+	assert report["status"] == "pass"
+	assert report["stock_ledger_entry_count"] == 3
+	assert not any("Stock Ledger Entry count 為 0" in warning for warning in report["warnings"])
+	assert any("Stock Ledger Entry count = 3" in validation for validation in report["validations"])
+
+
+def test_formal_draft_baseline_counts_are_reported(monkeypatch):
+	fake_db, _ = _fake_environment(monkeypatch)
+	formal = _formal_invoice()
+	fake_db.sales_invoices[formal.name] = formal
+	fake_db.vehicles["UCV-FORMAL-001"] = _vehicle()
+	fake_db.serial_nos["VIN-FORMAL-001"] = UnsafeDoc(name="VIN-FORMAL-001", item_code=service.ITEM_CODE, status="Active", warehouse=service.WAREHOUSE)
+	fake_db.counts[("GL Entry", (("company", service.COMPANY),))] = 2
+	fake_db.counts[("Stock Ledger Entry", (("company", service.COMPANY),))] = 3
+
+	report = service.SubmittedSalesInvoicePreflightService().run(sales_invoice=formal.name)
+
+	assert report["gl_entry_count"] == 2
+	assert report["stock_ledger_entry_count"] == 3
+	assert report["submitted_sales_invoice_count"] == 0
+
+
+def test_unknown_target_mode_still_blocks(monkeypatch):
+	fake_db, _ = _fake_environment(monkeypatch)
+	unknown = _formal_invoice(name="ACC-SINV-UNKNOWN-001")
+	fake_db.sales_invoices[unknown.name] = unknown
+	fake_db.serial_nos["VIN-FORMAL-001"] = UnsafeDoc(name="VIN-FORMAL-001", item_code=service.ITEM_CODE, status="Active", warehouse=service.WAREHOUSE)
+
+	report = service.SubmittedSalesInvoicePreflightService().run(sales_invoice=unknown.name)
+
+	assert report["target_mode"] == "unknown"
+	assert report["baseline_mode"] == "clean_site_expected"
+	assert report["status"] == "fail"
+	assert any("無法由 Used Car Vehicle.sales_invoice 反查" in error for error in report["blocking_errors"])

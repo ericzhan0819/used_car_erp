@@ -356,7 +356,13 @@ P1-ACC-6F-C-0 新增 submitted Sales Invoice submit 前最後 read-only gate sna
 
 文件：`docs/p1-acc-6f-c-0-submitted-sales-invoice-submit-gate-snapshot.md`。
 
-## 16. 驗證指令
+## 16. P1-ACC-6F-C-0A Split QA And Formal Preflight Baseline Semantics
+
+P1-ACC-6F-C-0A 將 submitted Sales Invoice preflight baseline 分為 QA draft clean-site expected 與 formal Used Car Vehicle draft observe-only。P1-ACC-6E QA draft 仍在 `erpnext-coa.test` 上把 GL Entry / Stock Ledger Entry / submitted Sales Invoice count 非 0 視為 clean-site warning；formal draft 則只記錄 GL / Stock Ledger baseline counts，因正式流程在建立 Sales Invoice draft 前本來就可能已有 Stock Entry / Journal Entry ledger。submitted Sales Invoice count > 0 仍是第一張 submitted QA 污染風險。本階段不是 submit，也不是 fixture creation。
+
+文件：`docs/p1-acc-6f-c-0a-split-qa-and-formal-preflight-baseline-semantics.md`。
+
+## 17. 驗證指令
 
 目前常用驗證指令。以下站台以 `erpnext-coa.test` 為準；早期 `erpnext.localhost` 指令屬舊資料，後續不要照抄使用。
 

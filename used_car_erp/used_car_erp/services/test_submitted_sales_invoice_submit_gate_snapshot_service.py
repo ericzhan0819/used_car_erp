@@ -155,6 +155,8 @@ def _preflight_report(**overrides):
 		"status": "pass",
 		"ready_to_submit": True,
 		"sales_invoice": "SINV-FORMAL-001",
+		"target_mode": "formal_vehicle_draft",
+		"baseline_mode": "formal_flow_observe_only",
 		"blocking_errors": [],
 		"warnings": [],
 	}
@@ -200,6 +202,8 @@ def test_formal_draft_with_linked_vehicle_and_preflight_passes(monkeypatch):
 	assert report["ready_for_submit_test"] is True
 	assert report["vehicle"] == "UCV-FORMAL-001"
 	assert report["preflight_status"] == "pass"
+	assert report["target_mode"] == "formal_vehicle_draft"
+	assert report["baseline_mode"] == "formal_flow_observe_only"
 
 
 def test_docstatus_non_zero_fails(monkeypatch):
@@ -295,6 +299,26 @@ def test_preflight_fail_makes_submit_gate_fail(monkeypatch):
 	assert report["status"] == "fail"
 	assert report["ready_for_submit_test"] is False
 	assert any("PreflightService" in error for error in report["blocking_errors"])
+
+
+def test_formal_gl_sle_baseline_counts_do_not_fail_snapshot(monkeypatch):
+	_fake_environment(monkeypatch)
+	FakePreflightService.report = _preflight_report(
+		gl_entry_count=2,
+		stock_ledger_entry_count=3,
+		validations=[
+			"formal flow baseline observed: GL Entry count = 2",
+			"formal flow baseline observed: Stock Ledger Entry count = 3",
+		],
+		warnings=[],
+	)
+
+	report = service.SubmittedSalesInvoiceSubmitGateSnapshotService().run()
+
+	assert report["status"] == "pass"
+	assert report["ready_for_submit_test"] is True
+	assert report["preflight_report"]["gl_entry_count"] == 2
+	assert report["preflight_report"]["stock_ledger_entry_count"] == 3
 
 
 def test_submitted_sales_invoice_count_warning(monkeypatch):

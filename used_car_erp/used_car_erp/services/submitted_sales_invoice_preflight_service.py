@@ -37,6 +37,8 @@ REPORT_KEYS = (
 	"expense_account",
 	"tax_template",
 	"tax_account",
+	"target_mode",
+	"baseline_mode",
 	"gl_entry_count",
 	"stock_ledger_entry_count",
 	"submitted_sales_invoice_count",
@@ -51,21 +53,29 @@ class SubmittedSalesInvoicePreflightService:
 		self.report = self._new_report()
 
 	def run(self, sales_invoice=None):
-		self._read_baseline_counts()
 		invoice_name = sales_invoice or self._find_latest_qa_draft_sales_invoice()
 		if not invoice_name:
+			self._set_target_mode(None, None)
+			self._read_baseline_counts()
+			self._apply_baseline_semantics()
 			self._block("找不到可檢查的 Draft Sales Invoice。")
 			self._set_status()
 			return self.report
 
 		self.report["sales_invoice"] = invoice_name
 		if not frappe.db.exists("Sales Invoice", invoice_name):
+			self._set_target_mode(None, None)
+			self._read_baseline_counts()
+			self._apply_baseline_semantics()
 			self._block(f"Sales Invoice 不存在：{invoice_name}")
 			self._set_status()
 			return self.report
 
 		invoice = frappe.get_doc("Sales Invoice", invoice_name)
 		linked_vehicle = self._resolve_linked_vehicle(invoice_name)
+		self._set_target_mode(invoice, linked_vehicle)
+		self._read_baseline_counts()
+		self._apply_baseline_semantics()
 		self._validate_sales_invoice(invoice, linked_vehicle)
 		self._validate_item_row(invoice, linked_vehicle)
 		self._validate_tax_row(invoice)
@@ -88,6 +98,8 @@ class SubmittedSalesInvoicePreflightService:
 			"expense_account": EXPENSE_ACCOUNT,
 			"tax_template": TAX_TEMPLATE,
 			"tax_account": TAX_ACCOUNT,
+			"target_mode": None,
+			"baseline_mode": None,
 			"gl_entry_count": None,
 			"stock_ledger_entry_count": None,
 			"submitted_sales_invoice_count": None,
@@ -116,10 +128,23 @@ class SubmittedSalesInvoicePreflightService:
 		return None
 
 	def _new_not_found_report(self, message):
+		self._set_target_mode(None, None)
 		self._read_baseline_counts()
+		self._apply_baseline_semantics()
 		self._block(message)
 		self._set_status()
 		return self.report
+
+	def _set_target_mode(self, invoice, linked_vehicle):
+		if invoice and _is_qa_sales_invoice(invoice):
+			self.report["target_mode"] = "qa_draft"
+			self.report["baseline_mode"] = "clean_site_expected"
+		elif invoice and linked_vehicle and getattr(linked_vehicle, "sales_invoice", None) == invoice.name:
+			self.report["target_mode"] = "formal_vehicle_draft"
+			self.report["baseline_mode"] = "formal_flow_observe_only"
+		else:
+			self.report["target_mode"] = "unknown"
+			self.report["baseline_mode"] = "clean_site_expected"
 
 	def _read_baseline_counts(self):
 		self.report["gl_entry_count"] = frappe.db.count("GL Entry", {"company": COMPANY})
@@ -129,7 +154,25 @@ class SubmittedSalesInvoicePreflightService:
 			{"company": COMPANY, "docstatus": 1},
 		)
 
+		self.report["validations"].append("已讀取 submit 前 GL / Stock Ledger / submitted Sales Invoice baseline counts。")
+
+	def _apply_baseline_semantics(self):
 		site = getattr(getattr(frappe, "local", None), "site", None)
+		if self.report["baseline_mode"] == "formal_flow_observe_only":
+			self.report["validations"].append(
+				f"formal flow baseline observed: GL Entry count = {self.report['gl_entry_count']}"
+			)
+			self.report["validations"].append(
+				"formal flow baseline observed: "
+				f"Stock Ledger Entry count = {self.report['stock_ledger_entry_count']}"
+			)
+			if site == EXPECTED_CLEAN_SITE and self.report["submitted_sales_invoice_count"]:
+				self._warn(
+					"erpnext-coa.test clean baseline warning: submitted Sales Invoice count 已非 0，"
+					"會干擾第一張 submitted Sales Invoice QA 判斷；這不是 formal draft payload error。"
+				)
+			return
+
 		if site == EXPECTED_CLEAN_SITE:
 			if self.report["gl_entry_count"]:
 				self._warn("erpnext-coa.test 目前預期 GL Entry count 為 0，實際已有資料；本 preflight 不自動修復。")
@@ -137,8 +180,6 @@ class SubmittedSalesInvoicePreflightService:
 				self._warn("erpnext-coa.test 目前預期 Stock Ledger Entry count 為 0，實際已有資料；本 preflight 不自動修復。")
 			if self.report["submitted_sales_invoice_count"]:
 				self._warn("erpnext-coa.test 目前預期 submitted Sales Invoice count 為 0，實際已有資料；本 preflight 不自動修復。")
-
-		self.report["validations"].append("已讀取 submit 前 GL / Stock Ledger / submitted Sales Invoice baseline counts。")
 
 	def _resolve_linked_vehicle(self, invoice_name):
 		vehicle_name = frappe.db.get_value("Used Car Vehicle", {"sales_invoice": invoice_name}, "name")

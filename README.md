@@ -145,6 +145,8 @@ P1-ACC-6F-B-3：新增受 readiness gate 保護的正式 Draft Sales Invoice 建
 
 P1-ACC-6F-C-0：新增 submitted Sales Invoice submit gate snapshot，針對最新正式 Draft Sales Invoice 或指定 Sales Invoice 讀取 submit 前欄位、linked Used Car Vehicle、baseline counts 與 submitted preflight 結果，只回答是否可安排 P1-ACC-6F-C real submit test；本階段不 submit、不建立 draft、不修資料、不建立 GL Entry / Stock Ledger Entry。
 
+P1-ACC-6F-C-0A：修正 submit preflight baseline semantics，將 P1-ACC-6E QA draft 的 clean-site expected baseline 與正式 Used Car Vehicle draft 的 observe-only baseline 分開；formal flow 前置 Stock Entry / Journal Entry 造成的 GL / Stock Ledger counts 不再視為 formal draft payload warning，但 submitted Sales Invoice count > 0 仍是第一張 submitted QA 污染風險。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -168,6 +170,7 @@ Decision documents:
 - [P1-ACC-6F-B-2 Formal Sales Invoice Draft Readiness Inspector](docs/p1-acc-6f-b-2-formal-sales-invoice-draft-readiness-inspector.md)
 - [P1-ACC-6F-B-3 Guarded Formal Sales Invoice Draft Creation QA](docs/p1-acc-6f-b-3-guarded-formal-sales-invoice-draft-creation-qa.md)
 - [P1-ACC-6F-C-0 Submitted Sales Invoice Submit Gate Snapshot](docs/p1-acc-6f-c-0-submitted-sales-invoice-submit-gate-snapshot.md)
+- [P1-ACC-6F-C-0A Split QA And Formal Preflight Baseline Semantics](docs/p1-acc-6f-c-0a-split-qa-and-formal-preflight-baseline-semantics.md)
 
 Manual QA checklist:
 

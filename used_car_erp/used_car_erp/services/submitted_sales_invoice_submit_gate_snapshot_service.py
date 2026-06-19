@@ -50,6 +50,8 @@ REPORT_KEYS = (
 	"counts",
 	"preflight_status",
 	"preflight_ready_to_submit",
+	"target_mode",
+	"baseline_mode",
 	"preflight_report",
 	"validations",
 	"warnings",
@@ -210,6 +212,8 @@ class SubmittedSalesInvoiceSubmitGateSnapshotService:
 		self.report["preflight_report"] = preflight
 		self.report["preflight_status"] = preflight.get("status")
 		self.report["preflight_ready_to_submit"] = preflight.get("ready_to_submit")
+		self.report["target_mode"] = preflight.get("target_mode")
+		self.report["baseline_mode"] = preflight.get("baseline_mode")
 		if preflight.get("status") != "pass":
 			self._block("SubmittedSalesInvoicePreflightService 回傳 fail / warning，submit gate 不通過。")
 
