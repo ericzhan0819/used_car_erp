@@ -153,6 +153,8 @@ P1-ACC-6F-C-0B-1：修正正式車輛入庫 Material Receipt 的 Stock Entry Dif
 
 P1-ACC-6F-C-0B-2：formal submit fixture setup 可安全續跑半套 fixture，不清理、不重建、不建立第二套 fixture，而是用既有正式 service 從目前車輛狀態補到 Draft Sales Invoice 與 submit gate snapshot；本階段仍不 submit Sales Invoice。
 
+P1-ACC-6F-C：新增 guarded formal Sales Invoice submit QA，只允許在 `erpnext-coa.test`、confirmation token 正確且 submit gate snapshot 通過時提交一張 formal fixture Draft Sales Invoice。此階段會造成 ERPNext 原生 GL Entry / Stock Ledger Entry，但不建立 Payment Entry / Delivery Note / Purchase Invoice、不做預收款沖轉、不回寫 `formal_delivery_status = 已完成`。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -180,6 +182,7 @@ Decision documents:
 - [P1-ACC-6F-C-0B Formal Submitted Sales Invoice Test Fixture Setup](docs/p1-acc-6f-c-0b-formal-submitted-sales-invoice-test-fixture-setup.md)
 - [P1-ACC-6F-C-0B-1 Vehicle Stock Entry Difference Account Gate](docs/p1-acc-6f-c-0b-1-vehicle-stock-entry-difference-account-gate.md)
 - [P1-ACC-6F-C-0B-2 Resume Half-Created Formal Submit Fixture](docs/p1-acc-6f-c-0b-2-resume-half-created-formal-submit-fixture.md)
+- [P1-ACC-6F-C Guarded Formal Sales Invoice Submit QA](docs/p1-acc-6f-c-guarded-formal-sales-invoice-submit-qa.md)
 
 Manual QA checklist:
 
