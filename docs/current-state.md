@@ -344,6 +344,14 @@ P1-ACC-6F-B-2 新增正式 Sales Invoice 草稿建立前只讀 readiness inspect
 
 ## 14. 驗證指令
 
+## 14. P1-ACC-6F-B-3 Guarded Formal Sales Invoice Draft Creation QA
+
+P1-ACC-6F-B-3 新增受 readiness gate 保護的正式 Draft Sales Invoice 建立 QA runner。只有 readiness pass 時才允許呼叫 `create_sales_invoice_draft_for_vehicle()` 建立草稿；建立後立即檢查 Draft Sales Invoice header、item row、tax row、Sales Invoice count 增加 1，以及 GL Entry / Stock Ledger Entry / Payment Entry / Journal Entry / Delivery Note / Stock Entry counts 不變，並執行 submitted preflight 與 latest formal draft target 確認。本階段不 submit、不建立正式 GL / Stock Ledger、不處理 Payment Entry / Journal Entry / Delivery Note / Stock Entry，真正 submit 仍留到 P1-ACC-6F-C。若 live site 沒有候選或 readiness 未 pass，blocked 是正確結果。
+
+文件：`docs/p1-acc-6f-b-3-guarded-formal-sales-invoice-draft-creation-qa.md`。
+
+## 15. 驗證指令
+
 目前常用驗證指令。以下站台以 `erpnext-coa.test` 為準；早期 `erpnext.localhost` 指令屬舊資料，後續不要照抄使用。
 
 ```bash
@@ -363,7 +371,7 @@ bench --site erpnext-coa.test execute used_car_erp.used_car_erp.services.vehicle
 
 如果 `run-tests` 顯示 `Testing is disabled for the site`，不要為了本次文件修改而更動站台測試設定。
 
-## 15. Commit 歷史參考
+## 16. Commit 歷史參考
 
 最近穩定 commits：
 
