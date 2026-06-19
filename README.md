@@ -163,6 +163,10 @@ P1-ACC-6G-1：新增 guarded advance settlement Journal Entry QA，只允許在 
 
 P1-ACC-6H-0：新增 formal sale accounting closure inspector，集中只讀檢查已售出車輛、submitted Sales Invoice、Sales Invoice GL / SLE、advance settlement Journal Entry、訂金 / 尾款金流與傳票鏈，以及非本流程文件是否為 0；本階段不建立、不提交、不修改任何文件，不處理 UI、15-1 稅務公式或整備 / 維修 / 美容 / 拍場 / 代辦費。
 
+P1-ACC-6H-0 formal accounting closure inspector 已完成，正式售車會計閉環已可通過只讀檢查；下一階段轉向 UX / tax boundary，不再繼續增加 accounting runtime。
+
+P1-UX-TAX-0：新增 Used Car Vehicle 簡化 UX 與 15-1 稅務邊界規格，明確定義車輛頁應收斂為基本資料、採購、售車、收支四個業務區塊，會計文件與 ledger 技術細節移往會計作業；15-1 只用在售車營業稅估算，`purchase_price` 只代表購車價，不包含整備、維修、美容、拍場、代辦或其他後續費用。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -195,6 +199,7 @@ Decision documents:
 - [P1-ACC-6G-0 Advance Settlement Readiness Inspector](docs/p1-acc-6g-0-advance-settlement-readiness-inspector.md)
 - [P1-ACC-6G-1 Guarded Advance Settlement Journal Entry QA](docs/p1-acc-6g-1-guarded-advance-settlement-journal-qa.md)
 - [P1-ACC-6H-0 Formal Sale Accounting Closure Inspector](docs/p1-acc-6h-0-formal-sale-accounting-closure-inspector.md)
+- [P1-UX-TAX-0 Used Car Vehicle Simplified UX And 15-1 Tax Boundary Spec](docs/p1-ux-tax-0-used-car-vehicle-simplified-ux-and-15-1-tax-boundary-spec.md)
 
 Manual QA checklist:
 

@@ -381,6 +381,10 @@ P1-ACC-6G-1 新增 guarded advance settlement Journal Entry QA。此 service 只
 
 P1-ACC-6H-0 新增 formal sale accounting closure inspector。此 service 只讀整台已售出車輛的正式售車會計閉環，檢查 `formal_delivery_status = 已完成`、submitted Sales Invoice、Sales Invoice GL Entry / Stock Ledger Entry、submitted advance settlement Journal Entry、settlement GL Entry、Sales Invoice outstanding 歸零、訂金 / 尾款金流與傳票鏈，以及 Payment Entry / Delivery Note / Purchase Invoice 等非本流程文件未產生。若 inspector pass，正式售車會計 runtime 可暫停開發，下一階段可轉向 Used Car Vehicle 簡化 UX、15-1 稅務邊界規格與會計 workspace / dashboard 整理。
 
+目前 formal sale accounting closure 已完成，`ACC-SINV-2026-00004` 的 closure inspector 已回傳 `status = pass`、`closed = true`、`ready_for_ui_review = true`。會計 runtime 暫停擴張，下一階段先做 Vehicle UX / 15-1 tax boundary spec，不再新增會計 runtime。
+
+P1-UX-TAX-0 新增 Used Car Vehicle 簡化 UX 與 15-1 稅務邊界規格。此文件定義車輛頁後續應聚焦基本資料、採購、售車、收支四個業務區塊，會計技術細節移往會計作業；同時明確 `purchase_price = 購車價`，15-1 只用於售車營業稅估算，整備 / 維修 / 美容 / 拍場 / 代辦費不併入 15-1 購入成本。
+
 文件：`docs/p1-acc-6f-c-0b-formal-submitted-sales-invoice-test-fixture-setup.md`。
 
 文件：`docs/p1-acc-6f-c-guarded-formal-sales-invoice-submit-qa.md`。
@@ -392,6 +396,8 @@ P1-ACC-6H-0 新增 formal sale accounting closure inspector。此 service 只讀
 文件：`docs/p1-acc-6g-1-guarded-advance-settlement-journal-qa.md`。
 
 文件：`docs/p1-acc-6h-0-formal-sale-accounting-closure-inspector.md`。
+
+文件：`docs/p1-ux-tax-0-used-car-vehicle-simplified-ux-and-15-1-tax-boundary-spec.md`。
 
 ## 18. 驗證指令
 
