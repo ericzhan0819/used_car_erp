@@ -88,6 +88,10 @@ ACTION_ROLE_MAP = {
 		"Used Car Accounting",
 		"Used Car Accounting Manager",
 	},
+	"used_car_formal_delivery.advance_settlement.link": {
+		"Used Car Accounting",
+		"Used Car Accounting Manager",
+	},
 	"used_car_advance_settlement.create_draft": {
 		"Used Car Accounting",
 		"Used Car Accounting Manager",

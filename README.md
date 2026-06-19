@@ -159,6 +159,8 @@ P1-ACC-6F-D：新增 Sales Invoice submit 後正式交車狀態同步，只在 s
 
 P1-ACC-6G-0：新增預收款沖轉 readiness inspector，檢查已提交 Sales Invoice、已完成正式交車會計狀態、已入帳訂金 / 尾款金流與 Journal Entry 是否可進入下一階段預收款沖轉建立；本階段只回傳 gate report 與 settlement preview，不建立或提交 Journal Entry，不修改任何文件，不使用 15-1 稅務估算或成本資料作為沖轉依據。
 
+P1-ACC-6G-1：新增 guarded advance settlement Journal Entry QA，只允許在 `erpnext-coa.test` 且 confirmation token 正確時，根據 P1-ACC-6G-0 readiness preview 建立並提交一張預收款沖轉 Journal Entry，將已入帳訂金 / 尾款預收款轉沖 submitted Sales Invoice 應收帳款；本階段不建立 Payment Entry / Delivery Note / Purchase Invoice / Sales Invoice，不修改 Sales Invoice / Money Flow / Voucher Draft / Reservation，且只透過 controlled write 回寫 `Used Car Vehicle.advance_settlement_journal_entry`。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -189,6 +191,7 @@ Decision documents:
 - [P1-ACC-6F-C Guarded Formal Sales Invoice Submit QA](docs/p1-acc-6f-c-guarded-formal-sales-invoice-submit-qa.md)
 - [P1-ACC-6F-D Post-submit Formal Delivery Status Sync](docs/p1-acc-6f-d-post-submit-formal-delivery-status-sync.md)
 - [P1-ACC-6G-0 Advance Settlement Readiness Inspector](docs/p1-acc-6g-0-advance-settlement-readiness-inspector.md)
+- [P1-ACC-6G-1 Guarded Advance Settlement Journal Entry QA](docs/p1-acc-6g-1-guarded-advance-settlement-journal-qa.md)
 
 Manual QA checklist:
 

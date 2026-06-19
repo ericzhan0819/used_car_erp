@@ -132,6 +132,11 @@ CONTROLLED_WRITE_ALLOWED_FIELDS = {
 			"formal_delivery_posting_date",
 		},
 	},
+	"used_car_formal_delivery.advance_settlement.link": {
+		"Used Car Vehicle": {
+			"advance_settlement_journal_entry",
+		},
+	},
 }
 
 

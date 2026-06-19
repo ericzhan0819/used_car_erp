@@ -377,6 +377,8 @@ P1-ACC-6F-D 新增 submitted Sales Invoice 後的 formal delivery status sync。
 
 P1-ACC-6G-0 新增預收款沖轉 readiness inspector。此 service 只讀 Sales Invoice、linked Used Car Vehicle、completed reservation、訂金 / 尾款金流、傳票草稿、Journal Entry、GL Entry 與 Account，用來確認是否具備下一階段建立 advance settlement Journal Entry 的條件；本階段不建立 Journal Entry、不提交、不寫回 `advance_settlement_journal_entry`、不修改 formal delivery status，也不把 15-1 稅務估算或整備 / 維修 / 美容 / 拍場 / 代辦等成本資料納入 settlement amount。
 
+P1-ACC-6G-1 新增 guarded advance settlement Journal Entry QA。此 service 只允許在 `erpnext-coa.test` 且 confirmation token 正確時，根據 P1-ACC-6G-0 readiness preview 建立並提交一張沖轉 Journal Entry，借記預收 / 暫收負債科目、貸記 Sales Invoice 應收帳款，並只透過 controlled write 回寫 `Used Car Vehicle.advance_settlement_journal_entry`。本階段不建立 Payment Entry / Delivery Note / Purchase Invoice / Sales Invoice，不修改 Sales Invoice / Money Flow / Voucher Draft / Reservation，不使用 15-1 稅務估算或整備 / 維修 / 美容 / 拍場 / 代辦費。
+
 文件：`docs/p1-acc-6f-c-0b-formal-submitted-sales-invoice-test-fixture-setup.md`。
 
 文件：`docs/p1-acc-6f-c-guarded-formal-sales-invoice-submit-qa.md`。
@@ -384,6 +386,8 @@ P1-ACC-6G-0 新增預收款沖轉 readiness inspector。此 service 只讀 Sales
 文件：`docs/p1-acc-6f-d-post-submit-formal-delivery-status-sync.md`。
 
 文件：`docs/p1-acc-6g-0-advance-settlement-readiness-inspector.md`。
+
+文件：`docs/p1-acc-6g-1-guarded-advance-settlement-journal-qa.md`。
 
 ## 18. 驗證指令
 
