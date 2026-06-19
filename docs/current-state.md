@@ -379,6 +379,8 @@ P1-ACC-6G-0 新增預收款沖轉 readiness inspector。此 service 只讀 Sales
 
 P1-ACC-6G-1 新增 guarded advance settlement Journal Entry QA。此 service 只允許在 `erpnext-coa.test` 且 confirmation token 正確時，根據 P1-ACC-6G-0 readiness preview 建立並提交一張沖轉 Journal Entry，借記預收 / 暫收負債科目、貸記 Sales Invoice 應收帳款，並只透過 controlled write 回寫 `Used Car Vehicle.advance_settlement_journal_entry`。本階段不建立 Payment Entry / Delivery Note / Purchase Invoice / Sales Invoice，不修改 Sales Invoice / Money Flow / Voucher Draft / Reservation，不使用 15-1 稅務估算或整備 / 維修 / 美容 / 拍場 / 代辦費。
 
+P1-ACC-6H-0 新增 formal sale accounting closure inspector。此 service 只讀整台已售出車輛的正式售車會計閉環，檢查 `formal_delivery_status = 已完成`、submitted Sales Invoice、Sales Invoice GL Entry / Stock Ledger Entry、submitted advance settlement Journal Entry、settlement GL Entry、Sales Invoice outstanding 歸零、訂金 / 尾款金流與傳票鏈，以及 Payment Entry / Delivery Note / Purchase Invoice 等非本流程文件未產生。若 inspector pass，正式售車會計 runtime 可暫停開發，下一階段可轉向 Used Car Vehicle 簡化 UX、15-1 稅務邊界規格與會計 workspace / dashboard 整理。
+
 文件：`docs/p1-acc-6f-c-0b-formal-submitted-sales-invoice-test-fixture-setup.md`。
 
 文件：`docs/p1-acc-6f-c-guarded-formal-sales-invoice-submit-qa.md`。
@@ -388,6 +390,8 @@ P1-ACC-6G-1 新增 guarded advance settlement Journal Entry QA。此 service 只
 文件：`docs/p1-acc-6g-0-advance-settlement-readiness-inspector.md`。
 
 文件：`docs/p1-acc-6g-1-guarded-advance-settlement-journal-qa.md`。
+
+文件：`docs/p1-acc-6h-0-formal-sale-accounting-closure-inspector.md`。
 
 ## 18. 驗證指令
 

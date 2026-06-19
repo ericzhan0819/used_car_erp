@@ -161,6 +161,8 @@ P1-ACC-6G-0：新增預收款沖轉 readiness inspector，檢查已提交 Sales 
 
 P1-ACC-6G-1：新增 guarded advance settlement Journal Entry QA，只允許在 `erpnext-coa.test` 且 confirmation token 正確時，根據 P1-ACC-6G-0 readiness preview 建立並提交一張預收款沖轉 Journal Entry，將已入帳訂金 / 尾款預收款轉沖 submitted Sales Invoice 應收帳款；本階段不建立 Payment Entry / Delivery Note / Purchase Invoice / Sales Invoice，不修改 Sales Invoice / Money Flow / Voucher Draft / Reservation，且只透過 controlled write 回寫 `Used Car Vehicle.advance_settlement_journal_entry`。
 
+P1-ACC-6H-0：新增 formal sale accounting closure inspector，集中只讀檢查已售出車輛、submitted Sales Invoice、Sales Invoice GL / SLE、advance settlement Journal Entry、訂金 / 尾款金流與傳票鏈，以及非本流程文件是否為 0；本階段不建立、不提交、不修改任何文件，不處理 UI、15-1 稅務公式或整備 / 維修 / 美容 / 拍場 / 代辦費。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -192,6 +194,7 @@ Decision documents:
 - [P1-ACC-6F-D Post-submit Formal Delivery Status Sync](docs/p1-acc-6f-d-post-submit-formal-delivery-status-sync.md)
 - [P1-ACC-6G-0 Advance Settlement Readiness Inspector](docs/p1-acc-6g-0-advance-settlement-readiness-inspector.md)
 - [P1-ACC-6G-1 Guarded Advance Settlement Journal Entry QA](docs/p1-acc-6g-1-guarded-advance-settlement-journal-qa.md)
+- [P1-ACC-6H-0 Formal Sale Accounting Closure Inspector](docs/p1-acc-6h-0-formal-sale-accounting-closure-inspector.md)
 
 Manual QA checklist:
 
