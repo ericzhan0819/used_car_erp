@@ -391,6 +391,8 @@ P1-UX-TAX-2 新增 read-only vehicle accounting status summary inspector。此 s
 
 P1-UX-TAX-3 新增 read-only 15-1 tax estimate service。此 service 只讀 Vehicle 與 linked Sales Invoice，以 `purchase_price` 購車價與 `sold_price` / Sales Invoice grand_total 估算售車銷項稅額、15-1 可扣抵估算與預估本車營業稅；整備、維修、美容、拍場、代辦或其他後續支出不進入 15-1 購入成本。本階段沒有 write behavior，不修改 DocType JSON、不新增 JS、不建立或提交任何文件。
 
+P1-UX-TAX-4 新增 read-only management profit summary service。此 service 只讀 Vehicle、linked Sales Invoice、Used Car Vehicle Cost 與明確可判斷的其他直接收入，計算成交價、購車價、直接成本、其他直接收入、管理毛利與管理毛利率；管理損益可包含整備、維修、美容、拍場、代辦費，但 15-1 稅務估算仍排除這些後續支出。本階段沒有 write behavior，不修改 DocType JSON、不新增 JS、不建立或提交任何文件。
+
 文件：`docs/p1-acc-6f-c-0b-formal-submitted-sales-invoice-test-fixture-setup.md`。
 
 文件：`docs/p1-acc-6f-c-guarded-formal-sales-invoice-submit-qa.md`。
@@ -410,6 +412,8 @@ P1-UX-TAX-3 新增 read-only 15-1 tax estimate service。此 service 只讀 Vehi
 文件：`docs/p1-ux-tax-2-vehicle-accounting-status-summary-inspector.md`。
 
 文件：`docs/p1-ux-tax-3-vehicle-15-1-tax-estimate-read-only-service.md`。
+
+文件：`docs/p1-ux-tax-4-vehicle-management-profit-summary-read-only-service.md`。
 
 ## 18. 驗證指令
 
