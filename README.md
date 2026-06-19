@@ -171,6 +171,8 @@ P1-UX-TAX-1：Used Car Vehicle 表單已開始依 P1-UX-TAX-0 重整為基本資
 
 P1-UX-TAX-2：新增 Vehicle Accounting Status Summary Inspector，提供車輛頁可使用的 read-only 會計狀態摘要、單一下一步與摘要卡片；本階段沒有 write behavior，不新增按鈕、不修改 JS、不修改 DocType JSON。
 
+P1-UX-TAX-3：新增 Vehicle 15-1 Tax Estimate Read-only Service，依 `purchase_price` 購車價與 `sold_price` / Sales Invoice grand_total 估算售車銷項稅額、15-1 可扣抵估算與預估本車營業稅；明確排除整備、維修、美容、拍場、代辦或其他後續支出，本階段沒有 write behavior，不新增按鈕、不修改 JS、不修改 DocType JSON。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -206,6 +208,7 @@ Decision documents:
 - [P1-UX-TAX-0 Used Car Vehicle Simplified UX And 15-1 Tax Boundary Spec](docs/p1-ux-tax-0-used-car-vehicle-simplified-ux-and-15-1-tax-boundary-spec.md)
 - [P1-UX-TAX-1 Used Car Vehicle Form Section Layout Refactor](docs/p1-ux-tax-1-used-car-vehicle-form-section-layout-refactor.md)
 - [P1-UX-TAX-2 Vehicle Accounting Status Summary Inspector](docs/p1-ux-tax-2-vehicle-accounting-status-summary-inspector.md)
+- [P1-UX-TAX-3 Vehicle 15-1 Tax Estimate Read-only Service](docs/p1-ux-tax-3-vehicle-15-1-tax-estimate-read-only-service.md)
 
 Manual QA checklist:
 
