@@ -143,6 +143,8 @@ P1-ACC-6F-B-2：新增正式 Sales Invoice 草稿建立前只讀 readiness inspe
 
 P1-ACC-6F-B-3：新增受 readiness gate 保護的正式 Draft Sales Invoice 建立 QA runner；只有 readiness pass 時才呼叫 `create_sales_invoice_draft_for_vehicle()` 建立草稿，建立後檢查 Sales Invoice、tax row、item row、counts 與 formal preflight。此階段不 submit、不建立 GL Entry / Stock Ledger Entry、不處理 Payment Entry / Journal Entry / Delivery Note / Stock Entry；若沒有候選或 readiness 未通過，blocked 是正確結果。
 
+P1-ACC-6F-C-0：新增 submitted Sales Invoice submit gate snapshot，針對最新正式 Draft Sales Invoice 或指定 Sales Invoice 讀取 submit 前欄位、linked Used Car Vehicle、baseline counts 與 submitted preflight 結果，只回答是否可安排 P1-ACC-6F-C real submit test；本階段不 submit、不建立 draft、不修資料、不建立 GL Entry / Stock Ledger Entry。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -165,6 +167,7 @@ Decision documents:
 - [P1-ACC-6F-B-1 Formal Vehicle Sales Invoice Preflight Target](docs/p1-acc-6f-b-1-formal-vehicle-sales-invoice-preflight-target.md)
 - [P1-ACC-6F-B-2 Formal Sales Invoice Draft Readiness Inspector](docs/p1-acc-6f-b-2-formal-sales-invoice-draft-readiness-inspector.md)
 - [P1-ACC-6F-B-3 Guarded Formal Sales Invoice Draft Creation QA](docs/p1-acc-6f-b-3-guarded-formal-sales-invoice-draft-creation-qa.md)
+- [P1-ACC-6F-C-0 Submitted Sales Invoice Submit Gate Snapshot](docs/p1-acc-6f-c-0-submitted-sales-invoice-submit-gate-snapshot.md)
 
 Manual QA checklist:
 
