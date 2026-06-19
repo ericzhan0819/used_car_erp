@@ -362,7 +362,13 @@ P1-ACC-6F-C-0A 將 submitted Sales Invoice preflight baseline 分為 QA draft cl
 
 文件：`docs/p1-acc-6f-c-0a-split-qa-and-formal-preflight-baseline-semantics.md`。
 
-## 17. 驗證指令
+## 17. P1-ACC-6F-C-0B Formal Submitted Sales Invoice Test Fixture Setup
+
+P1-ACC-6F-C-0B 新增 formal submit fixture setup service。此 service 只允許在 `erpnext-coa.test` 執行，且 submitted Sales Invoice count 必須為 0；通過 gate 後會透過既有 Used Car Vehicle 正式流程建立測試車輛、入庫、上架、保留、訂金 / 尾款入帳、成交、Formal Draft Sales Invoice，最後執行 submit gate snapshot。此階段不是 submit，不清理 fixture，保留 Draft Sales Invoice 給下一階段 P1-ACC-6F-C real submit test。
+
+文件：`docs/p1-acc-6f-c-0b-formal-submitted-sales-invoice-test-fixture-setup.md`。
+
+## 18. 驗證指令
 
 目前常用驗證指令。以下站台以 `erpnext-coa.test` 為準；早期 `erpnext.localhost` 指令屬舊資料，後續不要照抄使用。
 
