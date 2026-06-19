@@ -48,7 +48,9 @@ P1-ACC-6F-C-0B-1 adds a prerequisite fix for the formal intake `Material Receipt
 - Runs only on `erpnext-coa.test`.
 - Blocks if submitted Sales Invoice count is already greater than zero.
 - Reuses an existing formal submit fixture Draft Sales Invoice if one is found.
-- Reports half-created fixture data as blocking instead of deleting or repairing it.
+- P1-ACC-6F-C-0B-2 resumes a half-created fixture by continuing through existing formal services from the current vehicle state.
+- Does not delete, cancel, rebuild, or create a second fixture when a half-created fixture is found.
+- Reports resume mode, resume stage, resume state, and existing fixture payload for debugging.
 - Reports `stock_adjustment_account`, `stock_entry_difference_account`, original exception message, and already created documents when intake Stock Entry setup blocks.
 - Leaves the Draft Sales Invoice and fixture documents in place for the next phase.
 
@@ -90,6 +92,13 @@ Live fixture setup from the bench directory:
 ```bash
 cd /home/z/frappe/frappe-bench
 bench --site erpnext-coa.test execute used_car_erp.used_car_erp.services.formal_submitted_sales_invoice_test_fixture_setup_service.run_formal_submitted_sales_invoice_test_fixture_setup
+```
+
+Read-only resume state inspect:
+
+```bash
+cd /home/z/frappe/frappe-bench
+bench --site erpnext-coa.test execute used_car_erp.used_car_erp.services.formal_submitted_sales_invoice_test_fixture_setup_service.inspect_formal_submit_fixture_resume_state
 ```
 
 Read-only checks after setup:

@@ -151,6 +151,8 @@ P1-ACC-6F-C-0B：新增 formal submit fixture setup service，只允許在 `erpn
 
 P1-ACC-6F-C-0B-1：修正正式車輛入庫 Material Receipt 的 Stock Entry Difference Account gate；若 `Company.stock_adjustment_account` 缺失，runtime 可在 `Stock Entry Detail.expense_account` 使用既有 fallback expense account `0100005-UC - 中古車銷貨成本 - O`。本階段不 submit Sales Invoice、不修改 COA、不建立或啟停 Account。
 
+P1-ACC-6F-C-0B-2：formal submit fixture setup 可安全續跑半套 fixture，不清理、不重建、不建立第二套 fixture，而是用既有正式 service 從目前車輛狀態補到 Draft Sales Invoice 與 submit gate snapshot；本階段仍不 submit Sales Invoice。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -177,6 +179,7 @@ Decision documents:
 - [P1-ACC-6F-C-0A Split QA And Formal Preflight Baseline Semantics](docs/p1-acc-6f-c-0a-split-qa-and-formal-preflight-baseline-semantics.md)
 - [P1-ACC-6F-C-0B Formal Submitted Sales Invoice Test Fixture Setup](docs/p1-acc-6f-c-0b-formal-submitted-sales-invoice-test-fixture-setup.md)
 - [P1-ACC-6F-C-0B-1 Vehicle Stock Entry Difference Account Gate](docs/p1-acc-6f-c-0b-1-vehicle-stock-entry-difference-account-gate.md)
+- [P1-ACC-6F-C-0B-2 Resume Half-Created Formal Submit Fixture](docs/p1-acc-6f-c-0b-2-resume-half-created-formal-submit-fixture.md)
 
 Manual QA checklist:
 
