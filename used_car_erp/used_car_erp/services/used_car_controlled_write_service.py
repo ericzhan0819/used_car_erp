@@ -123,6 +123,15 @@ CONTROLLED_WRITE_ALLOWED_FIELDS = {
 		},
 		"Used Car Reservation": {"status", "completed_at", "completed_by", "completion_note"},
 	},
+	"used_car_formal_delivery.status.sync": {
+		"Used Car Vehicle": {
+			"formal_delivery_status",
+			"formal_delivery_completed_at",
+			"formal_delivery_completed_by",
+			"formal_delivery_note",
+			"formal_delivery_posting_date",
+		},
+	},
 }
 
 
