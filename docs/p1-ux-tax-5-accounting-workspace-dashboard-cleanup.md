@@ -77,16 +77,14 @@ Vehicle Management Profit Summary Read-only Service
 本階段不做：
 
 ```text
-不做 JS implementation
-不做 Workspace JSON
-不做 DocType JSON
-不做新按鈕
 不做新的 write behavior
 不做新的 accounting runtime
 不做新的 tax formula
 不做新的 management profit formula
 不建立或提交任何 ERPNext 文件
 ```
+
+具體 implementation step 的非目標以各 step 文件為準；若該 step 只做文件或只做前端接線，仍不得突破本階段 read-only boundary。
 
 ## 6. Step 2 Implementation
 
@@ -178,7 +176,71 @@ Step 3 只改既有 HTML 摘要區的消費來源，不新增按鈕、不新增 
 
 若 aggregator 載入失敗，車輛頁只顯示唯讀錯誤提示，不阻斷既有車輛主流程操作。
 
-## 8. 後續最小 implementation 建議
+## 8. Step 4 Implementation
+
+Step 4 已新增車輛頁 duplicate dashboard comment cleanup，讓 Step 3 的單車摘要成為主要 read-only summary 入口。
+
+新增檔案：
+
+```text
+used_car_erp/public/js/used_car_vehicle_dashboard_comment_cleanup.js
+```
+
+接線檔案：
+
+```text
+used_car_erp/hooks.py
+```
+
+此 cleanup hook 只抑制與 Step 3 summary 重複的 dashboard headline comments，例如：
+
+```text
+目前階段
+流程進度
+交車前最終檢查
+正式交車提交前檢查
+成本摘要
+單車損益與預估營業稅
+```
+
+Step 4 不改 backend service、不改 Workspace JSON、不改 DocType JSON、不新增按鈕、不新增公式、不新增 runtime。
+
+詳細文件：
+
+```text
+docs/p1-ux-tax-5-step-4-dashboard-comment-cleanup.md
+```
+
+## 9. Step 5 Candidate List Boundary
+
+Step 5 已新增 Accounting Workspace candidate list 規格文件，定義下一個最小 read-only 會計作業入口。
+
+新增文件：
+
+```text
+docs/p1-ux-tax-5-step-5-accounting-workspace-candidate-list-spec.md
+```
+
+Step 5 結論：下一步不應直接修改既有 `會計作業` Workspace JSON。應先新增一個獨立 read-only page 或等效輕量入口，消費：
+
+```text
+find_vehicle_dashboard_summary_candidates(limit=10)
+```
+
+候選清單只顯示：
+
+```text
+車輛
+銷售發票
+來源
+會計狀態
+15-1 稅務估算狀態
+管理損益狀態
+```
+
+唯一允許的 row action 是開啟 `Used Car Vehicle` 或相關只讀來源，不得新增 create / submit / cancel / write action。
+
+## 10. 後續最小 implementation 建議
 
 後續 implementation 應繼續切小步：
 
@@ -186,10 +248,12 @@ Step 3 只改既有 HTML 摘要區的消費來源，不新增按鈕、不新增 
 Step 1：文件同步（已完成）
 Step 2：read-only aggregator service，只包裝既有三份 summary（已完成）
 Step 3：只在單一頁面接入最小摘要顯示，不做整頁重排（已完成）
-Step 4：視實測結果，只移除或收斂重複 dashboard comments，不新增新的 runtime
+Step 4：只移除或收斂重複 dashboard comments，不新增新的 runtime（已完成）
+Step 5：定義 Accounting Workspace candidate list read-only boundary（已完成）
+Step 6：新增 read-only candidate page，只呼叫 find_vehicle_dashboard_summary_candidates，不改 Workspace JSON
 ```
 
-## 9. 驗收標準
+## 11. 驗收標準
 
 本階段完成後，repo 內應明確記錄：
 
