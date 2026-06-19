@@ -4,7 +4,7 @@ Last reviewed: 2026-06-20
 
 Phase: `P1-UX-TAX-6`
 
-Status: Step 4 dashboard legacy comment producer cleanup implemented
+Status: closed with Step 5 handoff
 
 ## 1. Background
 
@@ -541,7 +541,46 @@ permission gates
 formal sale accounting sequence
 ```
 
-## 12. Non-goals For P1-UX-TAX-6 Step 1
+## 12. Step 5 Handoff / Phase Closure
+
+Step 5 closes P1-UX-TAX-6 as a UX cleanup phase.
+
+Detailed handoff document:
+
+```text
+docs/p1-ux-tax-6-step-5-handoff.md
+```
+
+Final phase result:
+
+```text
+Used Car Vehicle exposes at most one primary lifecycle action per normal state.
+Non-sold states use add_non_sold_vehicle_primary_action_button.
+Sold states preserve get_sold_vehicle_primary_next_action as the primary flow source of truth.
+Sold document links and technical operations are grouped as secondary actions.
+P1-UX-TAX-5 single vehicle summary cards are the active read-only summary surface.
+Legacy duplicate dashboard comments no longer appear or flash-then-disappear.
+```
+
+Recommended next phase:
+
+```text
+Documentation-first Accounting Operations migration decision for high-impact sold-vehicle accounting actions.
+```
+
+Candidate future actions:
+
+```text
+確認銷售發票並出庫
+建立預收款沖轉草稿
+確認預收款沖轉入帳
+修復銷售發票草稿連結
+檢查提交資格
+```
+
+Do not extend P1-UX-TAX-6 runtime further unless a browser smoke issue is found.
+
+## 13. Non-goals For P1-UX-TAX-6 Step 1
 
 Step 1 does not do:
 
@@ -564,7 +603,7 @@ No GL Entry mutation
 No Stock Ledger Entry mutation
 ```
 
-## 13. Acceptance Criteria
+## 14. Acceptance Criteria
 
 Step 1 is complete when:
 
