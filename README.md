@@ -157,6 +157,8 @@ P1-ACC-6F-C：新增 guarded formal Sales Invoice submit QA，只允許在 `erpn
 
 P1-ACC-6F-D：新增 Sales Invoice submit 後正式交車狀態同步，只在 submitted Sales Invoice 已有 ERPNext 原生 GL Entry / Stock Ledger Entry 後，將 linked Used Car Vehicle 的會計文件狀態從 `銷售發票草稿` 同步為 `已完成`；本階段不是 submit、不處理預收款沖轉、不建立 Journal Entry / Payment Entry / Delivery Note / Purchase Invoice / Stock Entry。
 
+P1-ACC-6G-0：新增預收款沖轉 readiness inspector，檢查已提交 Sales Invoice、已完成正式交車會計狀態、已入帳訂金 / 尾款金流與 Journal Entry 是否可進入下一階段預收款沖轉建立；本階段只回傳 gate report 與 settlement preview，不建立或提交 Journal Entry，不修改任何文件，不使用 15-1 稅務估算或成本資料作為沖轉依據。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -186,6 +188,7 @@ Decision documents:
 - [P1-ACC-6F-C-0B-2 Resume Half-Created Formal Submit Fixture](docs/p1-acc-6f-c-0b-2-resume-half-created-formal-submit-fixture.md)
 - [P1-ACC-6F-C Guarded Formal Sales Invoice Submit QA](docs/p1-acc-6f-c-guarded-formal-sales-invoice-submit-qa.md)
 - [P1-ACC-6F-D Post-submit Formal Delivery Status Sync](docs/p1-acc-6f-d-post-submit-formal-delivery-status-sync.md)
+- [P1-ACC-6G-0 Advance Settlement Readiness Inspector](docs/p1-acc-6g-0-advance-settlement-readiness-inspector.md)
 
 Manual QA checklist:
 
