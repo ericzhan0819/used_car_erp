@@ -302,32 +302,200 @@ function render_accounting_status_summary(frm) {
     return;
   }
 
+  if (frm.is_new() || !frm.doc.name) {
+    field.$wrapper.html(`
+      <div class="frappe-card" style="padding: 16px; margin-bottom: 12px;">
+        <div style="font-weight: 600; margin-bottom: 6px;">單車摘要</div>
+        <div class="text-muted">儲存車輛後，這裡會顯示會計狀態、15-1 稅務估算與管理損益摘要。</div>
+      </div>
+    `);
+    return;
+  }
+
+  const request_key = `${frm.doc.name || ""}:${frm.doc.sales_invoice || ""}:${frm.doc.modified || ""}`;
+  frm._vehicle_dashboard_summary_request_key = request_key;
+  render_vehicle_dashboard_summary_loading(field);
+
+  frappe.call({
+    method:
+      "used_car_erp.used_car_erp.services.vehicle_dashboard_summary_service.run_vehicle_dashboard_summary",
+    args: {
+      vehicle_name: frm.doc.name,
+      sales_invoice: frm.doc.sales_invoice || null,
+    },
+    callback(response) {
+      if (frm._vehicle_dashboard_summary_request_key !== request_key) {
+        return;
+      }
+
+      render_vehicle_dashboard_summary(field, response.message || {});
+    },
+    error() {
+      if (frm._vehicle_dashboard_summary_request_key !== request_key) {
+        return;
+      }
+
+      render_vehicle_dashboard_summary_error(field);
+    },
+  });
+}
+
+function render_vehicle_dashboard_summary_loading(field) {
+  field.$wrapper.html(`
+    <div class="frappe-card" style="padding: 16px; margin-bottom: 12px;">
+      <div style="font-weight: 600; margin-bottom: 6px;">單車摘要</div>
+      <div class="text-muted">正在讀取會計狀態、15-1 稅務估算與管理損益摘要...</div>
+    </div>
+  `);
+}
+
+function render_vehicle_dashboard_summary_error(field) {
+  field.$wrapper.html(`
+    <div class="frappe-card" style="padding: 16px; margin-bottom: 12px;">
+      <div style="font-weight: 600; margin-bottom: 6px;">單車摘要</div>
+      <div class="text-muted">摘要讀取失敗。此區塊只提供唯讀資訊，不影響車輛主流程操作。</div>
+    </div>
+  `);
+}
+
+function render_vehicle_dashboard_summary(field, report) {
+  const summary = report.vehicle_page_summary || {};
+  const accounting = summary.accounting || {};
+  const tax = summary.tax_15_1 || {};
+  const profit = summary.management_profit || {};
+  const warnings = report.warnings || [];
+  const blocking_errors = report.blocking_errors || [];
   const cards = [
-    ["會計文件狀態", frm.doc.formal_delivery_status || "未處理"],
-    ["銷售發票", frm.doc.sales_invoice ? "已建立" : "未建立"],
-    ["預收款沖轉", frm.doc.advance_settlement_journal_entry ? "已建立" : "未建立"],
-    ["訂金", get_accounting_flow_status(frm.doc.deposit_money_flow, frm.doc.deposit_voucher_draft, frm.doc.deposit_journal_entry)],
-    ["尾款", get_accounting_flow_status(frm.doc.final_money_flow, frm.doc.final_voucher_draft, frm.doc.final_journal_entry)],
-    ["管理毛利", format_vehicle_currency(frm.doc.gross_margin || 0)],
+    {
+      label: "會計狀態",
+      status: accounting.status,
+      rows: [
+        ["目前狀態", accounting.business_status || "未處理"],
+        ["下一步", accounting.next_action_label || "暫無下一步"],
+        ["處理區域", accounting.next_action_area || "—"],
+      ],
+    },
+    {
+      label: "15-1 稅務估算",
+      status: tax.status,
+      rows: [
+        ["可扣抵估算", format_vehicle_dashboard_money(tax.allowed_deduction_display)],
+        ["預估營業稅", format_vehicle_dashboard_money(tax.estimated_business_tax_display)],
+        ["適用狀態", tax.tax_mode_applicability || "待確認"],
+      ],
+    },
+    {
+      label: "管理損益",
+      status: profit.status,
+      rows: [
+        ["管理毛利", format_vehicle_dashboard_money(profit.management_gross_profit_display)],
+        ["毛利率", profit.management_gross_margin_rate_display || "—"],
+        ["直接成本", format_vehicle_dashboard_money(profit.direct_cost_total)],
+      ],
+    },
   ];
 
   field.$wrapper.html(`
     <div class="frappe-card" style="padding: 16px; margin-bottom: 12px;">
-      <div style="font-weight: 600; margin-bottom: 12px;">收支與會計文件摘要</div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-        ${cards
-          .map(
-            ([label, value]) => `
-              <div style="border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 12px;">
-                <div class="text-muted" style="font-size: 12px; margin-bottom: 4px;">${frappe.utils.escape_html(label)}</div>
-                <div style="font-weight: 600;">${frappe.utils.escape_html(value)}</div>
-              </div>
-            `
-          )
-          .join("")}
+      <div style="display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+          <div style="font-weight: 600; margin-bottom: 4px;">單車摘要</div>
+          <div class="text-muted" style="font-size: 12px;">唯讀彙整：會計狀態、15-1 稅務估算、管理損益</div>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+          ${render_vehicle_dashboard_status_badge("整體", report.status)}
+          ${render_vehicle_dashboard_status_badge("會計", (report.service_statuses || {}).accounting_status)}
+          ${render_vehicle_dashboard_status_badge("稅務", (report.service_statuses || {}).tax_estimate)}
+          ${render_vehicle_dashboard_status_badge("損益", (report.service_statuses || {}).management_profit)}
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+        ${cards.map(render_vehicle_dashboard_card).join("")}
+      </div>
+      ${render_vehicle_dashboard_messages("待處理", blocking_errors)}
+      ${render_vehicle_dashboard_messages("提醒", warnings)}
+      <div class="text-muted" style="font-size: 12px; margin-top: 12px;">
+        此區塊只讀既有 summary service；不建立、不提交、不取消任何 ERPNext 文件，也不寫回車輛資料。
       </div>
     </div>
   `);
+}
+
+function render_vehicle_dashboard_card(card) {
+  return `
+    <div style="border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 12px;">
+      <div style="display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px;">
+        <div style="font-weight: 600;">${escape_vehicle_dashboard_html(card.label)}</div>
+        ${render_vehicle_dashboard_status_badge(null, card.status)}
+      </div>
+      ${card.rows
+        .map(
+          ([label, value]) => `
+            <div style="display: flex; justify-content: space-between; gap: 12px; margin-top: 6px;">
+              <div class="text-muted" style="font-size: 12px;">${escape_vehicle_dashboard_html(label)}</div>
+              <div style="font-weight: 500; text-align: right;">${escape_vehicle_dashboard_html(format_vehicle_dashboard_value(value))}</div>
+            </div>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function render_vehicle_dashboard_status_badge(label, status) {
+  if (!status) {
+    return "";
+  }
+
+  const indicator = get_vehicle_dashboard_status_indicator(status);
+  const text = label ? `${label}: ${status}` : status;
+  return `<span class="indicator ${indicator}" style="font-size: 12px; white-space: nowrap;">${escape_vehicle_dashboard_html(text)}</span>`;
+}
+
+function render_vehicle_dashboard_messages(label, messages) {
+  if (!messages || !messages.length) {
+    return "";
+  }
+
+  return `
+    <div style="border-top: 1px solid var(--border-color); margin-top: 12px; padding-top: 10px;">
+      <div style="font-weight: 600; margin-bottom: 4px;">${escape_vehicle_dashboard_html(label)}</div>
+      ${messages
+        .map((message) => `<div class="text-muted" style="font-size: 12px;">${escape_vehicle_dashboard_html(message)}</div>`)
+        .join("")}
+    </div>
+  `;
+}
+
+function get_vehicle_dashboard_status_indicator(status) {
+  if (status === "pass" || status === "ready") {
+    return "green";
+  }
+  if (status === "warning" || status === "unknown") {
+    return "orange";
+  }
+  if (status === "fail" || status === "blocked") {
+    return "red";
+  }
+  return "blue";
+}
+
+function format_vehicle_dashboard_money(value) {
+  if (typeof value === "number") {
+    return format_vehicle_currency(value);
+  }
+  return value;
+}
+
+function format_vehicle_dashboard_value(value) {
+  if (value === undefined || value === null || value === "") {
+    return "—";
+  }
+  return value;
+}
+
+function escape_vehicle_dashboard_html(value) {
+  return frappe.utils.escape_html(String(format_vehicle_dashboard_value(value)));
 }
 
 function get_accounting_flow_status(money_flow, voucher_draft, journal_entry) {

@@ -143,17 +143,53 @@ Step 2 仍不做：
 不呼叫 insert / save / submit / cancel / db_set / delete_doc / raw SQL
 ```
 
-## 7. 後續最小 implementation 建議
+## 7. Step 3 Implementation
+
+Step 3 已在 `Used Car Vehicle` 單一頁面接入最小摘要顯示。
+
+修改檔案：
+
+```text
+used_car_erp/used_car_erp/doctype/used_car_vehicle/used_car_vehicle.js
+```
+
+接線方式：
+
+```text
+既有 accounting_status_summary_html HTML 欄位
+→ frappe.call(run_vehicle_dashboard_summary)
+→ 顯示會計狀態、15-1 稅務估算、管理損益三張摘要卡
+→ 顯示 service_statuses 與 aggregator 整體狀態
+```
+
+Step 3 只改既有 HTML 摘要區的消費來源，不新增按鈕、不新增 DocType 欄位、不改 Workspace JSON、不改 DocType JSON、不做整頁重排。
+
+此 UI 區塊仍維持 read-only：
+
+```text
+不建立 ERPNext 文件
+不提交 ERPNext 文件
+不取消 ERPNext 文件
+不寫回 Used Car Vehicle / Sales Invoice / Journal Entry / GL Entry / Stock Ledger Entry
+不新增 accounting runtime
+不新增 tax runtime
+不新增 management profit runtime
+```
+
+若 aggregator 載入失敗，車輛頁只顯示唯讀錯誤提示，不阻斷既有車輛主流程操作。
+
+## 8. 後續最小 implementation 建議
 
 後續 implementation 應繼續切小步：
 
 ```text
 Step 1：文件同步（已完成）
 Step 2：read-only aggregator service，只包裝既有三份 summary（已完成）
-Step 3：只在單一頁面接入最小摘要顯示，不做整頁重排
+Step 3：只在單一頁面接入最小摘要顯示，不做整頁重排（已完成）
+Step 4：視實測結果，只移除或收斂重複 dashboard comments，不新增新的 runtime
 ```
 
-## 8. 驗收標準
+## 9. 驗收標準
 
 本階段完成後，repo 內應明確記錄：
 
