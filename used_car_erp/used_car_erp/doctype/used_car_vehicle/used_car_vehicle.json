@@ -7,7 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "overview_tab",
-  "vehicle_identity_section",
+  "basic_info_section",
   "stock_no",
   "status",
   "branch_location",
@@ -15,7 +15,6 @@
   "license_plate",
   "vin",
   "engine_no",
-  "vehicle_specs_tab",
   "basic_specs_section",
   "brand",
   "model",
@@ -79,9 +78,7 @@
   "vehicle_tax_mode",
   "tax_review_status",
   "tax_review_note",
-  "accounting_status_tab",
-  "accounting_status_summary_html",
-  "sale_completion_section",
+  "cashflow_summary_section",
   "completed_reservation",
   "completed_at",
   "completed_by",
@@ -93,7 +90,8 @@
   "final_money_flow",
   "final_voucher_draft",
   "final_journal_entry",
-  "formal_delivery_section",
+  "accounting_status_section",
+  "accounting_status_summary_html",
   "formal_delivery_status",
   "formal_delivery_posting_date",
   "sales_invoice",
@@ -104,7 +102,7 @@
   "formal_delivery_note",
   "total_cost",
   "gross_margin",
-  "compliance_tab",
+  "more_info_section",
   "tax_registration_flags_section",
   "license_tax_paid",
   "fuel_tax_paid",
@@ -120,7 +118,6 @@
   "fuel_tax_due_date",
   "insurance_expiry_date",
   "registration_note",
-  "erpnext_links_tab",
   "system_links_section",
   "item",
   "serial_no",
@@ -128,7 +125,6 @@
   "system_links_column",
   "stock_entry",
   "purchase_invoice",
-  "notes_tab",
   "internal_notes_section",
   "notes"
  ],
@@ -139,9 +135,9 @@
    "label": "基本資料"
   },
   {
-   "fieldname": "vehicle_identity_section",
+   "fieldname": "basic_info_section",
    "fieldtype": "Section Break",
-   "label": "車輛識別"
+   "label": "基本資料"
   },
   {
    "description": "系統儲存時自動產生，使用者不可手動填寫或修改。例如 VH-202606-0001。",
@@ -197,14 +193,9 @@
    "label": "引擎號碼"
   },
   {
-   "fieldname": "vehicle_specs_tab",
-   "fieldtype": "Section Break",
-   "label": "車輛詳細規格"
-  },
-  {
    "fieldname": "basic_specs_section",
    "fieldtype": "Section Break",
-   "label": "基本規格"
+   "label": "車輛規格"
   },
   {
    "fieldname": "brand",
@@ -310,7 +301,7 @@
   {
    "fieldname": "purchase_information_section",
    "fieldtype": "Section Break",
-   "label": "採購資訊"
+   "label": "採購"
   },
   {
    "fieldname": "purchase_type",
@@ -363,7 +354,7 @@
    "label": "採購金額"
   },
   {
-   "description": "購車價只代表買進車輛本身的價格，不包含整備、維修、美容、拍場、代辦或其他後續支出；15-1 估算僅以購車價為基礎。",
+   "description": "購車價只代表買進車輛本身的價格，不包含整備費、維修費、美容費、拍場費、代辦費或其他後續費用；作為 15-1 購入可扣抵稅額估算基礎。",
    "fieldname": "purchase_price",
    "fieldtype": "Currency",
    "in_list_view": 1,
@@ -469,7 +460,7 @@
   {
    "fieldname": "sales_information_section",
    "fieldtype": "Section Break",
-   "label": "銷售資訊"
+   "label": "售車"
   },
   {
    "fieldname": "customer",
@@ -554,19 +545,10 @@
    "permlevel": 3
   },
   {
-   "fieldname": "accounting_status_tab",
-   "fieldtype": "Tab Break",
-   "label": "收支 / 會計狀態"
-  },
-  {
-   "fieldname": "accounting_status_summary_html",
-   "fieldtype": "HTML",
-   "label": "會計狀態摘要"
-  },
-  {
-   "fieldname": "sale_completion_section",
+   "collapsible": 1,
+   "fieldname": "cashflow_summary_section",
    "fieldtype": "Section Break",
-   "label": "成交與金流摘要"
+   "label": "收支"
   },
   {
    "fieldname": "completed_reservation",
@@ -647,9 +629,15 @@
    "permlevel": 2
   },
   {
-   "fieldname": "formal_delivery_section",
+   "collapsible": 1,
+   "fieldname": "accounting_status_section",
    "fieldtype": "Section Break",
-   "label": "會計文件 / 銷售文件"
+   "label": "會計狀態"
+  },
+  {
+   "fieldname": "accounting_status_summary_html",
+   "fieldtype": "HTML",
+   "label": "會計狀態摘要"
   },
   {
    "default": "未處理",
@@ -725,9 +713,10 @@
    "permlevel": 1
   },
   {
-   "fieldname": "compliance_tab",
-   "fieldtype": "Tab Break",
-   "label": "證件 / 稅費"
+   "collapsible": 1,
+   "fieldname": "more_info_section",
+   "fieldtype": "Section Break",
+   "label": "更多資訊"
   },
   {
    "fieldname": "tax_registration_flags_section",
@@ -804,11 +793,6 @@
    "label": "監理 / 稅務備註"
   },
   {
-   "fieldname": "erpnext_links_tab",
-   "fieldtype": "Tab Break",
-   "label": "系統連結"
-  },
-  {
    "fieldname": "system_links_section",
    "fieldtype": "Section Break",
    "label": "系統連結"
@@ -855,11 +839,6 @@
    "label": "採購發票",
    "options": "Purchase Invoice",
    "read_only": 1
-  },
-  {
-   "fieldname": "notes_tab",
-   "fieldtype": "Tab Break",
-   "label": "備註"
   },
   {
    "fieldname": "internal_notes_section",
