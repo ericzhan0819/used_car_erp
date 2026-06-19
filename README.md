@@ -149,6 +149,8 @@ P1-ACC-6F-C-0A：修正 submit preflight baseline semantics，將 P1-ACC-6E QA d
 
 P1-ACC-6F-C-0B：新增 formal submit fixture setup service，只允許在 `erpnext-coa.test` 且 submitted Sales Invoice count 為 0 時，透過既有正式中古車 service 建立完整 formal flow 測試 fixture 與 Draft Sales Invoice，並執行 submit gate snapshot；本階段不是 submit，不清理 fixture，保留草稿給下一階段 P1-ACC-6F-C real submit test。
 
+P1-ACC-6F-C-0B-1：修正正式車輛入庫 Material Receipt 的 Stock Entry Difference Account gate；若 `Company.stock_adjustment_account` 缺失，runtime 可在 `Stock Entry Detail.expense_account` 使用既有 fallback expense account `0100005-UC - 中古車銷貨成本 - O`。本階段不 submit Sales Invoice、不修改 COA、不建立或啟停 Account。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -174,6 +176,7 @@ Decision documents:
 - [P1-ACC-6F-C-0 Submitted Sales Invoice Submit Gate Snapshot](docs/p1-acc-6f-c-0-submitted-sales-invoice-submit-gate-snapshot.md)
 - [P1-ACC-6F-C-0A Split QA And Formal Preflight Baseline Semantics](docs/p1-acc-6f-c-0a-split-qa-and-formal-preflight-baseline-semantics.md)
 - [P1-ACC-6F-C-0B Formal Submitted Sales Invoice Test Fixture Setup](docs/p1-acc-6f-c-0b-formal-submitted-sales-invoice-test-fixture-setup.md)
+- [P1-ACC-6F-C-0B-1 Vehicle Stock Entry Difference Account Gate](docs/p1-acc-6f-c-0b-1-vehicle-stock-entry-difference-account-gate.md)
 
 Manual QA checklist:
 

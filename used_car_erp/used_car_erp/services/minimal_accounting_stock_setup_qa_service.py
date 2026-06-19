@@ -47,6 +47,8 @@ REPORT_KEYS = (
 	"expense_account",
 	"tax_template",
 	"tax_account",
+	"stock_adjustment_account",
+	"stock_entry_difference_account",
 	"gl_entry_count_before",
 	"gl_entry_count_after",
 	"stock_ledger_entry_count_before",
@@ -100,6 +102,8 @@ class MinimalAccountingStockSetupQAService:
 			"expense_account": EXPENSE_ACCOUNT,
 			"tax_template": INCLUDED_TAX_TEMPLATE,
 			"tax_account": TAX_ACCOUNT,
+			"stock_adjustment_account": None,
+			"stock_entry_difference_account": None,
 			"gl_entry_count_before": None,
 			"gl_entry_count_after": None,
 			"stock_ledger_entry_count_before": None,
@@ -114,6 +118,7 @@ class MinimalAccountingStockSetupQAService:
 		self._validate_clean_ledger_counts_before()
 		self._validate_accounts()
 		self._validate_company_defaults()
+		self._validate_stock_entry_difference_account()
 		self._validate_warehouse()
 		self._validate_item()
 		self._validate_tax_template(INCLUDED_TAX_TEMPLATE, included_in_print_rate=1, required=True)
@@ -170,6 +175,50 @@ class MinimalAccountingStockSetupQAService:
 
 		if not any(error.startswith("Company default_") for error in self.report["errors"]):
 			self.report["validations"].append("Company default accounting accounts match P1-ACC-6E requirements.")
+
+	def _validate_stock_entry_difference_account(self):
+		company = frappe.get_doc("Company", COMPANY)
+		stock_adjustment_account = None
+		if frappe.get_meta("Company").has_field("stock_adjustment_account"):
+			stock_adjustment_account = getattr(company, "stock_adjustment_account", None)
+		self.report["stock_adjustment_account"] = stock_adjustment_account
+
+		if stock_adjustment_account:
+			self.report["stock_entry_difference_account"] = stock_adjustment_account
+			self._validate_difference_account(stock_adjustment_account, label="Company stock_adjustment_account")
+			return
+
+		self.report["stock_entry_difference_account"] = EXPENSE_ACCOUNT
+		if self._difference_account_is_valid(EXPENSE_ACCOUNT):
+			self.report["warnings"].append(
+				"Company.stock_adjustment_account 未設定；VehicleStockService 將在 Stock Entry Detail 使用 fallback difference account。"
+			)
+			self.report["validations"].append("Fallback Stock Entry Difference Account is valid for OO.")
+			return
+
+		self.report["errors"].append(
+			"找不到可用的 Stock Entry Difference Account，請先設定 Company.stock_adjustment_account 或確認 0100005-UC - 中古車銷貨成本 - O。"
+		)
+
+	def _difference_account_is_valid(self, account):
+		before = len(self.report["errors"])
+		self._validate_difference_account(account, label="Stock Entry Difference Account")
+		return len(self.report["errors"]) == before
+
+	def _validate_difference_account(self, account, label):
+		if not account or not frappe.db.exists("Account", account):
+			self.report["errors"].append(f"{label} missing: {account}")
+			return
+
+		account_doc = frappe.get_doc("Account", account)
+		if account_doc.company != COMPANY:
+			self.report["errors"].append(f"{label} {account} must belong to {COMPANY}.")
+		if int(account_doc.is_group or 0):
+			self.report["errors"].append(f"{label} {account} must be a ledger account, not a group.")
+		if int(account_doc.disabled or 0):
+			self.report["errors"].append(f"{label} {account} must not be disabled.")
+		if getattr(account_doc, "root_type", None) != "Expense":
+			self.report["errors"].append(f"{label} {account} root_type must be Expense.")
 
 	def _validate_warehouse(self):
 		if not frappe.db.exists("Warehouse", WAREHOUSE):

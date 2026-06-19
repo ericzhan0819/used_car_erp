@@ -12,6 +12,8 @@ class UnsafeDoc(SimpleNamespace):
 			raise AssertionError(f"Unexpected insert: {self.doctype}")
 		self.name = "UCV-FIXTURE-001"
 		self.stock_no = "VH-FIXTURE-001"
+		if hasattr(self, "_fake_db"):
+			self._fake_db.vehicles[self.name] = self
 		return self
 
 	def save(self):
@@ -31,8 +33,11 @@ class UnsafeDoc(SimpleNamespace):
 
 
 class FakeMeta:
+	def __init__(self, fields=None):
+		self.fields = set(fields or [])
+
 	def has_field(self, fieldname):
-		return True
+		return fieldname in self.fields
 
 
 class FakeDB:
@@ -40,6 +45,17 @@ class FakeDB:
 		self.counts = {doctype: 0 for doctype in service.COUNT_DOCTYPES}
 		self.sales_invoices = {}
 		self.vehicles = {}
+		self.companies = {"OO": UnsafeDoc(name="OO", stock_adjustment_account="0100005-UC - 中古車銷貨成本 - O")}
+		self.accounts = {
+			"0100005-UC - 中古車銷貨成本 - O": UnsafeDoc(
+				name="0100005-UC - 中古車銷貨成本 - O",
+				company="OO",
+				is_group=0,
+				disabled=0,
+				root_type="Expense",
+			)
+		}
+		self.warehouses = {}
 		self.get_value_map = {}
 		self.delete_called = False
 		self.cancel_called = False
@@ -59,6 +75,12 @@ class FakeDB:
 			if isinstance(filters, str):
 				return filters in self.vehicles
 			return bool(self.get_value(doctype, filters, "name"))
+		if doctype == "Company":
+			return filters in self.companies
+		if doctype == "Account":
+			return filters in self.accounts
+		if doctype == "Warehouse":
+			return filters in self.warehouses
 		return False
 
 	def get_value(self, doctype, filters, fieldname, order_by=None):
@@ -67,6 +89,10 @@ class FakeDB:
 			return self.get_value_map[key]
 		if doctype == "Used Car Vehicle" and isinstance(filters, str):
 			return getattr(self.vehicles[filters], fieldname, None)
+		if doctype == "Company" and isinstance(filters, str):
+			return getattr(self.companies[filters], fieldname, None)
+		if doctype == "Warehouse" and isinstance(filters, str):
+			return getattr(self.warehouses[filters], fieldname, None)
 		return None
 
 	def get_all(self, *args, **kwargs):
@@ -89,15 +115,21 @@ class FakeFrappe:
 		self.local = SimpleNamespace(site=site)
 
 	def get_meta(self, doctype):
+		if doctype in {"Company", "Stock Entry Detail", "Stock Entry", "Used Car Vehicle"}:
+			return FakeMeta({"stock_adjustment_account", "expense_account", "stock_entry_type", "notes", "tax_review_note", "purchase_note"})
 		return FakeMeta()
 
 	def get_doc(self, doctype, name=None):
 		if isinstance(doctype, dict):
-			return UnsafeDoc(**doctype)
+			doc = UnsafeDoc(**doctype)
+			doc._fake_db = self.db
+			return doc
 		if doctype == "Sales Invoice":
 			return self.db.sales_invoices[name]
 		if doctype == "Used Car Vehicle":
 			return self.db.vehicles[name]
+		if doctype == "Account":
+			return self.db.accounts[name]
 		raise AssertionError(f"Unexpected get_doc: {doctype} {name}")
 
 	def generate_hash(self, length=8):
@@ -113,10 +145,13 @@ class FakeFrappe:
 
 class FakeIntakeService:
 	called = 0
+	exception = None
 
 	def complete_intake(self, vehicle_name):
 		type(self).called += 1
 		CALLS.append("intake")
+		if self.exception:
+			raise self.exception
 		return {"item": "ITEM-FIXTURE", "serial_no": "VIN-FIXTURE", "stock_entry": "STE-FIXTURE", "stock_no": "VH-FIXTURE-001"}
 
 
@@ -213,8 +248,10 @@ def _fake_environment(monkeypatch, site="erpnext-coa.test"):
 	monkeypatch.setattr(service, "FormalSalesInvoiceDraftReadinessService", FakeReadinessService)
 	monkeypatch.setattr(service, "GuardedFormalSalesInvoiceDraftCreationQAService", FakeDraftCreationService)
 	monkeypatch.setattr(service, "SubmittedSalesInvoiceSubmitGateSnapshotService", FakeSnapshotService)
+	monkeypatch.setattr(service.VehicleStockService, "_resolve_company_for_stock_entry", lambda self, vehicle: "OO")
 	CALLS.clear()
 	FakeIntakeService.called = 0
+	FakeIntakeService.exception = None
 	FakeListingService.called = 0
 	FakeReadinessService.called = 0
 	FakeDraftCreationService.called = 0
@@ -374,6 +411,19 @@ def test_created_documents_records_fixture_documents(monkeypatch):
 	assert ("Journal Entry", "JE-DEPOSIT") in docs
 	assert ("Journal Entry", "JE-FINAL") in docs
 	assert ("Sales Invoice", "SINV-FIXTURE") in docs
+
+
+def test_intake_stock_gate_failure_reports_difference_account_context(monkeypatch):
+	_fake_environment(monkeypatch)
+	FakeIntakeService.exception = Exception("missing Difference Account")
+
+	report = service.FormalSubmittedSalesInvoiceTestFixtureSetupService().run()
+
+	assert report["status"] == "fail"
+	assert report["stock_adjustment_account"] == "0100005-UC - 中古車銷貨成本 - O"
+	assert report["stock_entry_difference_account"] == "0100005-UC - 中古車銷貨成本 - O"
+	assert any("missing Difference Account" in error for error in report["blocking_errors"])
+	assert {row["doctype"] for row in report["created_documents"]} == {"Used Car Vehicle"}
 
 
 def test_rerun_existing_fixture_does_not_create_second_fixture(monkeypatch):

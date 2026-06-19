@@ -41,12 +41,15 @@ The setup uses existing services to create:
 
 If the snapshot passes, `ready_for_submit_test = true` and the next phase may run `P1-ACC-6F-C` real submit test.
 
+P1-ACC-6F-C-0B-1 adds a prerequisite fix for the formal intake `Material Receipt` Stock Entry Difference Account gate. When `Company.stock_adjustment_account` is missing, Vehicle Stock runtime may use existing fallback expense account `0100005-UC - 中古車銷貨成本 - O` on `Stock Entry Detail.expense_account`; it does not modify COA.
+
 ## Safety Gates
 
 - Runs only on `erpnext-coa.test`.
 - Blocks if submitted Sales Invoice count is already greater than zero.
 - Reuses an existing formal submit fixture Draft Sales Invoice if one is found.
 - Reports half-created fixture data as blocking instead of deleting or repairing it.
+- Reports `stock_adjustment_account`, `stock_entry_difference_account`, original exception message, and already created documents when intake Stock Entry setup blocks.
 - Leaves the Draft Sales Invoice and fixture documents in place for the next phase.
 
 ## Boundaries

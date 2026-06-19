@@ -10,6 +10,7 @@ class FakeDB:
 			("Stock Ledger Entry", (("company", service.COMPANY),)): 0,
 		}
 		self.customer_name = None
+		self.stock_adjustment_account = service.EXPENSE_ACCOUNT
 
 	def exists(self, doctype, name):
 		if doctype == "Company" and name == service.COMPANY:
@@ -66,6 +67,7 @@ class FakeFrappe:
 				default_income_account=service.INCOME_ACCOUNT,
 				default_expense_account=service.EXPENSE_ACCOUNT,
 				default_inventory_account=service.INVENTORY_ACCOUNT,
+				stock_adjustment_account=self.db.stock_adjustment_account,
 			)
 		if doctype == "Account":
 			return self.db.accounts[name]
@@ -102,6 +104,9 @@ class FakeFrappe:
 
 	def throw(self, message):
 		raise Exception(message)
+
+	def get_meta(self, doctype):
+		return SimpleNamespace(has_field=lambda fieldname: doctype == "Company" and fieldname == "stock_adjustment_account")
 
 
 class FakeInsertableDoc:
@@ -140,8 +145,8 @@ class FakeInsertableDoc:
 		raise AssertionError("submit must not be called")
 
 
-def _account(name, is_group=0, disabled=0):
-	return SimpleNamespace(name=name, company=service.COMPANY, is_group=is_group, disabled=disabled)
+def _account(name, is_group=0, disabled=0, company=service.COMPANY, root_type="Expense"):
+	return SimpleNamespace(name=name, company=company, is_group=is_group, disabled=disabled, root_type=root_type)
 
 
 def _tax_template(rate=5, included_in_print_rate=1):
@@ -162,7 +167,13 @@ def _tax_template(rate=5, included_in_print_rate=1):
 
 def _fake_environment(monkeypatch):
 	fake_db = FakeDB()
-	fake_db.accounts = {name: _account(name) for name in service.REQUIRED_ACCOUNTS}
+	fake_db.accounts = {
+		service.INCOME_ACCOUNT: _account(service.INCOME_ACCOUNT, root_type="Income"),
+		service.EXPENSE_ACCOUNT: _account(service.EXPENSE_ACCOUNT, root_type="Expense"),
+		service.INVENTORY_ACCOUNT: _account(service.INVENTORY_ACCOUNT, root_type="Asset"),
+		service.RECEIVABLE_ACCOUNT: _account(service.RECEIVABLE_ACCOUNT, root_type="Asset"),
+		service.TAX_ACCOUNT: _account(service.TAX_ACCOUNT, root_type="Liability"),
+	}
 	fake_db.tax_templates = {
 		service.INCLUDED_TAX_TEMPLATE: _tax_template(),
 		service.EXCLUDED_TAX_TEMPLATE: _tax_template(included_in_print_rate=0),
@@ -179,6 +190,8 @@ def test_normal_master_data_passes_and_creates_draft(monkeypatch):
 	report = service.MinimalAccountingStockSetupQAService().run(commit=False)
 
 	assert report["status"] == "pass"
+	assert report["stock_adjustment_account"] == service.EXPENSE_ACCOUNT
+	assert report["stock_entry_difference_account"] == service.EXPENSE_ACCOUNT
 	assert report["company"] == service.COMPANY
 	assert report["customer"] == "CUST-P1-ACC-6E"
 	assert report["sales_invoice"] == "ACC-SINV-P1-ACC-6E"
@@ -258,6 +271,46 @@ def test_report_schema_is_stable(monkeypatch):
 	assert isinstance(report["validations"], list)
 	assert isinstance(report["warnings"], list)
 	assert isinstance(report["errors"], list)
+
+
+def test_stock_adjustment_account_empty_uses_fallback_warning(monkeypatch):
+	fake_db, fake_frappe = _fake_environment(monkeypatch)
+	fake_db.stock_adjustment_account = None
+
+	report = service.MinimalAccountingStockSetupQAService().run(commit=False)
+
+	assert report["status"] == "warning"
+	assert report["stock_adjustment_account"] is None
+	assert report["stock_entry_difference_account"] == service.EXPENSE_ACCOUNT
+	assert any("fallback difference account" in warning for warning in report["warnings"])
+	assert [doc.doctype for doc in fake_frappe.inserted_docs] == ["Customer", "Sales Invoice"]
+
+
+def test_stock_adjustment_account_empty_and_fallback_missing_fails(monkeypatch):
+	fake_db, fake_frappe = _fake_environment(monkeypatch)
+	fake_db.stock_adjustment_account = None
+	del fake_db.accounts[service.EXPENSE_ACCOUNT]
+
+	report = service.MinimalAccountingStockSetupQAService().run(commit=False)
+
+	assert report["status"] == "fail"
+	assert any("找不到可用的 Stock Entry Difference Account" in error for error in report["errors"])
+	assert fake_frappe.inserted_docs == []
+
+
+def test_stock_adjustment_account_invalid_company_group_disabled_or_root_type_fails(monkeypatch):
+	fake_db, fake_frappe = _fake_environment(monkeypatch)
+	fake_db.stock_adjustment_account = "BAD-DIFF - X"
+	fake_db.accounts["BAD-DIFF - X"] = _account("BAD-DIFF - X", company="XX", is_group=1, disabled=1, root_type="Asset")
+
+	report = service.MinimalAccountingStockSetupQAService().run(commit=False)
+
+	assert report["status"] == "fail"
+	assert any("must belong to OO" in error for error in report["errors"])
+	assert any("must be a ledger account" in error for error in report["errors"])
+	assert any("must not be disabled" in error for error in report["errors"])
+	assert any("root_type must be Expense" in error for error in report["errors"])
+	assert fake_frappe.inserted_docs == []
 
 
 def test_service_does_not_submit_or_commit_in_fake_unit_test(monkeypatch):

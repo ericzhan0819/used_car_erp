@@ -121,6 +121,9 @@ Vehicle Reservation Foundation：
 * `t_warehouse = vehicle.stock_warehouse`
 * `basic_rate = vehicle.purchase_price`
 * `serial_no = vehicle.vin`
+* 若 ERPNext `Stock Entry Detail` 有 `expense_account` 欄位，會寫入已驗證的 Stock Entry Difference Account。
+* Difference Account 優先使用 `Company.stock_adjustment_account`；若公司欄位缺失或未設定，使用既有 `0100005-UC - 中古車銷貨成本 - O` 作為 fallback。
+* Difference Account 必須存在、同公司、非群組、未停用且 `root_type = Expense`；runtime 不建立 Account、不改 COA。
 * `submit` 成功後回寫：
 * `serial_no`
 * `stock_entry`

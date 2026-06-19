@@ -4,6 +4,9 @@ from frappe.utils import flt, nowdate
 from used_car_erp.used_car_erp.services.vehicle_item_service import VehicleItemService
 
 
+FALLBACK_STOCK_ENTRY_DIFFERENCE_ACCOUNT = "0100005-UC - 中古車銷貨成本 - O"
+
+
 class VehicleStockService:
 	def stock_in_vehicle(self, vehicle_name: str):
 		vehicle = frappe.get_doc("Used Car Vehicle", vehicle_name)
@@ -68,20 +71,22 @@ class VehicleStockService:
 			frappe.throw("此 VIN 已存在於其他 ERPNext Item 的 Serial No，不可用於本車輛入庫。")
 
 	def _build_stock_entry_doc(self, vehicle):
+		item_row = {
+			"item_code": vehicle.item,
+			"qty": 1,
+			"t_warehouse": vehicle.stock_warehouse,
+			"basic_rate": vehicle.purchase_price,
+			"serial_no": vehicle.vin,
+			"allow_zero_valuation_rate": 0,
+		}
+		if self._stock_entry_detail_has_expense_account():
+			item_row["expense_account"] = self._resolve_stock_entry_difference_account(vehicle)
+
 		stock_entry_doc = {
 			"doctype": "Stock Entry",
 			"purpose": "Material Receipt",
 			"posting_date": nowdate(),
-			"items": [
-				{
-					"item_code": vehicle.item,
-					"qty": 1,
-					"t_warehouse": vehicle.stock_warehouse,
-					"basic_rate": vehicle.purchase_price,
-					"serial_no": vehicle.vin,
-					"allow_zero_valuation_rate": 0,
-				}
-			],
+			"items": [item_row],
 		}
 
 		stock_entry_meta = frappe.get_meta("Stock Entry")
@@ -89,6 +94,51 @@ class VehicleStockService:
 			stock_entry_doc["stock_entry_type"] = "Material Receipt"
 
 		return stock_entry_doc
+
+	def _resolve_company_for_stock_entry(self, vehicle):
+		if getattr(vehicle, "company", None):
+			return vehicle.company
+		if getattr(vehicle, "stock_warehouse", None) and frappe.db.exists("Warehouse", vehicle.stock_warehouse):
+			company = frappe.db.get_value("Warehouse", vehicle.stock_warehouse, "company")
+			if company:
+				return company
+		return "OO"
+
+	def _resolve_stock_entry_difference_account(self, vehicle):
+		company = self._resolve_company_for_stock_entry(vehicle)
+		company_account = None
+		if frappe.db.exists("Company", company) and frappe.get_meta("Company").has_field("stock_adjustment_account"):
+			company_account = frappe.db.get_value("Company", company, "stock_adjustment_account")
+			if company_account:
+				self._validate_difference_account(company_account, company)
+				return company_account
+
+		try:
+			self._validate_difference_account(FALLBACK_STOCK_ENTRY_DIFFERENCE_ACCOUNT, company)
+		except Exception:
+			frappe.throw(
+				"找不到可用的 Stock Entry Difference Account，請先設定 Company.stock_adjustment_account 或確認 0100005-UC - 中古車銷貨成本 - O。"
+			)
+		return FALLBACK_STOCK_ENTRY_DIFFERENCE_ACCOUNT
+
+	def _validate_difference_account(self, account, company):
+		if not account or not frappe.db.exists("Account", account):
+			frappe.throw(
+				"找不到可用的 Stock Entry Difference Account，請先設定 Company.stock_adjustment_account 或確認 0100005-UC - 中古車銷貨成本 - O。"
+			)
+
+		account_doc = frappe.get_doc("Account", account)
+		if account_doc.company != company:
+			frappe.throw(f"Stock Entry Difference Account {account} 必須屬於公司 {company}。")
+		if int(account_doc.is_group or 0):
+			frappe.throw(f"Stock Entry Difference Account {account} 必須是非群組會計科目。")
+		if int(account_doc.disabled or 0):
+			frappe.throw(f"Stock Entry Difference Account {account} 不可停用。")
+		if getattr(account_doc, "root_type", None) != "Expense":
+			frappe.throw(f"Stock Entry Difference Account {account} root_type 必須是 Expense。")
+
+	def _stock_entry_detail_has_expense_account(self):
+		return frappe.get_meta("Stock Entry Detail").has_field("expense_account")
 
 	def _validate_submitted_stock_entry(self, stock_entry, vehicle):
 		if stock_entry.docstatus != 1:

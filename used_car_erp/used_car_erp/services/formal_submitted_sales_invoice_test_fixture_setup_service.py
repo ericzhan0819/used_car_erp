@@ -12,6 +12,7 @@ from used_car_erp.used_car_erp.services.submitted_sales_invoice_submit_gate_snap
 from used_car_erp.used_car_erp.services.vehicle_intake_service import VehicleIntakeService
 from used_car_erp.used_car_erp.services.vehicle_listing_service import VehicleListingService
 from used_car_erp.used_car_erp.services.vehicle_reservation_service import VehicleReservationService
+from used_car_erp.used_car_erp.services.vehicle_stock_service import VehicleStockService
 from used_car_erp.used_car_erp.services.vehicle_voucher_service import VehicleVoucherService
 
 
@@ -30,6 +31,8 @@ REPORT_KEYS = (
 	"item",
 	"serial_no",
 	"stock_entry",
+	"stock_adjustment_account",
+	"stock_entry_difference_account",
 	"reservation",
 	"customer",
 	"deposit_money_flow",
@@ -141,6 +144,7 @@ class FormalSubmittedSalesInvoiceTestFixtureSetupService:
 	def _create_fixture_flow(self):
 		vehicle = self._create_vehicle()
 		self._record_vehicle(vehicle)
+		self._record_stock_entry_difference_account(vehicle)
 		self._record_created("Used Car Vehicle", vehicle.name)
 
 		intake = VehicleIntakeService().complete_intake(vehicle.name)
@@ -240,6 +244,14 @@ class FormalSubmittedSalesInvoiceTestFixtureSetupService:
 			if result.get(key):
 				self.report[key] = result.get(key)
 
+	def _record_stock_entry_difference_account(self, vehicle):
+		service = VehicleStockService()
+		company = service._resolve_company_for_stock_entry(vehicle)
+		if frappe.db.exists("Company", company) and frappe.get_meta("Company").has_field("stock_adjustment_account"):
+			self.report["stock_adjustment_account"] = frappe.db.get_value("Company", company, "stock_adjustment_account")
+		if service._stock_entry_detail_has_expense_account():
+			self.report["stock_entry_difference_account"] = service._resolve_stock_entry_difference_account(vehicle)
+
 	def _record_reservation_result(self, result, prefix):
 		if result.get("reservation"):
 			self.report["reservation"] = result.get("reservation")
@@ -275,6 +287,8 @@ class FormalSubmittedSalesInvoiceTestFixtureSetupService:
 				self.report[key] = existing.get(key)
 		if existing.get("sales_invoice"):
 			self.report["validations"].append("已找到既有 formal submit fixture draft，未重複建立資料。")
+		if existing.get("vehicle") and frappe.db.exists("Used Car Vehicle", existing.get("vehicle")):
+			self._record_stock_entry_difference_account(frappe.get_doc("Used Car Vehicle", existing.get("vehicle")))
 
 	def _record_created(self, doctype, name):
 		if name:
