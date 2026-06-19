@@ -4,7 +4,7 @@ Last reviewed: 2026-06-20
 
 Phase: `P1-UX-TAX-6`
 
-Status: Step 1 documentation boundary
+Status: Step 2 JS-only non-sold / reserved primary-action cleanup implemented
 
 ## 1. Background
 
@@ -413,7 +413,49 @@ Step 5: Accounting Operations migration spec for high-impact accounting actions.
         Documentation first.
 ```
 
-## 9. Non-goals For P1-UX-TAX-6 Step 1
+## 9. Step 2 Implementation
+
+Step 2 has implemented the first JS-only primary-action cleanup for non-sold / reserved vehicle states.
+
+Changed file:
+
+```text
+used_car_erp/used_car_erp/doctype/used_car_vehicle/used_car_vehicle.js
+```
+
+Detailed step document:
+
+```text
+docs/p1-ux-tax-6-step-2-non-sold-reserved-primary-action-cleanup.md
+```
+
+Implemented changes:
+
+```text
+保留中 ready state no longer shows both 成交前檢查 and 確認成交.
+非已售出 / 非保留中 vehicle states now use add_non_sold_vehicle_primary_action_button.
+庫存中 stocked vehicle shows 開始整備 only; 直接上架 is no longer exposed as a competing top-level button.
+整備中 stocked vehicle shows 整備完成並上架 only.
+上架中 stocked vehicle shows 建立訂金保留 only; 下架回庫存 is no longer exposed as a competing top-level button.
+Cost / estimate refresh buttons are no longer added from the normal non-sold refresh path.
+```
+
+Step 2 did not change:
+
+```text
+Python service logic
+DocType JSON
+hooks.py
+Workspace JSON
+ERPNext core
+accounting runtime
+15-1 tax runtime
+management profit runtime
+controlled write gates
+permission gates
+```
+
+## 10. Non-goals For P1-UX-TAX-6 Step 1
 
 Step 1 does not do:
 
@@ -436,7 +478,7 @@ No GL Entry mutation
 No Stock Ledger Entry mutation
 ```
 
-## 10. Acceptance Criteria
+## 11. Acceptance Criteria
 
 Step 1 is complete when:
 

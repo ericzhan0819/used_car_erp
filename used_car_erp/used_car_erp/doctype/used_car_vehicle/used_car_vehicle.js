@@ -137,11 +137,7 @@ function apply_vehicle_form_mode(frm) {
 
   add_accounting_status_technical_fields_toggle_button(frm);
 
-  add_complete_intake_button(frm);
-  add_listing_workflow_buttons(frm);
-  add_create_vehicle_cost_button(frm);
-  add_recalculate_cost_summary_button(frm);
-  add_refresh_profit_tax_estimate_button(frm);
+  add_non_sold_vehicle_primary_action_button(frm);
 
   if (frm._vehicle_edit_mode) {
     set_vehicle_fields_read_only(frm, false);
@@ -620,12 +616,13 @@ function add_reserved_vehicle_primary_action_button(frm, active_reservation) {
     return;
   }
 
-  if (next_step.can_check_delivery) {
-    add_delivery_preflight_button(frm);
-  }
-
   if (next_step.can_complete_sale) {
     add_complete_reservation_button(frm);
+    return;
+  }
+
+  if (next_step.can_check_delivery) {
+    add_delivery_preflight_button(frm);
   }
 }
 
@@ -1027,8 +1024,13 @@ function add_complete_intake_button(frm) {
   });
 }
 
-function add_listing_workflow_buttons(frm) {
-  if (frm.is_new() || ["草稿", "已售出", "封存"].includes(frm.doc.status)) {
+function add_non_sold_vehicle_primary_action_button(frm) {
+  if (frm.is_new() || ["已售出", "保留中", "封存"].includes(frm.doc.status)) {
+    return;
+  }
+
+  if (!frm.doc.serial_no && !frm.doc.stock_entry) {
+    add_complete_intake_button(frm);
     return;
   }
 
@@ -1039,13 +1041,6 @@ function add_listing_workflow_buttons(frm) {
       "確定將此車輛狀態改為「整備中」？此操作不會異動 ERPNext 庫存。",
       "used_car_erp.used_car_erp.services.vehicle_listing_service.start_preparation",
       "已開始整備"
-    );
-    add_listing_action_button(
-      frm,
-      "直接上架",
-      "確定將此車輛狀態改為「上架中」？此操作不會異動 ERPNext 庫存。",
-      "used_car_erp.used_car_erp.services.vehicle_listing_service.list_vehicle",
-      "已上架"
     );
     return;
   }
@@ -1061,23 +1056,8 @@ function add_listing_workflow_buttons(frm) {
     return;
   }
 
-  if (frm.doc.status === "上架中") {
-    if (is_vehicle_stocked(frm)) {
-      add_create_reservation_button(frm);
-    }
-
-    add_listing_action_button(
-      frm,
-      "下架回庫存",
-      "確定將此車輛從「上架中」改回「庫存中」？此操作不會異動 ERPNext 庫存。",
-      "used_car_erp.used_car_erp.services.vehicle_listing_service.unlist_vehicle",
-      "已下架回庫存"
-    );
-    return;
-  }
-
-  if (frm.doc.status === "保留中") {
-    return;
+  if (frm.doc.status === "上架中" && is_vehicle_stocked(frm)) {
+    add_create_reservation_button(frm);
   }
 }
 
