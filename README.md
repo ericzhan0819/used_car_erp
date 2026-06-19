@@ -175,7 +175,7 @@ P1-UX-TAX-3：新增 Vehicle 15-1 Tax Estimate Read-only Service，依 `purchase
 
 P1-UX-TAX-4：新增 Vehicle Management Profit Summary Read-only Service，依成交價、購車價、Vehicle Cost 直接成本與其他直接收入計算單車管理毛利；管理損益包含整備、維修、美容、拍場、代辦費，但 15-1 稅務估算仍排除這些後續支出。本階段沒有 write behavior，不新增按鈕、不修改 JS、不修改 DocType JSON。
 
-P1-UX-TAX-5：新增 Accounting Workspace Dashboard Cleanup 規格文件與 read-only `VehicleDashboardSummaryService`，把 Vehicle Accounting Status Summary、15-1 Tax Estimate、Management Profit Summary 三份既有 service 包成單一 payload。Step 3 已在 `Used Car Vehicle` 單一頁面接入最小摘要顯示；Step 6 已新增 read-only `單車摘要候選` Desk Page；Step 7 已在 `會計作業` Workspace 新增 `單車摘要候選` Page shortcut。
+P1-UX-TAX-5：Accounting Workspace Dashboard Cleanup 已收尾。此階段新增 read-only `VehicleDashboardSummaryService` aggregator，把 Vehicle Accounting Status Summary、15-1 Tax Estimate、Management Profit Summary 三份既有 service 包成單一 payload；已在 `Used Car Vehicle` 顯示最小摘要、清理重複 dashboard comments、新增 read-only `單車摘要候選` Desk Page，並在 `會計作業` Workspace 新增 `單車摘要候選` Page shortcut。此階段已確認瀏覽器 smoke 正常，後續不再於 P1-UX-TAX-5 擴張 runtime。
 
 Decision documents:
 
@@ -216,6 +216,7 @@ Decision documents:
 - [P1-UX-TAX-4 Vehicle Management Profit Summary Read-only Service](docs/p1-ux-tax-4-vehicle-management-profit-summary-read-only-service.md)
 - [P1-UX-TAX-5 Accounting Workspace Dashboard Cleanup](docs/p1-ux-tax-5-accounting-workspace-dashboard-cleanup.md)
 - [P1-UX-TAX-5 Step 7 Accounting Workspace Shortcut](docs/p1-ux-tax-5-step-7-accounting-workspace-shortcut.md)
+- [P1-UX-TAX-5 Step 8 Handoff](docs/p1-ux-tax-5-step-8-handoff.md)
 
 Manual QA checklist:
 

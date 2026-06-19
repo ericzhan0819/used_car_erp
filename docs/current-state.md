@@ -393,7 +393,7 @@ P1-UX-TAX-3 新增 read-only 15-1 tax estimate service。此 service 只讀 Vehi
 
 P1-UX-TAX-4 新增 read-only management profit summary service。此 service 只讀 Vehicle、linked Sales Invoice、Used Car Vehicle Cost 與明確可判斷的其他直接收入，計算成交價、購車價、直接成本、其他直接收入、管理毛利與管理毛利率；管理損益可包含整備、維修、美容、拍場、代辦費，但 15-1 稅務估算仍排除這些後續支出。本階段沒有 write behavior，不修改 DocType JSON、不新增 JS、不建立或提交任何文件。
 
-P1-UX-TAX-5 新增 Accounting Workspace Dashboard Cleanup 規格文件與 read-only `VehicleDashboardSummaryService`。此 service 只包裝 Vehicle Accounting Status Summary、15-1 Tax Estimate、Management Profit Summary 三份既有 service，回傳單一 payload、薄的 `vehicle_page_summary`、`summary_cards` 與 `service_statuses`；個別 summary 失敗時保留其他 summary。Step 3 已在 `Used Car Vehicle` 單一頁面用既有 `accounting_status_summary_html` 接入最小摘要顯示，只消費 aggregator payload；不新增按鈕、不改 Workspace JSON、不改 DocType JSON、不建立或提交任何文件。
+P1-UX-TAX-5 Accounting Workspace Dashboard Cleanup 已收尾。此階段新增 read-only `VehicleDashboardSummaryService`，只包裝 Vehicle Accounting Status Summary、15-1 Tax Estimate、Management Profit Summary 三份既有 service，回傳單一 payload、薄的 `vehicle_page_summary`、`summary_cards` 與 `service_statuses`；個別 summary 失敗時保留其他 summary。此階段已在 `Used Car Vehicle` 單一頁面接入最小摘要顯示、清理重複 dashboard comments、新增 read-only `單車摘要候選` Desk Page，並在 `會計作業` Workspace 新增 `單車摘要候選` Page shortcut。使用者已確認 browser smoke 正常。後續不再於 P1-UX-TAX-5 擴張 accounting / tax / management profit runtime。
 
 文件：`docs/p1-acc-6f-c-0b-formal-submitted-sales-invoice-test-fixture-setup.md`。
 
@@ -418,6 +418,8 @@ P1-UX-TAX-5 新增 Accounting Workspace Dashboard Cleanup 規格文件與 read-o
 文件：`docs/p1-ux-tax-4-vehicle-management-profit-summary-read-only-service.md`。
 
 文件：`docs/p1-ux-tax-5-accounting-workspace-dashboard-cleanup.md`。
+
+文件：`docs/p1-ux-tax-5-step-8-handoff.md`。
 
 Service：`used_car_erp/used_car_erp/services/vehicle_dashboard_summary_service.py`。
 
