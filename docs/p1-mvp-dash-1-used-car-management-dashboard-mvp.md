@@ -388,6 +388,16 @@ Kept 中古車管理 Dashboard as a secondary shortcut instead of the only main 
 No real data service, number card runtime, sidebar redirect, hooks.py change, accounting runtime, or tax runtime change.
 ```
 
+Step 4B navigation status:
+
+```text
+總覽 is the Dashboard home entry.
+車輛管理 is the vehicle CRUD and status entry.
+The Vehicle Workspace document name is 車輛管理, while the repository path remains workspace/used_car_management/used_car_management.json.
+車輛管理 no longer contains the Dashboard shortcut.
+總覽 routing uses click interception plus direct URL replace fallback to avoid browser back redirect loops.
+```
+
 ## 16. Suggested commit messages
 
 Step 1:

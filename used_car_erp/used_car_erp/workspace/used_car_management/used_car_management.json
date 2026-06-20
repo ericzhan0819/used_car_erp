@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"ucm_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>中古車管理</b></span>\",\"col\":12}},{\"id\":\"ucm_dashboard\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"總覽\",\"col\":3}},{\"id\":\"ucm_vehicle_list\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"車輛列表\",\"col\":3}},{\"id\":\"ucm_new_vehicle\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"新增車輛\",\"col\":3}},{\"id\":\"ucm_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ucm_status_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>狀態快速入口</b></span>\",\"col\":12}},{\"id\":\"ucm_inventory\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"庫存中車輛\",\"col\":3}},{\"id\":\"ucm_preparing\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"整備中車輛\",\"col\":3}},{\"id\":\"ucm_listed\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"上架中車輛\",\"col\":3}},{\"id\":\"ucm_reserved\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"保留中車輛\",\"col\":3}},{\"id\":\"ucm_sold\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"已售出車輛\",\"col\":3}}]",
+ "content": "[{\"id\":\"ucm_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>車輛管理</b></span>\",\"col\":12}},{\"id\":\"ucm_vehicle_list\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"車輛列表\",\"col\":3}},{\"id\":\"ucm_new_vehicle\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"新增車輛\",\"col\":3}},{\"id\":\"ucm_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ucm_status_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>狀態快速入口</b></span>\",\"col\":12}},{\"id\":\"ucm_inventory\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"庫存中車輛\",\"col\":3}},{\"id\":\"ucm_preparing\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"整備中車輛\",\"col\":3}},{\"id\":\"ucm_listed\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"上架中車輛\",\"col\":3}},{\"id\":\"ucm_reserved\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"保留中車輛\",\"col\":3}},{\"id\":\"ucm_sold\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"已售出車輛\",\"col\":3}}]",
  "creation": "2026-06-11 19:10:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -10,12 +10,12 @@
  "icon": "stock",
  "idx": 0,
  "is_hidden": 0,
- "label": "中古車管理",
+ "label": "車輛管理",
  "links": [],
  "modified": "2026-06-11 19:10:00.000000",
  "modified_by": "Administrator",
  "module": "Used Car ERP",
- "name": "中古車管理",
+ "name": "車輛管理",
  "number_cards": [],
  "owner": "Administrator",
  "parent_page": "",
@@ -25,12 +25,7 @@
  "roles": [],
  "sequence_id": 1.0,
  "shortcuts": [
-  {
-    "label": "總覽",
-   "link_to": "used-car-management-dashboard",
-   "type": "Page"
-  },
-  {
+   {
    "doc_view": "List",
    "label": "車輛列表",
    "link_to": "Used Car Vehicle",
@@ -78,5 +73,5 @@
    "type": "DocType"
   }
  ],
- "title": "中古車管理"
+  "title": "車輛管理"
 }

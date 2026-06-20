@@ -56,3 +56,17 @@ Step 4A keeps the Sidebar `總覽` entry provided by the Workspace, but routes u
 - `中古車管理 Dashboard` is no longer used as a user-facing name.
 - This step only cleans up route and naming behavior.
 - No runtime write behavior, accounting, tax, 15-1, pending-task cards, DocType JSON, Python service, or whitelisted method was added.
+
+## Step 4B Vehicle Workspace Naming And Overview Navigation Cleanup
+
+Step 4B separates the Dashboard home entry from vehicle CRUD / status navigation.
+
+- `中古車管理` user-facing Workspace wording was changed to `車輛管理`.
+- `車輛管理` no longer includes the Dashboard shortcut.
+- `總覽` is the Dashboard home entry.
+- `總覽` navigation now uses Sidebar click interception plus direct URL `replace` fallback to avoid browser back being trapped by a redirect loop.
+- This step does not add runtime write behavior, service code, accounting / tax runtime changes, or DocType JSON changes.
+
+## Step 4B hotfix: Vehicle Workspace document rename
+
+The user-facing `中古車管理` Workspace rename must also rename the Workspace document itself to `車輛管理`; changing only label/title causes `/app/車輛管理` to fail with "Page 車輛管理 not found". The Workspace document was renamed from `中古車管理` to `車輛管理`, while the repository path remains `workspace/used_car_management/used_car_management.json`.
