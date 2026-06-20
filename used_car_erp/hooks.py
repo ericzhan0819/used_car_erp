@@ -27,7 +27,6 @@ app_license = "mit"
 # include js, css files in header of desk.html
 # app_include_css = "/assets/used_car_erp/css/used_car_erp.css"
 # app_include_js = "/assets/used_car_erp/js/used_car_erp.js"
-app_include_js = "/assets/used_car_erp/js/used_car_overview_redirect.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/used_car_erp/css/used_car_erp.css"

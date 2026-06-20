@@ -70,3 +70,14 @@ Step 4B separates the Dashboard home entry from vehicle CRUD / status navigation
 ## Step 4B hotfix: Vehicle Workspace document rename
 
 The user-facing `中古車管理` Workspace rename must also rename the Workspace document itself to `車輛管理`; changing only label/title causes `/app/車輛管理` to fail with "Page 車輛管理 not found". The Workspace document was renamed from `中古車管理` to `車輛管理`, while the repository path remains `workspace/used_car_management/used_car_management.json`.
+
+## Step 4C Native Overview Workspace Dashboard
+
+Step 4C changes `總覽` back to a native Workspace dashboard instead of routing through a custom Page.
+
+- `總覽` no longer redirects to `used-car-management-dashboard`.
+- `/app/總覽` itself is the native Workspace dashboard entry.
+- 庫存狀態 uses Frappe native read-only Number Cards for `在庫`, `庫存中`, `整備中`, `上架中`, `保留中`, and `已售出` counts.
+- `used-car-management-dashboard` Page is temporarily kept, but it is no longer the required Sidebar `總覽` entry path.
+- The home surface does not show `15-1`, accounting confirmation, pending-task, or low-level workflow wording.
+- This step does not add write behavior, service code, permission changes, DocType JSON changes, accounting runtime, or tax runtime.

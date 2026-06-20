@@ -1,0 +1,20 @@
+{
+ "creation": "2026-06-21 04:44:00.000000",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "document_type": "Used Car Vehicle",
+ "filters_json": "[[\"Used Car Vehicle\",\"status\",\"=\",\"庫存中\",false]]",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "庫存中",
+ "modified": "2026-06-21 04:44:00.000000",
+ "modified_by": "Administrator",
+ "module": "Used Car ERP",
+ "name": "Used Car Inventory",
+ "owner": "Administrator",
+ "show_percentage_stats": 0,
+ "stats_time_interval": "Daily",
+ "type": "Document Type"
+}

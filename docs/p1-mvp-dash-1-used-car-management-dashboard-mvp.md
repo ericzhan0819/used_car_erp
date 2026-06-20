@@ -398,6 +398,16 @@ The Vehicle Workspace document name is 車輛管理, while the repository path r
 總覽 routing uses click interception plus direct URL replace fallback to avoid browser back redirect loops.
 ```
 
+Step 4C native overview status:
+
+```text
+總覽 is now a native Workspace dashboard at /app/總覽.
+The redirect to used-car-management-dashboard is removed.
+庫存狀態 uses read-only native Number Cards for vehicle status counts.
+The custom used-car-management-dashboard Page remains available, but it is no longer the required Sidebar overview route.
+The overview home does not show 15-1, accounting confirmation, or pending-task workflow wording.
+```
+
 ## 16. Suggested commit messages
 
 Step 1:

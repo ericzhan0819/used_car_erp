@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"uco_overview_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>總覽</b></span>\",\"col\":12}},{\"id\":\"uco_report_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>簡易報表</b></span>\",\"col\":12}},{\"id\":\"uco_inventory_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"庫存車輛數\",\"col\":3}},{\"id\":\"uco_available_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"待售車輛數\",\"col\":3}},{\"id\":\"uco_reserved_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"保留中車輛\",\"col\":3}},{\"id\":\"uco_sold_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"已售出車輛\",\"col\":3}},{\"id\":\"uco_pending_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>待處理事項</b></span>\",\"col\":12}},{\"id\":\"uco_pending_dashboard\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"待處理檢視\",\"col\":3}},{\"id\":\"uco_shortcut_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>快捷入口</b></span>\",\"col\":12}},{\"id\":\"uco_vehicle_list\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"車輛列表\",\"col\":3}},{\"id\":\"uco_new_vehicle\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"新增車輛\",\"col\":3}},{\"id\":\"uco_dashboard\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"總覽\",\"col\":3}}]",
+ "content": "[{\"id\":\"uco_overview_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>總覽</b></span>\",\"col\":12}},{\"id\":\"uco_inventory_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>庫存狀態</b></span>\",\"col\":12}},{\"id\":\"uco_card_in_stock\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Used Car In Stock\",\"col\":2}},{\"id\":\"uco_card_inventory\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Used Car Inventory\",\"col\":2}},{\"id\":\"uco_card_preparing\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Used Car Preparing\",\"col\":2}},{\"id\":\"uco_card_listed\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Used Car Listed\",\"col\":2}},{\"id\":\"uco_card_reserved\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Used Car Reserved\",\"col\":2}},{\"id\":\"uco_card_sold\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Used Car Sold\",\"col\":2}},{\"id\":\"uco_shortcut_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>常用作業</b></span>\",\"col\":12}},{\"id\":\"uco_new_vehicle\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"新增車輛\",\"col\":3}},{\"id\":\"uco_vehicle_list\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"車輛列表\",\"col\":3}},{\"id\":\"uco_summary_candidates\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"單車摘要候選\",\"col\":3}}]",
  "creation": "2026-06-21 01:10:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -16,7 +16,32 @@
  "modified_by": "Administrator",
  "module": "Used Car ERP",
  "name": "總覽",
- "number_cards": [],
+ "number_cards": [
+  {
+   "label": "在庫",
+   "number_card_name": "Used Car In Stock"
+  },
+  {
+   "label": "庫存中",
+   "number_card_name": "Used Car Inventory"
+  },
+  {
+   "label": "整備中",
+   "number_card_name": "Used Car Preparing"
+  },
+  {
+   "label": "上架中",
+   "number_card_name": "Used Car Listed"
+  },
+  {
+   "label": "保留中",
+   "number_card_name": "Used Car Reserved"
+  },
+  {
+   "label": "已售出",
+   "number_card_name": "Used Car Sold"
+  }
+ ],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
@@ -26,55 +51,22 @@
  "sequence_id": 0.5,
  "shortcuts": [
    {
-    "doc_view": "List",
-    "label": "庫存車輛數",
-    "link_to": "Used Car Vehicle",
-    "stats_filter": "[[\"Used Car Vehicle\",\"status\",\"in\",[\"庫存中\",\"整備中\",\"上架中\",\"保留中\"],false]]",
-    "type": "DocType"
-   },
-   {
-    "doc_view": "List",
-    "label": "待售車輛數",
-    "link_to": "Used Car Vehicle",
-    "stats_filter": "[[\"Used Car Vehicle\",\"status\",\"=\",\"上架中\",false]]",
-    "type": "DocType"
-   },
-   {
-    "doc_view": "List",
-    "label": "保留中車輛",
-    "link_to": "Used Car Vehicle",
-    "stats_filter": "[[\"Used Car Vehicle\",\"status\",\"=\",\"保留中\",false]]",
-    "type": "DocType"
-   },
-   {
-    "doc_view": "List",
-    "label": "已售出車輛",
-    "link_to": "Used Car Vehicle",
-    "stats_filter": "[[\"Used Car Vehicle\",\"status\",\"=\",\"已售出\",false]]",
-    "type": "DocType"
-   },
-   {
-    "label": "待處理檢視",
-    "link_to": "used-car-management-dashboard",
-    "type": "Page"
-   },
-   {
-     "label": "總覽",
-    "link_to": "used-car-management-dashboard",
-    "type": "Page"
-  },
-  {
-   "doc_view": "List",
-   "label": "車輛列表",
-   "link_to": "Used Car Vehicle",
-   "type": "DocType"
-  },
-   {
     "doc_view": "New",
     "label": "新增車輛",
-     "link_to": "Used Car Vehicle",
-     "type": "DocType"
-    }
-   ],
+    "link_to": "Used Car Vehicle",
+    "type": "DocType"
+   },
+   {
+    "doc_view": "List",
+    "label": "車輛列表",
+    "link_to": "Used Car Vehicle",
+    "type": "DocType"
+   },
+   {
+    "label": "單車摘要候選",
+    "link_to": "vehicle-dashboard-summary-candidates",
+    "type": "Page"
+   }
+    ],
  "title": "總覽"
 }
