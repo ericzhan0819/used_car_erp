@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"uco_overview_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>總覽</b></span>\",\"col\":12}},{\"id\":\"uco_report_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>簡易報表</b></span>\",\"col\":12}},{\"id\":\"uco_inventory_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"庫存車輛數\",\"col\":3}},{\"id\":\"uco_available_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"待售車輛數\",\"col\":3}},{\"id\":\"uco_reserved_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"保留中車輛\",\"col\":3}},{\"id\":\"uco_sold_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"已售出車輛\",\"col\":3}},{\"id\":\"uco_pending_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>待處理事項</b></span>\",\"col\":12}},{\"id\":\"uco_pending_dashboard\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"待處理檢視\",\"col\":3}},{\"id\":\"uco_shortcut_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>快捷入口</b></span>\",\"col\":12}},{\"id\":\"uco_vehicle_list\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"車輛列表\",\"col\":3}},{\"id\":\"uco_new_vehicle\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"新增車輛\",\"col\":3}},{\"id\":\"uco_dashboard\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"中古車管理 Dashboard\",\"col\":3}}]",
+ "content": "[{\"id\":\"uco_overview_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>總覽</b></span>\",\"col\":12}},{\"id\":\"uco_report_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>簡易報表</b></span>\",\"col\":12}},{\"id\":\"uco_inventory_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"庫存車輛數\",\"col\":3}},{\"id\":\"uco_available_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"待售車輛數\",\"col\":3}},{\"id\":\"uco_reserved_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"保留中車輛\",\"col\":3}},{\"id\":\"uco_sold_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"已售出車輛\",\"col\":3}},{\"id\":\"uco_pending_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>待處理事項</b></span>\",\"col\":12}},{\"id\":\"uco_pending_dashboard\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"待處理檢視\",\"col\":3}},{\"id\":\"uco_shortcut_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>快捷入口</b></span>\",\"col\":12}},{\"id\":\"uco_vehicle_list\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"車輛列表\",\"col\":3}},{\"id\":\"uco_new_vehicle\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"新增車輛\",\"col\":3}},{\"id\":\"uco_dashboard\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"總覽\",\"col\":3}}]",
  "creation": "2026-06-21 01:10:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -59,7 +59,7 @@
     "type": "Page"
    },
    {
-    "label": "中古車管理 Dashboard",
+     "label": "總覽",
     "link_to": "used-car-management-dashboard",
     "type": "Page"
   },

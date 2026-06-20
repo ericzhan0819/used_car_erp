@@ -1,7 +1,7 @@
 frappe.pages["used-car-management-dashboard"].on_page_load = function (wrapper) {
   const page = frappe.ui.make_app_page({
     parent: wrapper,
-    title: "中古車管理 Dashboard",
+    title: "總覽",
     single_column: true,
   });
 
@@ -9,9 +9,9 @@ frappe.pages["used-car-management-dashboard"].on_page_load = function (wrapper) 
   $body.html(`
     <div class="used-car-management-dashboard" style="padding: 16px;">
       <div class="frappe-card" style="padding: 16px; margin-bottom: 12px;">
-        <div style="font-weight: 600; margin-bottom: 6px;">中古車業務主控台</div>
+        <div style="font-weight: 600; margin-bottom: 6px;">總覽</div>
         <div class="text-muted" style="font-size: 12px; line-height: 1.7;">
-          目前是 MVP 入口，先提供中古車管理常用資訊區塊與操作捷徑。<br>
+          庫存、銷售與常用作業入口。<br>
           本頁不建立、不提交、不修改任何文件，也不讀取即時統計資料。
         </div>
       </div>
@@ -21,13 +21,6 @@ frappe.pages["used-car-management-dashboard"].on_page_load = function (wrapper) 
         { label: "待售車輛數", value: "—" },
         { label: "保留中車輛", value: "—" },
         { label: "本月售出", value: "—" },
-      ])}
-
-      ${render_used_car_dashboard_section("待處理事項", [
-        { label: "待補購車資料", value: "待接資料" },
-        { label: "待收尾款", value: "待接資料" },
-        { label: "待會計確認", value: "待接資料" },
-        { label: "待 15-1 判斷", value: "待接資料" },
       ])}
 
       <div class="frappe-card" style="padding: 16px;">

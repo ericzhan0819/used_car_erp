@@ -45,3 +45,14 @@ Step 3A changes the `總覽` Workspace simple report shortcuts from placeholder 
 - `待處理事項` no longer shows unfiltered `Used Car Vehicle` counts; it uses a Page shortcut placeholder to avoid fake or misleading pending-task counts until safe task-specific fields or services are introduced.
 - `會計作業` shortcut 暫不放入 `總覽` Workspace，因目前站台 Workspace shortcut type 不支援 `Workspace`，會計入口仍保留在 Sidebar 的 Accounting / 會計作業。
 - No runtime, service, hooks, permission, accounting, tax, DocType JSON, or dashboard Page JS behavior was changed.
+
+## Step 4A Overview One-click Dashboard Route
+
+Step 4A keeps the Sidebar `總覽` entry provided by the Workspace, but routes users directly to the Dashboard Page.
+
+- Opening `/app/總覽` redirects to `/app/used-car-management-dashboard` through Desk route handling.
+- `used-car-management-dashboard` remains the internal route / Page name to avoid Frappe route and Page name risk.
+- The user-facing Dashboard name is now consistently `總覽`.
+- `中古車管理 Dashboard` is no longer used as a user-facing name.
+- This step only cleans up route and naming behavior.
+- No runtime write behavior, accounting, tax, 15-1, pending-task cards, DocType JSON, Python service, or whitelisted method was added.
