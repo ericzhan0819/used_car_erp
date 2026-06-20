@@ -371,6 +371,14 @@ Added the page shortcut to the existing 中古車管理 Workspace.
 No dashboard data service, whitelisted method, hooks.py change, permission change, accounting runtime change, or tax runtime change.
 ```
 
+Step 2A implementation status:
+
+```text
+Added top-level 總覽 Workspace as the Sidebar entry for the used-car ERP control surface.
+Added minimal shortcuts for 中古車管理 Dashboard, 車輛列表, and 新增車輛.
+No dashboard runtime, service, hooks.py, permission, accounting, or tax behavior change.
+```
+
 ## 16. Suggested commit messages
 
 Step 1:

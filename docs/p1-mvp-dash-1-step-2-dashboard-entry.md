@@ -16,3 +16,12 @@ Boundary:
 - No data service or dashboard aggregation was added.
 - No accounting, tax, permission, or runtime behavior was changed.
 - No ERPNext document is created, submitted, cancelled, or modified by this page.
+
+## Step 2A Top-level Overview Workspace
+
+Step 2A adds a top-level `總覽` Workspace as the used-car ERP control entry in the Desk Sidebar.
+
+- New top-level Workspace label / title: `總覽`.
+- Dashboard can be reached directly from the Sidebar through the `中古車管理 Dashboard` shortcut.
+- The Workspace only includes minimal shortcuts for dashboard, vehicle list, and new vehicle.
+- No runtime, service, hooks, permission, accounting, or tax behavior was changed.
