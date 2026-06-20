@@ -4,7 +4,7 @@ Last reviewed: 2026-06-20
 
 Phase: `P1-MVP-DASH-1`
 
-Status: Step 1 boundary document
+Status: Step 2 minimal dashboard entry implemented
 
 ## 1. Background
 
@@ -360,6 +360,15 @@ No new permission matrix.
 No custom Sidebar framework.
 No vehicle form changes.
 No accounting / tax runtime changes.
+```
+
+Step 2 implementation status:
+
+```text
+Added minimal Desk Page route: used-car-management-dashboard.
+Added static placeholder metric cards, pending task cards, and shortcut cards only.
+Added the page shortcut to the existing 中古車管理 Workspace.
+No dashboard data service, whitelisted method, hooks.py change, permission change, accounting runtime change, or tax runtime change.
 ```
 
 ## 16. Suggested commit messages

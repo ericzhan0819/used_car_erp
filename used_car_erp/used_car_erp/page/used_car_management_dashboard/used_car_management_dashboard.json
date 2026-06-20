@@ -1,0 +1,19 @@
+{
+ "creation": "2026-06-21 00:15:00.000000",
+ "docstatus": 0,
+ "doctype": "Page",
+ "icon": "dashboard",
+ "idx": 0,
+ "modified": "2026-06-21 00:15:00.000000",
+ "modified_by": "Administrator",
+ "module": "Used Car ERP",
+ "name": "used-car-management-dashboard",
+ "owner": "Administrator",
+ "page_name": "used-car-management-dashboard",
+ "roles": [],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "中古車管理 Dashboard"
+}
