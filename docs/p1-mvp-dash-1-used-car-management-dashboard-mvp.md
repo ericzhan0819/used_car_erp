@@ -379,6 +379,15 @@ Added minimal shortcuts for 中古車管理 Dashboard, 車輛列表, and 新增�
 No dashboard runtime, service, hooks.py, permission, accounting, or tax behavior change.
 ```
 
+Step 2B implementation status:
+
+```text
+Changed 總覽 Workspace into the dashboard home surface.
+Added static Workspace sections for 簡易報表, 待處理事項, and 快捷入口.
+Kept 中古車管理 Dashboard as a secondary shortcut instead of the only main content.
+No real data service, number card runtime, sidebar redirect, hooks.py change, accounting runtime, or tax runtime change.
+```
+
 ## 16. Suggested commit messages
 
 Step 1:

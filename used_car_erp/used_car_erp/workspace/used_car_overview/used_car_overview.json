@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"uco_overview_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>總覽</b></span>\",\"col\":12}},{\"id\":\"uco_dashboard\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"中古車管理 Dashboard\",\"col\":3}},{\"id\":\"uco_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"uco_common_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>常用入口</b></span>\",\"col\":12}},{\"id\":\"uco_vehicle_list\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"車輛列表\",\"col\":3}},{\"id\":\"uco_new_vehicle\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"新增車輛\",\"col\":3}}]",
+ "content": "[{\"id\":\"uco_overview_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>總覽</b></span>\",\"col\":12}},{\"id\":\"uco_report_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>簡易報表</b></span>\",\"col\":12}},{\"id\":\"uco_inventory_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"庫存車輛數\",\"col\":3}},{\"id\":\"uco_available_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"待售車輛數\",\"col\":3}},{\"id\":\"uco_reserved_count\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"保留中車輛\",\"col\":3}},{\"id\":\"uco_month_sold\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"本月售出\",\"col\":3}},{\"id\":\"uco_pending_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>待處理事項</b></span>\",\"col\":12}},{\"id\":\"uco_pending_purchase_data\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"待補購車資料\",\"col\":3}},{\"id\":\"uco_pending_final_collection\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"待收尾款\",\"col\":3}},{\"id\":\"uco_pending_accounting\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"待會計確認\",\"col\":3}},{\"id\":\"uco_pending_tax\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"待 15-1 判斷\",\"col\":3}},{\"id\":\"uco_shortcut_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>快捷入口</b></span>\",\"col\":12}},{\"id\":\"uco_vehicle_list\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"車輛列表\",\"col\":3}},{\"id\":\"uco_new_vehicle\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"新增車輛\",\"col\":3}},{\"id\":\"uco_dashboard\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"中古車管理 Dashboard\",\"col\":3}},{\"id\":\"uco_accounting_operations\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"會計作業\",\"col\":3}}]",
  "creation": "2026-06-21 01:10:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -25,10 +25,58 @@
  "roles": [],
  "sequence_id": 0.5,
  "shortcuts": [
-  {
-   "label": "中古車管理 Dashboard",
-   "link_to": "used-car-management-dashboard",
-   "type": "Page"
+   {
+    "doc_view": "List",
+    "label": "庫存車輛數",
+    "link_to": "Used Car Vehicle",
+    "type": "DocType"
+   },
+   {
+    "doc_view": "List",
+    "label": "待售車輛數",
+    "link_to": "Used Car Vehicle",
+    "type": "DocType"
+   },
+   {
+    "doc_view": "List",
+    "label": "保留中車輛",
+    "link_to": "Used Car Vehicle",
+    "type": "DocType"
+   },
+   {
+    "doc_view": "List",
+    "label": "本月售出",
+    "link_to": "Used Car Vehicle",
+    "type": "DocType"
+   },
+   {
+    "doc_view": "List",
+    "label": "待補購車資料",
+    "link_to": "Used Car Vehicle",
+    "type": "DocType"
+   },
+   {
+    "doc_view": "List",
+    "label": "待收尾款",
+    "link_to": "Used Car Vehicle",
+    "type": "DocType"
+   },
+   {
+    "doc_view": "List",
+    "label": "待會計確認",
+    "link_to": "Used Car Vehicle",
+    "type": "DocType"
+   },
+   {
+    "doc_view": "List",
+    "label": "待 15-1 判斷",
+    "link_to": "Used Car Vehicle",
+    "type": "DocType"
+   },
+   {
+    "label": "中古車管理 Dashboard",
+    "link_to": "used-car-management-dashboard",
+    "type": "Page"
   },
   {
    "doc_view": "List",
@@ -39,9 +87,14 @@
   {
    "doc_view": "New",
    "label": "新增車輛",
-   "link_to": "Used Car Vehicle",
-   "type": "DocType"
-  }
- ],
+    "link_to": "Used Car Vehicle",
+    "type": "DocType"
+   },
+   {
+    "label": "會計作業",
+    "link_to": "會計作業",
+    "type": "Workspace"
+   }
+  ],
  "title": "總覽"
 }
