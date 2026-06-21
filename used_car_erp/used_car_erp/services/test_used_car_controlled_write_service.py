@@ -47,6 +47,26 @@ class TestUsedCarControlledWriteService(FrappeTestCase):
 			{"final_money_flow", "final_voucher_draft"},
 		)
 
+	def test_general_expense_money_flow_allows_money_flow_and_voucher_draft_fields(self):
+		assert_controlled_write_policy(
+			"used_car_money_flow.general_expense.create",
+			"Used Car Money Flow",
+			{"doctype", "flow_type", "direction", "vehicle", "evidence_attachment", "voucher_draft"},
+		)
+		assert_controlled_write_policy(
+			"used_car_money_flow.general_expense.create",
+			"Used Car Voucher Draft",
+			{"doctype", "money_flow", "vehicle", "lines"},
+		)
+
+	def test_general_expense_money_flow_rejects_unapproved_doctype(self):
+		with self.assertRaises(UsedCarControlledWriteError):
+			assert_controlled_write_policy(
+				"used_car_money_flow.general_expense.create",
+				"Used Car Vehicle",
+				{"status"},
+			)
+
 	def test_cancel_allows_reservation_cancellation_fields(self):
 		assert_controlled_write_policy(
 			"used_car_reservation.cancel",

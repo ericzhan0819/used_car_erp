@@ -1,6 +1,7 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from used_car_erp.used_car_erp.services import vehicle_money_flow_service
 from used_car_erp.used_car_erp.services.vehicle_intake_service import VehicleIntakeService
 from used_car_erp.used_car_erp.services.vehicle_listing_service import VehicleListingService
 from used_car_erp.used_car_erp.services.vehicle_money_flow_service import (
@@ -301,6 +302,73 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		self.assertEqual(draft.vehicle, vehicle.name)
 		self.assertEqual(draft.status, "待審核")
 		self.assertEqual(result.get("status"), "待審核")
+
+	def test_create_general_expense_uses_controlled_write(self):
+		calls = []
+
+		class FakeVehicle:
+			name = "UC-TEST-001"
+			stock_no = "STOCK-001"
+
+			def check_permission(self, permission_type):
+				self.permission_type = permission_type
+
+		class FakeMoneyFlow:
+			doctype = "Used Car Money Flow"
+			name = "MF-TEST-001"
+			amount = 1200
+			status = "待審核"
+
+			def reload(self):
+				pass
+
+		class FakeVoucherService:
+			def create_general_expense_voucher_draft_from_money_flow_service(self, money_flow_name):
+				return "VD-TEST-001"
+
+		def fake_get_doc(*args):
+			if args == ("Used Car Vehicle", "UC-TEST-001"):
+				return FakeVehicle()
+			if len(args) == 1 and args[0].get("doctype") == "Used Car Money Flow":
+				return FakeMoneyFlow()
+			raise AssertionError(args)
+
+		def fake_insert_service_controlled_doc(doc, *, action, allowed_doctype, fieldnames):
+			calls.append(
+				{
+					"action": action,
+					"allowed_doctype": allowed_doctype,
+					"fieldnames": set(fieldnames),
+				}
+			)
+			return doc
+
+		original_get_doc = vehicle_money_flow_service.frappe.get_doc
+		original_insert = vehicle_money_flow_service.insert_service_controlled_doc
+		original_voucher_service = vehicle_money_flow_service.VehicleVoucherService
+		try:
+			vehicle_money_flow_service.frappe.get_doc = fake_get_doc
+			vehicle_money_flow_service.insert_service_controlled_doc = fake_insert_service_controlled_doc
+			vehicle_money_flow_service.VehicleVoucherService = FakeVoucherService
+
+			result = self.money_flow_service.create_general_expense_money_flow(
+				vehicle="UC-TEST-001",
+				payment_date="2026-06-12",
+				flow_type="維修支出",
+				amount=1200,
+				payment_method="現金",
+				payment_reference="TEST EXPENSE",
+				evidence_attachment="/files/test-expense.pdf",
+			)
+		finally:
+			vehicle_money_flow_service.frappe.get_doc = original_get_doc
+			vehicle_money_flow_service.insert_service_controlled_doc = original_insert
+			vehicle_money_flow_service.VehicleVoucherService = original_voucher_service
+
+		self.assertEqual(result.get("money_flow"), "MF-TEST-001")
+		self.assertEqual(calls[0]["action"], "used_car_money_flow.general_expense.create")
+		self.assertEqual(calls[0]["allowed_doctype"], "Used Car Money Flow")
+		self.assertIn("evidence_attachment", calls[0]["fieldnames"])
 
 	def test_create_general_expense_rejects_non_positive_amount(self):
 		vehicle = self._make_listed_vehicle()
