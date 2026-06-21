@@ -423,6 +423,8 @@ P1-UX-TAX-7 Step 8B 已完成 JS-only Vehicle Page accounting action demotion。
 
 P1-UX-TAX-7 Step 8C 已新增 Vehicle Page accounting action demotion smoke handoff。靜態驗證通過，browser smoke 清單已記錄：需手動確認 Accounting Operations candidate page / shortcut 仍正常、不同已售出車輛狀態不再顯示高衝擊 accounting mutation buttons、Sales Invoice / Journal Entry route links 與 `前往售車會計候選` route-only button 仍正常。本階段只改文件，不修改 runtime。
 
+P1-MVP-OPS-1 Step 1 已新增中古車營運主流程 MVP smoke checklist，定義從 `/app/總覽`、`車輛管理 / 新增車輛`、入庫、整備 / 上架、訂金保留、訂金 / 尾款會計確認、確認成交、建立 Sales Invoice 草稿，到 `/app/formal-sale-accounting-candidates` 查看售車會計候選的手動 browser smoke 路徑。本階段只新增文件與狀態同步，沒有 JS、Python service、DocType JSON、Workspace JSON、hooks.py、permission、accounting runtime 或 tax runtime change。下一步是依 checklist 在 `erpnext-coa.test` 執行 browser smoke，記錄找不到入口、文案不清楚、fixture 缺口與最小 UX / shortcut / 文案修正方向。
+
 文件：`docs/p1-acc-6f-c-0b-formal-submitted-sales-invoice-test-fixture-setup.md`。
 
 文件：`docs/p1-acc-6f-c-guarded-formal-sales-invoice-submit-qa.md`。
@@ -480,6 +482,8 @@ P1-UX-TAX-7 Step 8C 已新增 Vehicle Page accounting action demotion smoke hand
 文件：`docs/p1-ux-tax-7-step-8b-vehicle-page-accounting-action-demotion.md`。
 
 文件：`docs/p1-ux-tax-7-step-8c-vehicle-page-accounting-action-demotion-smoke.md`。
+
+文件：`docs/p1-mvp-ops-1-used-car-main-flow-smoke.md`。
 
 Service：`used_car_erp/used_car_erp/services/formal_sale_accounting_candidate_service.py`。
 

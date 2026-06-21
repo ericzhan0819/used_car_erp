@@ -197,6 +197,8 @@ P1-UX-TAX-7 Step 8B 已完成 JS-only Vehicle Page accounting action demotion。
 
 P1-UX-TAX-7 Step 8C 已新增 Vehicle Page accounting action demotion smoke handoff。靜態驗證通過，browser smoke 清單已記錄供 `erpnext-coa.test` 手動確認；本階段只同步文件，不改 Used Car Vehicle JS、Python service、DocType JSON、Workspace、hooks.py、permission 或 backend accounting runtime。
 
+P1-MVP-OPS-1 Step 1 已新增中古車營運主流程 MVP smoke checklist，將焦點從 accounting UX 擴張轉回使用者角度的主流程 browser smoke；本階段只新增文件，不改 runtime。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -253,6 +255,7 @@ Decision documents:
 - [P1-UX-TAX-7 Step 8A Vehicle Page Accounting Action Demotion Spec](docs/p1-ux-tax-7-step-8a-vehicle-page-accounting-action-demotion-spec.md)
 - [P1-UX-TAX-7 Step 8B Vehicle Page Accounting Action Demotion](docs/p1-ux-tax-7-step-8b-vehicle-page-accounting-action-demotion.md)
 - [P1-UX-TAX-7 Step 8C Vehicle Page Accounting Action Demotion Smoke](docs/p1-ux-tax-7-step-8c-vehicle-page-accounting-action-demotion-smoke.md)
+- [P1-MVP-OPS-1 Used Car Main Flow Smoke](docs/p1-mvp-ops-1-used-car-main-flow-smoke.md)
 
 Manual QA checklist:
 
