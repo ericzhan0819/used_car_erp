@@ -407,6 +407,8 @@ P1-UX-TAX-6 Step 5 已新增 handoff / phase closure 文件並收尾此 UX clean
 
 P1-MVP-DASH-1 Step 4C 已完成並收尾。`總覽` 現在是 `/app/總覽` native ERPNext Workspace Dashboard，不再 redirect 到 `used-car-management-dashboard`；`庫存狀態` 顯示 6 張 native Number Card：在庫、庫存中、整備中、上架中、保留中、已售出。Step 4C 已移除 overview redirect JS 與 hooks 載入，並修正 Workspace Number Card renderer 需要使用中文 label 匹配的問題。使用者已確認 `/app/總覽` 與 6 張卡片正常顯示。後續避免恢復 redirect，且總覽不放 15-1、會計待辦、待處理事項或中古車管理 Dashboard。
 
+P1-UX-TAX-7 Step 1 已新增 Accounting Operations migration decision 文件。此步驟盤點售車後高衝擊會計動作，決定 `確認銷售發票並出庫`、`建立預收款沖轉草稿`、`確認預收款沖轉入帳`、`修復 Sales Invoice 草稿連結` 與 submit readiness 檢查的目標入口應逐步移往 `會計作業`，而不是長期留在 `Used Car Vehicle` 作為一般業務操作。本階段只做文件同步，不修改 JS、Python service、DocType JSON、Workspace、hooks.py、permission、accounting runtime、tax runtime 或 formal sale accounting sequence。
+
 文件：`docs/p1-acc-6f-c-0b-formal-submitted-sales-invoice-test-fixture-setup.md`。
 
 文件：`docs/p1-acc-6f-c-guarded-formal-sales-invoice-submit-qa.md`。
@@ -448,6 +450,8 @@ P1-MVP-DASH-1 Step 4C 已完成並收尾。`總覽` 現在是 `/app/總覽` nati
 文件：`docs/p1-mvp-dash-1-step-2-dashboard-entry.md`。
 
 文件：`docs/p1-mvp-dash-1-step-4c-handoff.md`。
+
+文件：`docs/p1-ux-tax-7-accounting-operations-migration-decision.md`。
 
 Service：`used_car_erp/used_car_erp/services/vehicle_dashboard_summary_service.py`。
 

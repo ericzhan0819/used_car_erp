@@ -181,6 +181,8 @@ P1-UX-TAX-6：Used Car Vehicle Primary Action Simplification 已收尾。Step 1 
 
 P1-MVP-DASH-1 Step 4C 已完成並收尾：`/app/總覽` 現在是 native ERPNext Workspace Dashboard，不再 redirect 到 `used-car-management-dashboard`；總覽顯示 6 張 native Number Card（在庫、庫存中、整備中、上架中、保留中、已售出）與常用作業 shortcut。總覽不顯示 15-1、會計待辦、待處理事項或 `中古車管理 Dashboard`，目前資訊架構固定為 `總覽 = 經營狀態 Dashboard`、`車輛管理 = 車輛作業入口`、`會計作業 = 會計入口`。
 
+P1-UX-TAX-7 Step 1 已新增 Accounting Operations migration decision 文件，決定高衝擊售車會計動作的目標入口：`確認銷售發票並出庫`、`建立預收款沖轉草稿`、`確認預收款沖轉入帳`、`修復 Sales Invoice 草稿連結` 與 submit readiness 檢查應逐步移往 `會計作業`；本階段只做文件，不改 JS、Python service、DocType JSON、Workspace、hooks.py、permission 或 accounting runtime。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -229,6 +231,7 @@ Decision documents:
 - [P1-MVP-DASH-1 Dashboard MVP](docs/p1-mvp-dash-1-used-car-management-dashboard-mvp.md)
 - [P1-MVP-DASH-1 Step 2 Dashboard Entry](docs/p1-mvp-dash-1-step-2-dashboard-entry.md)
 - [P1-MVP-DASH-1 Step 4C Handoff](docs/p1-mvp-dash-1-step-4c-handoff.md)
+- [P1-UX-TAX-7 Accounting Operations Migration Decision](docs/p1-ux-tax-7-accounting-operations-migration-decision.md)
 
 Manual QA checklist:
 
