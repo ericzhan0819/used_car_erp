@@ -88,6 +88,7 @@ function apply_vehicle_form_mode(frm) {
   apply_tax_fields_visibility(frm);
   apply_vehicle_business_descriptions(frm);
   hide_vehicle_accounting_surface(frm);
+  hide_vehicle_technical_system_links(frm);
 
   if (frm.is_new()) {
     set_vehicle_fields_read_only(frm, false);
@@ -209,6 +210,25 @@ function hide_vehicle_accounting_surface(frm) {
       frm.toggle_display(df.fieldname, false);
       frm.set_df_property(df.fieldname, "hidden", 1);
     }
+  });
+}
+
+function hide_vehicle_technical_system_links(frm) {
+  [
+    "system_links_section",
+    "item",
+    "serial_no",
+    "stock_warehouse",
+    "system_links_column",
+    "stock_entry",
+    "purchase_invoice",
+  ].forEach((fieldname) => {
+    if (!frm.fields_dict[fieldname]) {
+      return;
+    }
+
+    frm.toggle_display(fieldname, false);
+    frm.set_df_property(fieldname, "hidden", 1);
   });
 }
 
