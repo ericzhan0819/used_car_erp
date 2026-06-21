@@ -1,10 +1,10 @@
 # P1-MVP-DASH-1 Used Car Management Dashboard MVP
 
-Last reviewed: 2026-06-20
+Last reviewed: 2026-06-21
 
 Phase: `P1-MVP-DASH-1`
 
-Status: Step 2 minimal dashboard entry implemented
+Status: Step 4C native overview Workspace dashboard completed
 
 ## 1. Background
 
@@ -406,6 +406,13 @@ The redirect to used-car-management-dashboard is removed.
 庫存狀態 uses read-only native Number Cards for vehicle status counts.
 The custom used-car-management-dashboard Page remains available, but it is no longer the required Sidebar overview route.
 The overview home does not show 15-1, accounting confirmation, or pending-task workflow wording.
+Browser smoke confirmed the six Number Cards render normally.
+```
+
+Step 4C handoff:
+
+```text
+docs/p1-mvp-dash-1-step-4c-handoff.md
 ```
 
 ## 16. Suggested commit messages

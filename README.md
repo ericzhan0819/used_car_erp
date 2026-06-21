@@ -179,6 +179,8 @@ P1-UX-TAX-5：Accounting Workspace Dashboard Cleanup 已收尾。此階段新增
 
 P1-UX-TAX-6：Used Car Vehicle Primary Action Simplification 已收尾。Step 1 已盤點 `Used Car Vehicle` form buttons、dashboard comments、intro messages 與 DocType layout，定義 one-primary-action boundary。Step 2 已做 JS-only cleanup，非已售出 / 非保留中車輛改由單一 primary action selector 顯示下一步，保留中 ready 狀態不再同時顯示「成交前檢查」與「確認成交」。Step 3 已將已售出車輛的文件連結、技術欄位切換與修復入口改為次要群組，保留 `get_sold_vehicle_primary_next_action` 作為主流程唯一來源。Step 4 已停用車輛頁 legacy dashboard comment producer calls，讓 P1-UX-TAX-5 單車摘要成為主要 read-only summary surface，並修正 dashboard card 閃一下才消失問題。Step 5 已新增 handoff / phase closure 文件；本階段未改 Python service、DocType JSON、hooks.py、Workspace，也未新增任何 ERPNext 文件 mutation。
 
+P1-MVP-DASH-1 Step 4C 已完成並收尾：`/app/總覽` 現在是 native ERPNext Workspace Dashboard，不再 redirect 到 `used-car-management-dashboard`；總覽顯示 6 張 native Number Card（在庫、庫存中、整備中、上架中、保留中、已售出）與常用作業 shortcut。總覽不顯示 15-1、會計待辦、待處理事項或 `中古車管理 Dashboard`，目前資訊架構固定為 `總覽 = 經營狀態 Dashboard`、`車輛管理 = 車輛作業入口`、`會計作業 = 會計入口`。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -224,6 +226,9 @@ Decision documents:
 - [P1-UX-TAX-6 Step 3 Sold Vehicle Secondary Action Grouping](docs/p1-ux-tax-6-step-3-sold-vehicle-secondary-action-grouping.md)
 - [P1-UX-TAX-6 Step 4 Dashboard Legacy Comment Producer Cleanup](docs/p1-ux-tax-6-step-4-dashboard-legacy-comment-producer-cleanup.md)
 - [P1-UX-TAX-6 Step 5 Handoff](docs/p1-ux-tax-6-step-5-handoff.md)
+- [P1-MVP-DASH-1 Dashboard MVP](docs/p1-mvp-dash-1-used-car-management-dashboard-mvp.md)
+- [P1-MVP-DASH-1 Step 2 Dashboard Entry](docs/p1-mvp-dash-1-step-2-dashboard-entry.md)
+- [P1-MVP-DASH-1 Step 4C Handoff](docs/p1-mvp-dash-1-step-4c-handoff.md)
 
 Manual QA checklist:
 
