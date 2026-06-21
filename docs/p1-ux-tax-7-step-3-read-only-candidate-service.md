@@ -4,7 +4,7 @@ Date: 2026-06-21
 
 Phase: `P1-UX-TAX-7`
 
-Status: Step 3 read-only service skeleton
+Status: Step 4 / Step 5 Desk Page and Workspace shortcut implemented
 
 ## 1. Purpose
 
@@ -89,7 +89,25 @@ Step 1 / Step 2 docs mention Step 3 boundary.
 No Desk Page, Workspace, Vehicle JS, DocType JSON, hooks.py, or write behavior is added.
 ```
 
-## 6. Suggested commit message
+## 6. Step 4 / Step 5 update
+
+P1-UX-TAX-7 Step 4 / Step 5 已將 read-only formal sale accounting candidates 接成 Desk Page，並在 會計作業 Workspace 加入 shortcut。
+
+Desk Page：
+
+```text
+/app/formal-sale-accounting-candidates
+```
+
+此頁只呼叫本文件定義的 Step 3 read-only service：
+
+```text
+run_formal_sale_accounting_candidates(limit=50)
+```
+
+此階段不會建立、提交、修復或修改 Sales Invoice、Journal Entry、Used Car Vehicle 或任何 ERPNext 文件。
+
+## 7. Suggested commit message
 
 ```text
 feat: add read-only formal sale accounting candidates

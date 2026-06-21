@@ -4,7 +4,7 @@ Date: 2026-06-21
 
 Phase: `P1-UX-TAX-7`
 
-Status: Step 1 documentation-only boundary
+Status: Step 4 / Step 5 read-only Desk Page and Workspace shortcut added
 
 ## 1. Purpose
 
@@ -201,7 +201,28 @@ Workspace shortcut only.
 No vehicle-page action removal yet.
 ```
 
-### Step 5: Vehicle-page action demotion
+Step 4 / Step 5 completion update:
+
+```text
+P1-UX-TAX-7 Step 4 / Step 5 已將 read-only formal sale accounting candidates 接成 Desk Page，並在 會計作業 Workspace 加入 shortcut。
+此階段不會建立、提交、修復或修改 Sales Invoice、Journal Entry、Used Car Vehicle 或任何 ERPNext 文件。
+```
+
+Desk Page route:
+
+```text
+/app/formal-sale-accounting-candidates
+```
+
+### Step 5: Workspace shortcut
+
+`會計作業` Workspace 已在 `會計待辦` 區塊加入：
+
+```text
+售車會計候選
+```
+
+### Step 6: Vehicle-page action demotion
 
 After the Accounting Operations candidate path is confirmed in browser smoke, demote high-impact accounting actions from the vehicle page.
 
