@@ -8,7 +8,73 @@ from used_car_erp.used_car_erp.services.used_car_controlled_write_service import
 )
 
 
+GENERAL_EXPENSE_FLOW_TYPES = ("整備支出", "維修支出", "美容支出", "代辦支出", "拍場支出", "其他支出")
+
+
 class VehicleVoucherService:
+	def create_general_expense_voucher_draft(self, money_flow_name: str):
+		return self._create_general_expense_voucher_draft(money_flow_name)
+
+	def create_general_expense_voucher_draft_from_money_flow_service(self, money_flow_name: str):
+		return self._create_general_expense_voucher_draft(
+			money_flow_name,
+			controlled_action="used_car_money_flow.general_expense.create",
+		)
+
+	def _create_general_expense_voucher_draft(self, money_flow_name: str, controlled_action: str | None = None):
+		money_flow = frappe.get_doc("Used Car Money Flow", money_flow_name)
+		self._validate_money_flow_for_general_expense_draft(money_flow)
+		debit_account, credit_account = self._resolve_general_expense_accounts()
+		self._validate_same_company_accounts([debit_account, credit_account])
+		memo_parts = [f"{money_flow.flow_type}：{money_flow.stock_no or money_flow.vehicle}"]
+		if money_flow.notes:
+			memo_parts.append(money_flow.notes)
+
+		draft_values = {
+			"doctype": "Used Car Voucher Draft",
+			"status": "待審核",
+			"posting_date": money_flow.payment_date,
+			"money_flow": money_flow.name,
+			"vehicle": money_flow.vehicle,
+			"memo": " / ".join(memo_parts),
+			"review_note": "系統自動建立一般支出草稿，請會計確認科目。",
+			"lines": [
+				{
+					"account": debit_account,
+					"debit": money_flow.amount,
+					"credit": 0,
+					"note": money_flow.flow_type,
+				},
+				{
+					"account": credit_account,
+					"debit": 0,
+					"credit": money_flow.amount,
+					"note": money_flow.payment_method or "支出付款科目",
+				},
+			],
+		}
+		if controlled_action:
+			draft = insert_service_controlled_doc(
+				frappe.get_doc(draft_values),
+				action=controlled_action,
+				allowed_doctype="Used Car Voucher Draft",
+				fieldnames=draft_values.keys(),
+			)
+		else:
+			draft = frappe.get_doc(draft_values).insert()
+
+		if controlled_action:
+			db_set_service_controlled_values(
+				"Used Car Money Flow",
+				money_flow.name,
+				action=controlled_action,
+				values={"voucher_draft": draft.name},
+			)
+		else:
+			frappe.db.set_value("Used Car Money Flow", money_flow.name, "voucher_draft", draft.name)
+
+		return draft.name
+
 	def create_deposit_voucher_draft(self, money_flow_name: str):
 		return self._create_deposit_voucher_draft(money_flow_name)
 
@@ -253,6 +319,13 @@ class VehicleVoucherService:
 		if money_flow.voucher_draft or frappe.db.exists("Used Car Voucher Draft", {"money_flow": money_flow.name}):
 			frappe.throw("此金流紀錄已建立傳票草稿。")
 
+	def _validate_money_flow_for_general_expense_draft(self, money_flow):
+		if money_flow.flow_type not in GENERAL_EXPENSE_FLOW_TYPES:
+			frappe.throw("本次只支援一般支出建立傳票草稿。")
+		if money_flow.direction != "支出":
+			frappe.throw("一般支出金流方向必須為支出。")
+		self._validate_money_flow_for_draft(money_flow, money_flow.flow_type)
+
 	def _validate_draft_ready_for_confirm(self, draft):
 		if draft.status != "待審核":
 			frappe.throw("只有待審核傳票草稿可以確認入帳。")
@@ -306,6 +379,19 @@ class VehicleVoucherService:
 
 		return debit_account, credit_account
 
+	def _resolve_general_expense_accounts(self):
+		debit_account = self._first_account({"is_group": 0, "root_type": "Expense"})
+		if not debit_account:
+			frappe.throw("找不到可用的費用科目，請會計確認科目設定。")
+
+		credit_account = self._first_account({"is_group": 0, "account_type": "Bank"})
+		if not credit_account:
+			credit_account = self._first_account({"is_group": 0, "account_type": "Cash"})
+		if not credit_account:
+			frappe.throw("找不到可用的付款科目，請先建立或設定銀行 / 現金科目。")
+
+		return debit_account, credit_account
+
 	def _account_name_contains(self, keyword: str):
 		return frappe.db.get_value(
 			"Account",
@@ -316,6 +402,12 @@ class VehicleVoucherService:
 
 	def _first_account(self, filters):
 		return frappe.db.get_value("Account", filters, "name", order_by="name asc")
+
+
+@frappe.whitelist()
+def create_general_expense_voucher_draft(money_flow_name: str):
+	service = VehicleVoucherService()
+	return service.create_general_expense_voucher_draft(money_flow_name)
 
 
 @frappe.whitelist()

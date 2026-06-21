@@ -64,7 +64,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "金流類型",
-   "options": "訂金收款\n尾款收款\n貸款撥款\n退款\n其他",
+   "options": "訂金收款\n尾款收款\n貸款撥款\n退款\n其他\n整備支出\n維修支出\n美容支出\n代辦支出\n拍場支出\n其他支出",
    "read_only": 1,
    "reqd": 1
   },

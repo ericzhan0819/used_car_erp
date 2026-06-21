@@ -10,6 +10,7 @@ from used_car_erp.used_car_erp.services.vehicle_voucher_service import VehicleVo
 
 
 VALID_PAYMENT_METHODS = ("現金", "匯款", "信用卡", "其他")
+GENERAL_EXPENSE_FLOW_TYPES = ("整備支出", "維修支出", "美容支出", "代辦支出", "拍場支出", "其他支出")
 RESTRICTED_ACCOUNTING_DOCTYPES = (
 	"Stock Entry",
 	"Purchase Invoice",
@@ -21,6 +22,58 @@ RESTRICTED_ACCOUNTING_DOCTYPES = (
 
 
 class VehicleMoneyFlowService:
+	def create_general_expense_money_flow(
+		self,
+		vehicle: str,
+		payment_date=None,
+		flow_type: str | None = None,
+		amount=0,
+		payment_method: str | None = None,
+		payment_reference: str | None = None,
+		notes: str | None = None,
+		evidence_attachment: str | None = None,
+	):
+		assert_can_perform_used_car_action(
+			"used_car_money_flow.general_expense.create",
+			message="你沒有建立中古車一般支出金流的權限。",
+		)
+		self._validate_general_expense_money_flow(vehicle, flow_type, amount, payment_method)
+		vehicle_doc = frappe.get_doc("Used Car Vehicle", vehicle)
+		vehicle_doc.check_permission("read")
+
+		money_flow_values = {
+			"doctype": "Used Car Money Flow",
+			"flow_type": flow_type,
+			"direction": "支出",
+			"status": "待審核",
+			"vehicle": vehicle_doc.name,
+			"stock_no": vehicle_doc.stock_no,
+			"amount": amount,
+			"payment_date": payment_date or nowdate(),
+			"payment_method": payment_method,
+			"payment_reference": payment_reference,
+			"evidence_attachment": evidence_attachment,
+			"notes": notes,
+			"created_by_service": 1,
+		}
+		money_flow = insert_service_controlled_doc(
+			frappe.get_doc(money_flow_values),
+			action="used_car_money_flow.general_expense.create",
+			allowed_doctype="Used Car Money Flow",
+			fieldnames=money_flow_values.keys(),
+		)
+
+		voucher_draft = VehicleVoucherService().create_general_expense_voucher_draft_from_money_flow_service(money_flow.name)
+		money_flow.reload()
+
+		return {
+			"money_flow": money_flow.name,
+			"voucher_draft": voucher_draft,
+			"amount": flt(money_flow.amount),
+			"status": money_flow.status,
+			"message": "已建立一般支出金流紀錄與傳票草稿。",
+		}
+
 	def create_deposit_money_flow_from_reservation(self, reservation_name: str):
 		assert_can_perform_used_car_action(
 			"used_car_money_flow.deposit.create",
@@ -156,6 +209,16 @@ class VehicleMoneyFlowService:
 			frappe.throw("訂金金額必須大於 0，才能建立金流紀錄。")
 		if reservation.money_flow or reservation.voucher_draft:
 			frappe.throw("此保留紀錄已建立金流紀錄。")
+
+	def _validate_general_expense_money_flow(self, vehicle, flow_type: str | None, amount, payment_method: str | None):
+		if not vehicle:
+			frappe.throw("車輛為必填。")
+		if flow_type not in GENERAL_EXPENSE_FLOW_TYPES:
+			frappe.throw("一般支出類型必須是：整備支出、維修支出、美容支出、代辦支出、拍場支出、其他支出。")
+		if flt(amount) <= 0:
+			frappe.throw("一般支出金額必須大於 0。")
+		if payment_method not in VALID_PAYMENT_METHODS:
+			frappe.throw("付款方式必須是：現金、匯款、信用卡、其他。")
 
 	def _validate_reservation_for_final_payment_money_flow(self, reservation, amount, payment_method: str):
 		if reservation.status != "有效":
@@ -479,6 +542,30 @@ def _money_flow_verification_cleanup_complete(voucher_draft_name, money_flow_nam
 			("Used Car Reservation", reservation_name),
 			("Used Car Vehicle", vehicle_name),
 		)
+	)
+
+
+@frappe.whitelist()
+def create_general_expense_money_flow(
+	vehicle: str,
+	payment_date=None,
+	flow_type: str | None = None,
+	amount=0,
+	payment_method: str | None = None,
+	payment_reference: str | None = None,
+	notes: str | None = None,
+	evidence_attachment: str | None = None,
+):
+	service = VehicleMoneyFlowService()
+	return service.create_general_expense_money_flow(
+		vehicle=vehicle,
+		payment_date=payment_date,
+		flow_type=flow_type,
+		amount=amount,
+		payment_method=payment_method,
+		payment_reference=payment_reference,
+		notes=notes,
+		evidence_attachment=evidence_attachment,
 	)
 
 

@@ -286,6 +286,46 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 			"現金",
 		)
 
+	def test_create_general_expense_creates_money_flow_and_voucher_draft(self):
+		vehicle = self._make_listed_vehicle()
+		result = self._create_general_expense_for_vehicle(vehicle.name)
+		money_flow = frappe.get_doc("Used Car Money Flow", result.get("money_flow"))
+		draft = frappe.get_doc("Used Car Voucher Draft", result.get("voucher_draft"))
+
+		self.assertEqual(money_flow.vehicle, vehicle.name)
+		self.assertEqual(money_flow.direction, "支出")
+		self.assertEqual(money_flow.flow_type, "維修支出")
+		self.assertEqual(money_flow.evidence_attachment, "/files/test-expense.pdf")
+		self.assertEqual(money_flow.voucher_draft, draft.name)
+		self.assertEqual(draft.money_flow, money_flow.name)
+		self.assertEqual(draft.vehicle, vehicle.name)
+		self.assertEqual(draft.status, "待審核")
+		self.assertEqual(result.get("status"), "待審核")
+
+	def test_create_general_expense_rejects_non_positive_amount(self):
+		vehicle = self._make_listed_vehicle()
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.money_flow_service.create_general_expense_money_flow(
+				vehicle=vehicle.name,
+				flow_type="維修支出",
+				amount=0,
+				payment_method="現金",
+			)
+		self.assertIn("一般支出金額必須大於 0", str(failure.exception))
+
+	def test_create_general_expense_rejects_non_expense_flow_type(self):
+		vehicle = self._make_listed_vehicle()
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.money_flow_service.create_general_expense_money_flow(
+				vehicle=vehicle.name,
+				flow_type="訂金收款",
+				amount=1000,
+				payment_method="現金",
+			)
+		self.assertIn("一般支出類型必須是", str(failure.exception))
+
 	def test_delivery_preflight_rejects_missing_final_payment(self):
 		result = self._create_reservation_for_listed_vehicle()
 		confirm_result = self.voucher_service.confirm_voucher_draft(result.get("voucher_draft"), "TEST DEPOSIT CONFIRM")
@@ -720,6 +760,21 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 			amount=50000,
 			payment_method="現金",
 			payment_reference="TEST FINAL",
+		)
+		self.created_money_flows.append(result.get("money_flow"))
+		self.created_voucher_drafts.append(result.get("voucher_draft"))
+		return result
+
+	def _create_general_expense_for_vehicle(self, vehicle_name):
+		result = self.money_flow_service.create_general_expense_money_flow(
+			vehicle=vehicle_name,
+			payment_date="2026-06-12",
+			flow_type="維修支出",
+			amount=1200,
+			payment_method="現金",
+			payment_reference="TEST EXPENSE",
+			notes="TEST NOTE",
+			evidence_attachment="/files/test-expense.pdf",
 		)
 		self.created_money_flows.append(result.get("money_flow"))
 		self.created_voucher_drafts.append(result.get("voucher_draft"))
