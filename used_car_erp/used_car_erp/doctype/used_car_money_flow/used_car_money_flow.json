@@ -26,6 +26,7 @@
   "payment_method",
   "payment_column",
   "payment_reference",
+  "evidence_attachment",
   "notes",
   "accounting_section",
   "voucher_draft",
@@ -169,6 +170,12 @@
    "fieldtype": "Data",
    "label": "付款備註 / 末五碼",
    "read_only": 1
+  },
+  {
+   "description": "收據、發票、合約、付款截圖等交易憑證",
+   "fieldname": "evidence_attachment",
+   "fieldtype": "Attach",
+   "label": "憑證附件"
   },
   {
    "fieldname": "notes",
