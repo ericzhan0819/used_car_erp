@@ -2,6 +2,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from used_car_erp.used_car_erp.services import vehicle_money_flow_service
+from used_car_erp.used_car_erp.doctype.used_car_money_flow.used_car_money_flow import UsedCarMoneyFlow
 from used_car_erp.used_car_erp.services.vehicle_intake_service import VehicleIntakeService
 from used_car_erp.used_car_erp.services.vehicle_listing_service import VehicleListingService
 from used_car_erp.used_car_erp.services.vehicle_money_flow_service import (
@@ -354,7 +355,7 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 			result = self.money_flow_service.create_general_expense_money_flow(
 				vehicle="UC-TEST-001",
 				payment_date="2026-06-12",
-				flow_type="維修支出",
+				flow_type="整備支出",
 				amount=1200,
 				payment_method="現金",
 				payment_reference="TEST EXPENSE",
@@ -369,6 +370,38 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		self.assertEqual(calls[0]["action"], "used_car_money_flow.general_expense.create")
 		self.assertEqual(calls[0]["allowed_doctype"], "Used Car Money Flow")
 		self.assertIn("evidence_attachment", calls[0]["fieldnames"])
+
+	def test_money_flow_validation_accepts_general_expense_flow_type(self):
+		money_flow = UsedCarMoneyFlow(
+			{
+				"doctype": "Used Car Money Flow",
+				"status": "待審核",
+				"flow_type": "整備支出",
+				"vehicle": "UC-TEST-001",
+				"payment_date": "2026-06-12",
+				"payment_method": "現金",
+				"amount": 1200,
+			}
+		)
+
+		money_flow.validate()
+
+	def test_money_flow_validation_rejects_unknown_flow_type(self):
+		money_flow = UsedCarMoneyFlow(
+			{
+				"doctype": "Used Car Money Flow",
+				"status": "待審核",
+				"flow_type": "未知支出",
+				"vehicle": "UC-TEST-001",
+				"payment_date": "2026-06-12",
+				"payment_method": "現金",
+				"amount": 1200,
+			}
+		)
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			money_flow.validate()
+		self.assertIn("金流類型必須是", str(failure.exception))
 
 	def test_create_general_expense_rejects_non_positive_amount(self):
 		vehicle = self._make_listed_vehicle()

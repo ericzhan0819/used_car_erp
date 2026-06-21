@@ -4,7 +4,19 @@ from frappe.utils import flt, nowdate
 
 
 VALID_MONEY_FLOW_STATUSES = ("待審核", "已入帳", "已作廢")
-VALID_FLOW_TYPES = ("訂金收款", "尾款收款", "貸款撥款", "退款", "其他")
+VALID_FLOW_TYPES = (
+	"訂金收款",
+	"尾款收款",
+	"貸款撥款",
+	"退款",
+	"其他",
+	"整備支出",
+	"維修支出",
+	"美容支出",
+	"代辦支出",
+	"拍場支出",
+	"其他支出",
+)
 VALID_PAYMENT_METHODS = ("現金", "匯款", "信用卡", "其他")
 
 
@@ -41,7 +53,7 @@ class UsedCarMoneyFlow(Document):
 
 	def _validate_flow_type(self):
 		if self.flow_type not in VALID_FLOW_TYPES:
-			frappe.throw("金流類型必須是：訂金收款、尾款收款、貸款撥款、退款、其他。")
+			frappe.throw("金流類型必須是：訂金收款、尾款收款、貸款撥款、退款、其他、整備支出、維修支出、美容支出、代辦支出、拍場支出、其他支出。")
 
 	def _validate_required_fields(self):
 		if not self.vehicle:
