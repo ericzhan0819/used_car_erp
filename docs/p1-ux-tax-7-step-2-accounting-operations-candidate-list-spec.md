@@ -563,7 +563,16 @@ Step 5 completion update:
 `會計作業` Workspace 已在 `會計待辦` 區塊加入 `售車會計候選` Page shortcut。
 ```
 
-### Step 6: Vehicle-page demotion
+### Step 6 / Step 7: Site apply, browser smoke, and handoff
+
+```text
+Apply the Page / Workspace to erpnext-coa.test.
+Confirm /app/formal-sale-accounting-candidates works.
+Confirm 會計作業 shows 售車會計候選 shortcut.
+Document smoke result in docs/p1-ux-tax-7-step-7-smoke-handoff.md.
+```
+
+### Step 8: Vehicle-page demotion
 
 ```text
 After browser smoke confirms the Accounting Operations candidate path, demote high-impact vehicle-page accounting buttons.

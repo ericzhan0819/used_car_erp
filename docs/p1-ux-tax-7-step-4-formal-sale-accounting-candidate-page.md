@@ -4,7 +4,7 @@ Date: 2026-06-21
 
 Phase: `P1-UX-TAX-7`
 
-Status: Step 4 / Step 5 read-only Desk Page and Workspace shortcut
+Status: Step 7 smoke passed / handoff documented
 
 ## 1. Purpose
 
@@ -104,7 +104,26 @@ link_to: formal-sale-accounting-candidates
 
 既有 shortcut 保持不變。
 
-## 5. Non-goals
+## 5. Smoke result
+
+P1-UX-TAX-7 Step 6 site apply / smoke 已完成，Step 7 已新增 handoff 文件：
+
+```text
+docs/p1-ux-tax-7-step-7-smoke-handoff.md
+```
+
+已確認：
+
+```text
+/app/formal-sale-accounting-candidates 可開。
+售車會計候選頁正常顯示。
+summary / empty state / refresh 正常。
+/app/會計作業 可看到 售車會計候選 shortcut。
+shortcut route 正常。
+仍維持 read-only boundary。
+```
+
+## 6. Non-goals
 
 本階段明確不做：
 
@@ -122,7 +141,7 @@ link_to: formal-sale-accounting-candidates
 不新增 inline mutation。
 ```
 
-## 6. Suggested commit message
+## 7. Suggested commit message
 
 ```text
 feat: add read-only formal sale accounting candidate page

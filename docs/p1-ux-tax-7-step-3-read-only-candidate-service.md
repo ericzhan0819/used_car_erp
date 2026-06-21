@@ -4,7 +4,7 @@ Date: 2026-06-21
 
 Phase: `P1-UX-TAX-7`
 
-Status: Step 4 / Step 5 Desk Page and Workspace shortcut implemented
+Status: Step 7 smoke passed / handoff documented
 
 ## 1. Purpose
 
@@ -107,7 +107,17 @@ run_formal_sale_accounting_candidates(limit=50)
 
 此階段不會建立、提交、修復或修改 Sales Invoice、Journal Entry、Used Car Vehicle 或任何 ERPNext 文件。
 
-## 7. Suggested commit message
+## 7. Step 7 smoke handoff update
+
+P1-UX-TAX-7 Step 7 已新增 smoke handoff 文件並記錄手動測試通過：
+
+```text
+docs/p1-ux-tax-7-step-7-smoke-handoff.md
+```
+
+已確認 Step 3 service 可在 `erpnext-coa.test` 執行，且 Step 4 / Step 5 Page 與 Workspace shortcut 已可由使用者操作。
+
+## 8. Suggested commit message
 
 ```text
 feat: add read-only formal sale accounting candidates

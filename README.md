@@ -189,6 +189,8 @@ P1-UX-TAX-7 Step 3 已新增 read-only `FormalSaleAccountingCandidateService`，
 
 P1-UX-TAX-7 Step 4 / Step 5 已將 read-only formal sale accounting candidates 接成 Desk Page，並在 會計作業 Workspace 加入 shortcut。此階段不會建立、提交、修復或修改 Sales Invoice、Journal Entry、Used Car Vehicle 或任何 ERPNext 文件。
 
+P1-UX-TAX-7 Step 7 已新增 smoke handoff 文件並記錄手動測試通過。`/app/formal-sale-accounting-candidates` 可開、`會計作業` 可看到 `售車會計候選` shortcut、summary / empty state / refresh 正常，且整體仍維持 read-only boundary。下一步建議進入 Step 8：Vehicle Page accounting action demotion。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -241,6 +243,7 @@ Decision documents:
 - [P1-UX-TAX-7 Step 2 Accounting Operations Candidate List Spec](docs/p1-ux-tax-7-step-2-accounting-operations-candidate-list-spec.md)
 - [P1-UX-TAX-7 Step 3 Read-only Candidate Service](docs/p1-ux-tax-7-step-3-read-only-candidate-service.md)
 - [P1-UX-TAX-7 Step 4 Formal Sale Accounting Candidate Page](docs/p1-ux-tax-7-step-4-formal-sale-accounting-candidate-page.md)
+- [P1-UX-TAX-7 Step 7 Smoke Handoff](docs/p1-ux-tax-7-step-7-smoke-handoff.md)
 
 Manual QA checklist:
 

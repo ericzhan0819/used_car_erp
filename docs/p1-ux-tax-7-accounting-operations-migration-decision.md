@@ -222,7 +222,21 @@ Desk Page route:
 售車會計候選
 ```
 
-### Step 6: Vehicle-page action demotion
+### Step 6 / Step 7: Site apply, browser smoke, and handoff
+
+Apply the Accounting Operations candidate path to `erpnext-coa.test`, confirm it in browser, and record the handoff checkpoint.
+
+Completion update:
+
+```text
+P1-UX-TAX-7 Step 6 site apply / smoke passed.
+P1-UX-TAX-7 Step 7 handoff documented in docs/p1-ux-tax-7-step-7-smoke-handoff.md.
+/app/formal-sale-accounting-candidates works.
+會計作業 shows 售車會計候選 shortcut.
+The path remains read-only.
+```
+
+### Step 8: Vehicle-page action demotion
 
 After the Accounting Operations candidate path is confirmed in browser smoke, demote high-impact accounting actions from the vehicle page.
 
