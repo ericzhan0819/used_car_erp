@@ -6,6 +6,8 @@ Phase: `P1-UX-TAX-7`
 
 Status: Step 8A documentation-only inventory and demotion boundary
 
+Step 8B implementation note: `docs/p1-ux-tax-7-step-8b-vehicle-page-accounting-action-demotion.md` records the JS-only demotion implementation. Step 8B keeps Sales Invoice draft creation and document route links on the vehicle page, removes high-impact accounting mutation buttons from the normal sold-vehicle surface, and adds a route-only `前往售車會計候選` button.
+
 Latest stable commit before this documentation step:
 
 ```text

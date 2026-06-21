@@ -280,6 +280,7 @@ function clear_vehicle_action_buttons(frm) {
     "隱藏會計技術欄位",
     "顯示文件連結",
     "隱藏文件連結",
+    "前往售車會計候選",
   ].forEach((label) => {
     frm.remove_custom_button(label);
   });
@@ -1346,23 +1347,13 @@ function add_sold_vehicle_primary_action_button(frm) {
     return;
   }
 
-  if (action.primary_action === "submit_sales_invoice") {
-    add_submit_formal_delivery_sales_invoice_button(frm);
-    return;
-  }
-
-  if (action.primary_action === "create_advance_settlement_draft") {
-    add_create_advance_settlement_journal_entry_draft_button(frm);
-    return;
-  }
-
-  if (action.primary_action === "submit_advance_settlement") {
-    add_submit_advance_settlement_journal_entry_button(frm);
-    return;
-  }
-
   if (action.primary_action === "create_sales_invoice_draft") {
     add_sold_vehicle_next_step_button(frm);
+    return;
+  }
+
+  if (is_sold_vehicle_accounting_operations_action(action.primary_action)) {
+    add_open_formal_sale_accounting_candidates_button(frm);
   }
 }
 
@@ -1377,11 +1368,27 @@ function add_sold_vehicle_related_document_buttons(frm) {
     add_open_sales_invoice_button(frm);
   }
 
-  add_recover_sales_invoice_draft_link_button_if_needed(frm);
-
   if (action.related_documents.includes("advance_settlement_journal_entry")) {
     add_open_advance_settlement_journal_entry_button(frm);
   }
+}
+
+function is_sold_vehicle_accounting_operations_action(primary_action) {
+  return [
+    "submit_sales_invoice",
+    "create_advance_settlement_draft",
+    "submit_advance_settlement",
+  ].includes(primary_action);
+}
+
+function add_open_formal_sale_accounting_candidates_button(frm) {
+  frm.add_custom_button(
+    "前往售車會計候選",
+    () => {
+      frappe.set_route("formal-sale-accounting-candidates");
+    },
+    "會計作業"
+  );
 }
 
 function can_check_recover_sales_invoice_draft_link(frm) {
