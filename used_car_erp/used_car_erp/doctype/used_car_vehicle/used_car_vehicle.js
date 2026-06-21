@@ -85,6 +85,8 @@ const ACCOUNTING_TECHNICAL_FIELDS = [
 function apply_vehicle_form_mode(frm) {
   clear_vehicle_action_buttons(frm);
   set_vehicle_intake_intro(frm);
+  apply_vehicle_cashflow_section_label(frm);
+  render_vehicle_cashflow_inline_summary(frm);
   apply_tax_fields_visibility(frm);
   apply_vehicle_business_descriptions(frm);
   hide_vehicle_accounting_surface(frm);
@@ -159,6 +161,139 @@ function apply_tax_fields_visibility(frm) {
       frm.toggle_display(fieldname, false);
     }
   });
+}
+
+function apply_vehicle_cashflow_section_label(frm) {
+  if (frm.fields_dict.cashflow_summary_section) {
+    frm.set_df_property("cashflow_summary_section", "label", "收支摘要");
+  }
+}
+
+function render_vehicle_cashflow_inline_summary(frm) {
+  const wrapper = get_vehicle_cashflow_summary_wrapper(frm);
+  if (!wrapper) {
+    return;
+  }
+
+  wrapper.find(".used-car-cashflow-inline-summary").remove();
+
+  if (frm.is_new() || !frm.doc.name) {
+    return;
+  }
+
+  const summary = $(render_vehicle_cashflow_summary_loading());
+  wrapper.append(summary);
+
+  frappe.call({
+    method: "frappe.client.get_list",
+    args: {
+      doctype: "Used Car Money Flow",
+      filters: {
+        vehicle: frm.doc.name,
+      },
+      fields: [
+        "name",
+        "payment_date",
+        "flow_type",
+        "direction",
+        "amount",
+        "status",
+        "evidence_attachment",
+      ],
+      order_by: "payment_date asc, modified asc",
+      limit_page_length: 20,
+    },
+    callback(response) {
+      summary.replaceWith(render_vehicle_cashflow_summary(response.message || []));
+    },
+    error() {
+      summary.replaceWith(render_vehicle_cashflow_summary_error());
+    },
+  });
+}
+
+function get_vehicle_cashflow_summary_wrapper(frm) {
+  const field = frm.fields_dict.cashflow_summary_section;
+  if (!field || !field.wrapper) {
+    return null;
+  }
+
+  return $(field.wrapper);
+}
+
+function render_vehicle_cashflow_summary_loading() {
+  return `
+    <div class="used-car-cashflow-inline-summary" style="margin: 10px 0 14px; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;">
+      <div class="text-muted">正在讀取收支摘要...</div>
+    </div>
+  `;
+}
+
+function render_vehicle_cashflow_summary_error() {
+  return `
+    <div class="used-car-cashflow-inline-summary" style="margin: 10px 0 14px; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;">
+      <div class="text-muted">收支摘要讀取失敗。此區塊只提供唯讀資訊，不影響車輛主流程操作。</div>
+    </div>
+  `;
+}
+
+function render_vehicle_cashflow_summary(records) {
+  if (!records.length) {
+    return `
+      <div class="used-car-cashflow-inline-summary" style="margin: 10px 0 14px; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;">
+        <div class="text-muted">尚無收支紀錄</div>
+      </div>
+    `;
+  }
+
+  const rows = records.map(render_vehicle_cashflow_summary_row).join("");
+  return `
+    <div class="used-car-cashflow-inline-summary" style="margin: 10px 0 14px; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden;">
+      <div style="padding: 10px 12px; font-weight: 600; border-bottom: 1px solid var(--border-color);">近 20 筆收支紀錄</div>
+      <div style="overflow-x: auto;">
+        <table class="table table-bordered" style="margin: 0; min-width: 680px;">
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>類型</th>
+              <th>金額</th>
+              <th>狀態</th>
+              <th>憑證</th>
+              <th>金流編號</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function render_vehicle_cashflow_summary_row(record) {
+  const sign = get_vehicle_cashflow_amount_sign(record);
+  const amount = format_vehicle_currency(record.amount || 0);
+  return `
+    <tr>
+      <td>${escape_vehicle_dashboard_html(record.payment_date)}</td>
+      <td>${escape_vehicle_dashboard_html(record.flow_type)}</td>
+      <td style="text-align: right; white-space: nowrap;">${escape_vehicle_dashboard_html(`${sign}${amount}`)}</td>
+      <td>${escape_vehicle_dashboard_html(record.status)}</td>
+      <td>${record.evidence_attachment ? "有憑證" : "無憑證"}</td>
+      <td>${escape_vehicle_dashboard_html(record.name)}</td>
+    </tr>
+  `;
+}
+
+function get_vehicle_cashflow_amount_sign(record) {
+  if (record.direction === "收入") {
+    return "+";
+  }
+  if (record.direction === "支出") {
+    return "-";
+  }
+
+  const expense_flow_types = ["整備支出", "維修支出", "美容支出", "代辦支出", "拍場支出", "其他支出"];
+  return expense_flow_types.includes(record.flow_type) ? "-" : "+";
 }
 
 function hide_vehicle_accounting_surface(frm) {
