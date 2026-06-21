@@ -421,6 +421,8 @@ P1-UX-TAX-7 Step 8A 已新增 Vehicle Page accounting action demotion spec。此
 
 P1-UX-TAX-7 Step 8B 已完成 JS-only Vehicle Page accounting action demotion。`Used Car Vehicle` 已售出頁保留 `建立 Sales Invoice 草稿`、Sales Invoice / Journal Entry route links 與文件連結 toggle；`確認銷售發票並出庫`、`建立預收款沖轉草稿`、`確認預收款沖轉入帳` 與 Sales Invoice 草稿連結修復不再由一般車輛頁掛出 mutation button，改顯示 route-only `前往售車會計候選` 導向 `/app/formal-sale-accounting-candidates`。本階段不改 Python service、DocType JSON、Workspace、hooks.py、permission、backend accounting sequence、Sales Invoice / Journal Entry behavior 或 GL / Stock Ledger behavior。
 
+P1-UX-TAX-7 Step 8C 已新增 Vehicle Page accounting action demotion smoke handoff。靜態驗證通過，browser smoke 清單已記錄：需手動確認 Accounting Operations candidate page / shortcut 仍正常、不同已售出車輛狀態不再顯示高衝擊 accounting mutation buttons、Sales Invoice / Journal Entry route links 與 `前往售車會計候選` route-only button 仍正常。本階段只改文件，不修改 runtime。
+
 文件：`docs/p1-acc-6f-c-0b-formal-submitted-sales-invoice-test-fixture-setup.md`。
 
 文件：`docs/p1-acc-6f-c-guarded-formal-sales-invoice-submit-qa.md`。
@@ -476,6 +478,8 @@ P1-UX-TAX-7 Step 8B 已完成 JS-only Vehicle Page accounting action demotion。
 文件：`docs/p1-ux-tax-7-step-8a-vehicle-page-accounting-action-demotion-spec.md`。
 
 文件：`docs/p1-ux-tax-7-step-8b-vehicle-page-accounting-action-demotion.md`。
+
+文件：`docs/p1-ux-tax-7-step-8c-vehicle-page-accounting-action-demotion-smoke.md`。
 
 Service：`used_car_erp/used_car_erp/services/formal_sale_accounting_candidate_service.py`。
 

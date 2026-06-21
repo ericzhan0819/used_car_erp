@@ -195,6 +195,8 @@ P1-UX-TAX-7 Step 8A 已新增 Vehicle Page accounting action demotion spec，盤
 
 P1-UX-TAX-7 Step 8B 已完成 JS-only Vehicle Page accounting action demotion。已售出車輛頁保留 `建立 Sales Invoice 草稿`、`查看銷售發票`、`查看預收款沖轉傳票` 與文件連結顯示切換；`確認銷售發票並出庫`、`建立預收款沖轉草稿`、`確認預收款沖轉入帳` 與 Sales Invoice 草稿連結修復不再從一般車輛頁掛出 mutation button，改以 `前往售車會計候選` route-only button 導向 `/app/formal-sale-accounting-candidates`。本階段不改 backend accounting behavior。
 
+P1-UX-TAX-7 Step 8C 已新增 Vehicle Page accounting action demotion smoke handoff。靜態驗證通過，browser smoke 清單已記錄供 `erpnext-coa.test` 手動確認；本階段只同步文件，不改 Used Car Vehicle JS、Python service、DocType JSON、Workspace、hooks.py、permission 或 backend accounting runtime。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -250,6 +252,7 @@ Decision documents:
 - [P1-UX-TAX-7 Step 7 Smoke Handoff](docs/p1-ux-tax-7-step-7-smoke-handoff.md)
 - [P1-UX-TAX-7 Step 8A Vehicle Page Accounting Action Demotion Spec](docs/p1-ux-tax-7-step-8a-vehicle-page-accounting-action-demotion-spec.md)
 - [P1-UX-TAX-7 Step 8B Vehicle Page Accounting Action Demotion](docs/p1-ux-tax-7-step-8b-vehicle-page-accounting-action-demotion.md)
+- [P1-UX-TAX-7 Step 8C Vehicle Page Accounting Action Demotion Smoke](docs/p1-ux-tax-7-step-8c-vehicle-page-accounting-action-demotion-smoke.md)
 
 Manual QA checklist:
 

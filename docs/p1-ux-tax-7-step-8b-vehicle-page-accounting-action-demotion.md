@@ -6,6 +6,8 @@ Phase: `P1-UX-TAX-7`
 
 Status: JS-only demotion implemented
 
+Step 8C handoff note: `docs/p1-ux-tax-7-step-8c-vehicle-page-accounting-action-demotion-smoke.md` records the smoke checklist and runtime boundary after this JS-only demotion. Step 8C does not add backend accounting runtime.
+
 Latest stable commit before this implementation step:
 
 ```text
