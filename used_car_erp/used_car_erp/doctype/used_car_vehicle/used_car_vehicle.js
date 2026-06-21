@@ -86,8 +86,8 @@ function apply_vehicle_form_mode(frm) {
   clear_vehicle_action_buttons(frm);
   set_vehicle_intake_intro(frm);
   apply_tax_fields_visibility(frm);
-  render_accounting_status_summary(frm);
-  apply_accounting_status_technical_field_visibility(frm);
+  apply_vehicle_business_descriptions(frm);
+  hide_vehicle_accounting_surface(frm);
 
   if (frm.is_new()) {
     set_vehicle_fields_read_only(frm, false);
@@ -95,9 +95,7 @@ function apply_vehicle_form_mode(frm) {
   }
 
   if (frm.doc.status === "已售出") {
-    add_accounting_status_technical_fields_toggle_button(frm);
     add_sold_vehicle_primary_action_button(frm);
-    add_sold_vehicle_related_document_buttons(frm);
     set_vehicle_fields_read_only(frm, true);
     allow_sold_vehicle_tax_metadata_edit(frm);
     allow_sold_vehicle_sale_workflow_edit(frm);
@@ -129,8 +127,6 @@ function apply_vehicle_form_mode(frm) {
     return;
   }
 
-  add_accounting_status_technical_fields_toggle_button(frm);
-
   add_non_sold_vehicle_primary_action_button(frm);
 
   if (frm._vehicle_edit_mode) {
@@ -157,6 +153,61 @@ function apply_tax_fields_visibility(frm) {
   ["sales_tax_section", "vehicle_tax_mode", "tax_review_status", "tax_review_note"].forEach((fieldname) => {
     if (frm.fields_dict[fieldname]) {
       frm.toggle_display(fieldname, false);
+    }
+  });
+}
+
+function hide_vehicle_accounting_surface(frm) {
+  const accounting_fields = [
+    "accounting_status_summary_html",
+    "accounting_status_section",
+    "sales_invoice",
+    "formal_delivery_status",
+    "formal_delivery_posting_date",
+    "advance_settlement_journal_entry",
+    "formal_delivery_column",
+    "formal_delivery_completed_at",
+    "formal_delivery_completed_by",
+    "formal_delivery_note",
+    "deposit_voucher_draft",
+    "deposit_journal_entry",
+    "final_voucher_draft",
+    "final_journal_entry",
+  ];
+
+  const accounting_section_keywords = [
+    "會計",
+    "Sales Invoice",
+    "Journal Entry",
+    "Voucher Draft",
+    "傳票",
+    "稅務估算",
+    "正式交車",
+    "formal delivery",
+  ];
+
+  accounting_fields.forEach((fieldname) => {
+    if (!frm.fields_dict[fieldname]) {
+      return;
+    }
+
+    frm.toggle_display(fieldname, false);
+    frm.set_df_property(fieldname, "hidden", 1);
+  });
+
+  frm.meta.fields.forEach((df) => {
+    if (!df.fieldname || !["Section Break", "Column Break", "HTML"].includes(df.fieldtype)) {
+      return;
+    }
+
+    const text = [df.label, df.fieldname, df.options].filter(Boolean).join(" ");
+    if (!accounting_section_keywords.some((keyword) => text.includes(keyword))) {
+      return;
+    }
+
+    if (frm.fields_dict[df.fieldname]) {
+      frm.toggle_display(df.fieldname, false);
+      frm.set_df_property(df.fieldname, "hidden", 1);
     }
   });
 }
@@ -195,7 +246,7 @@ function allow_sold_vehicle_tax_metadata_edit(frm) {
 function allow_sold_vehicle_sale_workflow_edit(frm) {
   if (!can_edit_sold_vehicle_sale_workflow(frm)) {
     if (is_sold_vehicle_formally_locked(frm)) {
-      frm.set_intro("正式文件已提交，售車資料已鎖定；後續需走修正 / 反轉流程。", "orange");
+      frm.set_intro("此車已售出，售車資料已鎖定。", "orange");
     }
     return;
   }
@@ -207,10 +258,16 @@ function allow_sold_vehicle_sale_workflow_edit(frm) {
   });
 
   frm.set_intro(
-    "此車已售出，但正式入帳鎖定前仍可修正售車資料。若已建立 Sales Invoice 草稿，儲存後會同步更新草稿。",
+    "此車已售出，車輛成交資料仍可在正式文件鎖定前修正。",
     "blue"
   );
   frm.refresh_fields(SALE_WORKFLOW_FIELDS.filter((fieldname) => frm.fields_dict[fieldname]));
+}
+
+function apply_vehicle_business_descriptions(frm) {
+  if (frm.fields_dict.sold_price) {
+    frm.set_df_property("sold_price", "description", "成交價屬於售車流程，可作為後續收支與交車確認依據。");
+  }
 }
 
 function can_edit_sold_vehicle_sale_workflow(frm) {
@@ -287,48 +344,7 @@ function clear_vehicle_action_buttons(frm) {
 }
 
 function render_accounting_status_summary(frm) {
-  const field = frm.get_field("accounting_status_summary_html");
-
-  if (!field) {
-    return;
-  }
-
-  if (frm.is_new() || !frm.doc.name) {
-    field.$wrapper.html(`
-      <div class="frappe-card" style="padding: 16px; margin-bottom: 12px;">
-        <div style="font-weight: 600; margin-bottom: 6px;">單車摘要</div>
-        <div class="text-muted">儲存車輛後，這裡會顯示會計狀態、15-1 稅務估算與管理損益摘要。</div>
-      </div>
-    `);
-    return;
-  }
-
-  const request_key = `${frm.doc.name || ""}:${frm.doc.sales_invoice || ""}:${frm.doc.modified || ""}`;
-  frm._vehicle_dashboard_summary_request_key = request_key;
-  render_vehicle_dashboard_summary_loading(field);
-
-  frappe.call({
-    method:
-      "used_car_erp.used_car_erp.services.vehicle_dashboard_summary_service.run_vehicle_dashboard_summary",
-    args: {
-      vehicle_name: frm.doc.name,
-      sales_invoice: frm.doc.sales_invoice || null,
-    },
-    callback(response) {
-      if (frm._vehicle_dashboard_summary_request_key !== request_key) {
-        return;
-      }
-
-      render_vehicle_dashboard_summary(field, response.message || {});
-    },
-    error() {
-      if (frm._vehicle_dashboard_summary_request_key !== request_key) {
-        return;
-      }
-
-      render_vehicle_dashboard_summary_error(field);
-    },
-  });
+  return;
 }
 
 function render_vehicle_dashboard_summary_loading(field) {
@@ -814,31 +830,11 @@ function add_submit_advance_settlement_journal_entry_button(frm) {
 }
 
 function add_open_advance_settlement_journal_entry_button(frm) {
-  if (!frm.doc.advance_settlement_journal_entry) {
-    return;
-  }
-
-  frm.add_custom_button(
-    "查看預收款沖轉傳票",
-    () => {
-      frappe.set_route("Form", "Journal Entry", frm.doc.advance_settlement_journal_entry);
-    },
-    "文件連結"
-  );
+  return;
 }
 
 function add_open_sales_invoice_button(frm) {
-  if (!frm.doc.sales_invoice) {
-    return;
-  }
-
-  frm.add_custom_button(
-    "查看銷售發票",
-    () => {
-      frappe.set_route("Form", "Sales Invoice", frm.doc.sales_invoice);
-    },
-    "文件連結"
-  );
+  return;
 }
 
 function add_recover_sales_invoice_draft_link_button(frm) {
@@ -1346,49 +1342,10 @@ function add_sold_vehicle_primary_action_button(frm) {
   if (!action || !action.primary_action) {
     return;
   }
-
-  if (action.primary_action === "create_sales_invoice_draft") {
-    add_sold_vehicle_next_step_button(frm);
-    return;
-  }
-
-  if (is_sold_vehicle_accounting_operations_action(action.primary_action)) {
-    add_open_formal_sale_accounting_candidates_button(frm);
-  }
-}
-
-function add_sold_vehicle_related_document_buttons(frm) {
-  const action = get_sold_vehicle_primary_next_action(frm);
-
-  if (!action) {
-    return;
-  }
-
-  if (action.related_documents.includes("sales_invoice")) {
-    add_open_sales_invoice_button(frm);
-  }
-
-  if (action.related_documents.includes("advance_settlement_journal_entry")) {
-    add_open_advance_settlement_journal_entry_button(frm);
-  }
-}
-
-function is_sold_vehicle_accounting_operations_action(primary_action) {
-  return [
-    "submit_sales_invoice",
-    "create_advance_settlement_draft",
-    "submit_advance_settlement",
-  ].includes(primary_action);
 }
 
 function add_open_formal_sale_accounting_candidates_button(frm) {
-  frm.add_custom_button(
-    "前往售車會計候選",
-    () => {
-      frappe.set_route("formal-sale-accounting-candidates");
-    },
-    "會計作業"
-  );
+  return;
 }
 
 function can_check_recover_sales_invoice_draft_link(frm) {
@@ -1411,7 +1368,7 @@ function get_sold_vehicle_primary_next_action(frm) {
 
   if (status === "已完成") {
     return {
-      current_stage: "正式交車入帳流程已完成",
+      current_stage: "已售出",
       next_step: "",
       primary_action: null,
       related_documents: [
@@ -1423,8 +1380,8 @@ function get_sold_vehicle_primary_next_action(frm) {
 
   if (status === "預收款沖轉已提交" && has_settlement_journal_entry) {
     return {
-      current_stage: "預收款沖轉 Journal Entry 已提交",
-      next_step: "等待正式交車完成檢查",
+      current_stage: "已售出",
+      next_step: "等待交車完成確認",
       primary_action: null,
       related_documents: [
         ...(has_sales_invoice ? ["sales_invoice"] : []),
@@ -1435,9 +1392,9 @@ function get_sold_vehicle_primary_next_action(frm) {
 
   if (status === "預收款沖轉草稿" && has_settlement_journal_entry) {
     return {
-      current_stage: "預收款沖轉 Journal Entry 草稿已建立",
-      next_step: "提交預收款沖轉 Journal Entry",
-      primary_action: "submit_advance_settlement",
+      current_stage: "已售出",
+      next_step: "等待會計作業確認",
+      primary_action: null,
       related_documents: [
         ...(has_sales_invoice ? ["sales_invoice"] : []),
         "advance_settlement_journal_entry",
@@ -1447,26 +1404,26 @@ function get_sold_vehicle_primary_next_action(frm) {
 
   if (status === "銷售發票已提交" && has_sales_invoice && !has_settlement_journal_entry) {
     return {
-      current_stage: "Sales Invoice 已提交並出庫",
-      next_step: "建立預收款沖轉 Journal Entry 草稿",
-      primary_action: "create_advance_settlement_draft",
+      current_stage: "已售出",
+      next_step: "等待會計作業確認",
+      primary_action: null,
       related_documents: ["sales_invoice"],
     };
   }
 
   if (has_sales_invoice && [undefined, null, "", "銷售發票草稿"].includes(status)) {
     return {
-      current_stage: "Sales Invoice 草稿已建立",
-      next_step: "確認銷售發票並出庫",
-      primary_action: "submit_sales_invoice",
+      current_stage: "已售出",
+      next_step: "等待會計作業確認",
+      primary_action: null,
       related_documents: ["sales_invoice"],
     };
   }
 
   return {
-    current_stage: "已完成成交，Sales Invoice 草稿尚未建立",
-    next_step: "建立 Sales Invoice 草稿",
-    primary_action: "create_sales_invoice_draft",
+    current_stage: "已售出",
+    next_step: "等待會計作業確認",
+    primary_action: null,
     related_documents: [],
   };
 }
@@ -1481,81 +1438,12 @@ function add_sold_vehicle_progress_comment(frm) {
   if (simplified_action) {
     const message = [
       `目前階段：${simplified_action.current_stage}`,
-      simplified_action.next_step ? `下一步：${simplified_action.next_step}` : "正式交車入帳流程已完成",
+      simplified_action.next_step ? `下一步：${simplified_action.next_step}` : "成交流程已完成",
     ];
 
     frm.dashboard.add_comment(message.join("<br>"), "blue", true);
     return;
   }
-
-  const sales_invoice_submitted = frm.doc.formal_delivery_status === "銷售發票已提交";
-  const settlement_draft_created =
-    frm.doc.formal_delivery_status === "預收款沖轉草稿" && frm.doc.advance_settlement_journal_entry;
-  const settlement_submitted =
-    frm.doc.formal_delivery_status === "預收款沖轉已提交" && frm.doc.advance_settlement_journal_entry;
-  const sales_invoice_status = sales_invoice_submitted
-    ? "Sales Invoice 已正式提交並出庫"
-    : settlement_submitted
-      ? "Sales Invoice 已正式提交並出庫"
-    : settlement_draft_created
-      ? "Sales Invoice 已正式提交並出庫"
-      : frm.doc.sales_invoice
-      ? "Sales Invoice 草稿已建立"
-      : "Sales Invoice 草稿尚未建立";
-  const next_step = sales_invoice_submitted
-    ? "建立預收款沖轉 Journal Entry 草稿"
-    : settlement_submitted
-      ? "正式交車完成檢查"
-    : settlement_draft_created
-      ? "會計確認並提交預收款沖轉 Journal Entry"
-    : frm.doc.sales_invoice
-      ? "開啟並檢查 Sales Invoice 草稿"
-      : "建立 Sales Invoice 草稿";
-  const progress_comment = [
-    "流程進度：",
-    "✓ 訂金已入帳",
-    "✓ 尾款已入帳",
-    "✓ 已確認成交",
-    `✓ ${sales_invoice_status}`,
-    `下一步：${next_step}`,
-  ];
-
-  if (settlement_submitted) {
-    progress_comment.push(
-      "",
-      "預收款沖轉 Journal Entry 已提交。",
-      "Sales Invoice 已提交並出庫。",
-      "正式交車完成仍待後續確認。"
-    );
-  } else if (settlement_draft_created) {
-    progress_comment.push(
-      "",
-      "預收款沖轉 Journal Entry 草稿已建立。",
-      "仍需會計人工確認與提交。",
-      "正式交車入帳尚未完成。"
-    );
-  } else if (frm.doc.advance_settlement_journal_entry) {
-    progress_comment.push(
-      "",
-      "預收款沖轉傳票草稿已建立，等待會計確認。",
-      "正式交車入帳尚未完成。"
-    );
-  } else if (sales_invoice_submitted) {
-    progress_comment.push(
-      "",
-      "Sales Invoice 已正式提交並出庫。",
-      "預收款沖轉仍待後續處理。",
-      "正式交車入帳尚未完成。"
-    );
-  } else if (frm.doc.sales_invoice) {
-    progress_comment.push("", build_sales_invoice_draft_checklist_comment());
-  }
-
-  frm.dashboard.add_comment(
-    progress_comment.join("<br>"),
-    "blue",
-    true
-  );
 }
 
 function build_sales_invoice_draft_checklist_comment() {
@@ -1618,69 +1506,7 @@ function add_sold_vehicle_final_check_comment(frm) {
 }
 
 function add_formal_delivery_submit_preflight_comment(frm) {
-  if (frm.is_new() || frm.doc.status !== "已售出" || !frm.doc.name || !frm.dashboard) {
-    return;
-  }
-
-  frappe.call({
-    method:
-      "used_car_erp.used_car_erp.services.vehicle_formal_delivery_service.preflight_formal_delivery_submit_for_vehicle",
-    args: {
-      vehicle_name: frm.doc.name,
-    },
-    callback(response) {
-      const result = response.message;
-
-      if (!result) {
-        return;
-      }
-
-      const sales_invoice_submitted = frm.doc.formal_delivery_status === "銷售發票已提交";
-      const blocked_reasons = result.blocked_reasons || [];
-      const readiness_result = result.ready
-        ? "判斷結果：目前資料已通過提交前檢查，可進入下一階段人工確認。"
-        : "判斷結果：目前尚不可進入正式提交階段。";
-      const blocked_message = blocked_reasons.length
-        ? ["待處理項目：", ...blocked_reasons.map((reason) => `- ${reason}`)]
-        : ["待處理項目：請查看上方檢查項目。"];
-      const message = [
-        sales_invoice_submitted ? "正式交車提交狀態（Phase 3B）：" : "正式交車提交前檢查（Phase 3A）：",
-        `整體狀態：${result.status_label || result.status}`,
-        ...result.checks.map((check) => `${final_check_icon(check.state)} ${check.label}：${check.message}`),
-        "",
-        "判斷結果：",
-        readiness_result,
-      ];
-
-      if (!result.ready) {
-        message.push("", ...blocked_message);
-      }
-
-      if (sales_invoice_submitted) {
-        message.push(
-          "",
-          "Sales Invoice 已正式提交並出庫。",
-          "預收款沖轉仍待後續處理。",
-          "正式交車入帳尚未完成。"
-        );
-      } else {
-        message.push(
-          "",
-          "注意：",
-          "此檢查只代表「資料可進入下一階段人工確認」。",
-          "目前尚未提交 Sales Invoice，尚未正式出庫，尚未沖轉預收款，尚未完成正式交車入帳。",
-          "尚未正式提交 Sales Invoice。",
-          "尚未正式出庫。",
-          "尚未沖轉預收款。"
-        );
-      }
-
-      frm.dashboard.add_comment(message.join("<br>"), result.ready ? "green" : "red", true);
-    },
-    error() {
-      // 正式交車 preflight 面板只是唯讀輔助資訊，載入失敗不可阻斷車輛頁既有操作。
-    },
-  });
+  return;
 }
 
 function final_check_icon(state) {
@@ -1884,32 +1710,7 @@ function set_vehicle_intake_intro(frm) {
   }
 
   if (frm.doc.status === "已售出") {
-    if (frm.doc.formal_delivery_status === "預收款沖轉草稿" && frm.doc.advance_settlement_journal_entry) {
-      frm.set_intro("預收款沖轉 Journal Entry 草稿已建立。仍需會計人工確認與提交；正式交車入帳尚未完成。", "blue");
-      return;
-    }
-
-    if (frm.doc.formal_delivery_status === "預收款沖轉已提交" && frm.doc.advance_settlement_journal_entry) {
-      frm.set_intro("預收款沖轉 Journal Entry 已提交。Sales Invoice 已提交並出庫。正式交車完成仍待後續確認。", "green");
-      return;
-    }
-
-    if (frm.doc.advance_settlement_journal_entry) {
-      frm.set_intro("預收款沖轉傳票草稿已建立，等待會計確認。正式交車入帳尚未完成。", "blue");
-      return;
-    }
-
-    if (frm.doc.formal_delivery_status === "銷售發票已提交") {
-      frm.set_intro("Sales Invoice 已正式提交並出庫。預收款沖轉仍待後續處理；正式交車入帳尚未完成。", "green");
-      return;
-    }
-
-    if (frm.doc.sales_invoice) {
-      frm.set_intro("Sales Invoice 草稿已建立。請先開啟草稿並依檢查清單確認內容；正式提交後只會出庫，預收款沖轉仍待後續處理。", "blue");
-      return;
-    }
-
-    frm.set_intro("此車輛已完成成交，訂金與尾款已完成入帳。下一步是建立 Sales Invoice 草稿，供人工檢查銷售資料；目前不會正式出庫或認列收入。", "blue");
+    frm.set_intro("此車輛已售出。車輛頁只顯示車輛成交與交車資訊；收入、支出與憑證由會計作業確認。", "blue");
     return;
   }
 
