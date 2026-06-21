@@ -43,6 +43,11 @@ ACTION_ROLE_MAP = {
 		"Used Car Manager",
 		"Used Car Owner",
 	},
+	"used_car_money_flow.general_expense.create": {
+		"Used Car Sales",
+		"Used Car Manager",
+		"Used Car Owner",
+	},
 	"used_car_vehicle_cost.create_with_amount": {
 		"Used Car Preparation",
 		"Used Car Accounting Manager",

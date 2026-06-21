@@ -16,6 +16,13 @@ class TestUsedCarActionPermissionService(FrappeTestCase):
 	def test_sales_can_create_deposit_money_flow(self):
 		self.assertTrue(is_action_allowed_for_roles("used_car_money_flow.deposit.create", {"Used Car Sales"}))
 
+	def test_general_expense_money_flow_create_is_known_action(self):
+		self.assertIn("used_car_money_flow.general_expense.create", ACTION_ROLE_MAP)
+		self.assertTrue(is_action_allowed_for_roles("used_car_money_flow.general_expense.create", {"Used Car Sales"}))
+
+	def test_general_expense_money_flow_create_still_requires_allowed_role(self):
+		self.assertFalse(is_action_allowed_for_roles("used_car_money_flow.general_expense.create", {"Used Car Accounting"}))
+
 	def test_sales_cannot_confirm_voucher_draft(self):
 		self.assertFalse(is_action_allowed_for_roles("used_car_voucher_draft.confirm", {"Used Car Sales"}))
 
