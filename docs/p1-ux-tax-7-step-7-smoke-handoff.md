@@ -204,7 +204,13 @@ Step 6: site apply and browser smoke passed.
 Step 7: handoff checkpoint documented.
 ```
 
-This phase can now safely proceed to controlled vehicle-page action demotion.
+Step 8A update:
+
+```text
+docs/p1-ux-tax-7-step-8a-vehicle-page-accounting-action-demotion-spec.md now defines the documentation-only inventory and JS-only demotion boundary.
+```
+
+This phase can now safely proceed to controlled vehicle-page action demotion implementation.
 
 ## 9. Suggested commit message
 

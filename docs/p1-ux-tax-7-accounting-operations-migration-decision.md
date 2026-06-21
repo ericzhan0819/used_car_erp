@@ -236,7 +236,15 @@ P1-UX-TAX-7 Step 7 handoff documented in docs/p1-ux-tax-7-step-7-smoke-handoff.m
 The path remains read-only.
 ```
 
-### Step 8: Vehicle-page action demotion
+### Step 8A: Vehicle-page action demotion spec
+
+Step 8A defines the inventory and JS-only boundary before runtime changes.
+
+```text
+docs/p1-ux-tax-7-step-8a-vehicle-page-accounting-action-demotion-spec.md
+```
+
+### Step 8B: Vehicle-page action demotion implementation
 
 After the Accounting Operations candidate path is confirmed in browser smoke, demote high-impact accounting actions from the vehicle page.
 

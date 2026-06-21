@@ -572,7 +572,21 @@ Confirm 會計作業 shows 售車會計候選 shortcut.
 Document smoke result in docs/p1-ux-tax-7-step-7-smoke-handoff.md.
 ```
 
-### Step 8: Vehicle-page demotion
+### Step 8A: Vehicle-page demotion spec
+
+```text
+Document current Used Car Vehicle accounting actions.
+Define JS-only demotion boundary.
+Define which actions remain on the vehicle page and which move to Accounting Operations.
+```
+
+Step 8A document:
+
+```text
+docs/p1-ux-tax-7-step-8a-vehicle-page-accounting-action-demotion-spec.md
+```
+
+### Step 8B: Vehicle-page demotion implementation
 
 ```text
 After browser smoke confirms the Accounting Operations candidate path, demote high-impact vehicle-page accounting buttons.
