@@ -173,18 +173,21 @@ Define route links back to Vehicle / Sales Invoice / Journal Entry.
 No runtime yet.
 ```
 
-### Step 3: Read-only candidate page
+### Step 3: Read-only candidate data service
 
-Add a read-only Desk Page or extend an existing read-only page for formal sale accounting candidates.
+Add a read-only data service for formal sale accounting candidates.
 
 Allowed:
 
 ```text
-Read-only service or page data.
+Read-only service data.
 No document creation.
 No submit.
 No repair.
 No status writeback.
+No Desk Page.
+No Workspace change.
+No Vehicle JS change.
 ```
 
 ### Step 4: Accounting Operations shortcuts

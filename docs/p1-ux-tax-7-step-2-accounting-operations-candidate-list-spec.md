@@ -459,6 +459,14 @@ Submission and settlement tasks follow the formal sale sequence.
 
 Within each category, sort by newest sold / updated vehicle first.
 
+Already closed formal sale accounting cases should not appear in the candidate list:
+
+```text
+submitted Sales Invoice + submitted advance settlement Journal Entry
+=> exclude from candidates
+=> do not show as blocked
+```
+
 ## 9. Route behavior
 
 Candidate list rows should be route-first, not action-first.
@@ -510,6 +518,17 @@ Create a read-only service or Desk Page data source for formal sale accounting c
 No write behavior.
 No submit.
 No recovery.
+```
+
+Step 3 implementation boundary:
+
+```text
+Add read-only FormalSaleAccountingCandidateService only.
+Return formal sale accounting candidate payload for future Accounting Operations page consumption.
+No Desk Page.
+No Workspace shortcut.
+No Vehicle JS change.
+No Sales Invoice / Journal Entry / Used Car Vehicle write.
 ```
 
 ### Step 4: Read-only Desk Page
