@@ -96,6 +96,7 @@ function apply_vehicle_form_mode(frm) {
   }
 
   if (frm.doc.status === "已售出") {
+    add_general_expense_money_flow_button(frm);
     add_sold_vehicle_primary_action_button(frm);
     set_vehicle_fields_read_only(frm, true);
     allow_sold_vehicle_tax_metadata_edit(frm);
@@ -105,6 +106,7 @@ function apply_vehicle_form_mode(frm) {
 
   if (is_reserved_vehicle(frm)) {
     load_active_reservation_for_reserved_vehicle(frm);
+    add_general_expense_money_flow_button(frm);
     add_reserved_vehicle_secondary_buttons(frm);
     set_vehicle_fields_read_only(frm, true);
 
@@ -129,6 +131,7 @@ function apply_vehicle_form_mode(frm) {
   }
 
   add_non_sold_vehicle_primary_action_button(frm);
+  add_general_expense_money_flow_button(frm);
 
   if (frm._vehicle_edit_mode) {
     set_vehicle_fields_read_only(frm, false);
@@ -329,6 +332,7 @@ function clear_vehicle_action_buttons(frm) {
     "下架回庫存",
     "建立訂金保留",
     "建立尾款收款",
+    "新增支出",
     "成交前檢查",
     "確認成交",
     "取消保留",
@@ -958,6 +962,114 @@ function add_create_vehicle_cost_button(frm) {
       review_status: "待確認",
     });
   });
+}
+
+function add_general_expense_money_flow_button(frm) {
+  if (frm.is_new() || !frm.doc.name || frm.doc.status === "封存") {
+    return;
+  }
+
+  const payment_method_field = get_money_flow_payment_method_prompt_field();
+
+  frm.add_custom_button(
+    "新增支出",
+    () => {
+      frappe.prompt(
+        [
+          {
+            fieldname: "payment_date",
+            label: "支出日期",
+            fieldtype: "Date",
+            default: frappe.datetime.get_today(),
+            reqd: 1,
+          },
+          {
+            fieldname: "flow_type",
+            label: "支出類型",
+            fieldtype: "Select",
+            options: "整備支出\n維修支出\n美容支出\n代辦支出\n拍場支出\n其他支出",
+            reqd: 1,
+          },
+          {
+            fieldname: "amount",
+            label: "金額",
+            fieldtype: "Currency",
+            reqd: 1,
+          },
+          payment_method_field,
+          {
+            fieldname: "payment_reference",
+            label: "付款參考",
+            fieldtype: "Data",
+            reqd: 0,
+          },
+          {
+            fieldname: "notes",
+            label: "備註",
+            fieldtype: "Small Text",
+            reqd: 0,
+          },
+          {
+            fieldname: "evidence_attachment",
+            label: "憑證附件",
+            fieldtype: "Attach",
+            reqd: 0,
+          },
+        ],
+        (values) => {
+          frappe.call({
+            method:
+              "used_car_erp.used_car_erp.services.vehicle_money_flow_service.create_general_expense_money_flow",
+            args: {
+              vehicle: frm.doc.name,
+              payment_date: values.payment_date,
+              flow_type: values.flow_type,
+              amount: values.amount,
+              payment_method: values.payment_method,
+              payment_reference: values.payment_reference,
+              notes: values.notes,
+              evidence_attachment: values.evidence_attachment,
+            },
+            freeze: true,
+            freeze_message: "正在建立支出金流...",
+            callback(response) {
+              const result = response.message || {};
+              const message =
+                result.money_flow || result.voucher_draft
+                  ? [
+                      "已建立支出金流與待審核傳票草稿",
+                      result.money_flow ? `金流紀錄：${result.money_flow}` : null,
+                      result.voucher_draft ? `傳票草稿：${result.voucher_draft}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join("<br>")
+                  : "已建立支出金流與待審核傳票草稿";
+
+              frappe.show_alert({
+                message,
+                indicator: "green",
+              });
+              frm.reload_doc();
+            },
+          });
+        },
+        "新增支出",
+        "建立支出"
+      );
+    },
+    "車輛作業"
+  );
+}
+
+function get_money_flow_payment_method_prompt_field() {
+  return {
+    fieldname: "payment_method",
+    label: "付款方式",
+    fieldtype: "Select",
+    options: "現金\n匯款\n信用卡\n其他",
+    default: "現金",
+    reqd: 1,
+  };
 }
 
 function add_recalculate_cost_summary_button(frm) {
