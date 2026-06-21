@@ -183,6 +183,8 @@ P1-MVP-DASH-1 Step 4C 已完成並收尾：`/app/總覽` 現在是 native ERPNex
 
 P1-UX-TAX-7 Step 1 已新增 Accounting Operations migration decision 文件，決定高衝擊售車會計動作的目標入口：`確認銷售發票並出庫`、`建立預收款沖轉草稿`、`確認預收款沖轉入帳`、`修復 Sales Invoice 草稿連結` 與 submit readiness 檢查應逐步移往 `會計作業`；本階段只做文件，不改 JS、Python service、DocType JSON、Workspace、hooks.py、permission 或 accounting runtime。
 
+P1-UX-TAX-7 Step 2 已新增 Accounting Operations candidate list spec，定義未來 `會計作業` 的 read-only `售車會計候選` 清單分類：待確認銷售發票並出庫、待建立預收款沖轉草稿、待確認預收款沖轉入帳、需補資料 / blocked formal accounting、需技術修復 Sales Invoice 草稿連結。本階段只定義候選條件、顯示欄位、route target、排序與後續步驟，不新增 Page、service、Workspace shortcut 或任何 write behavior。
+
 Decision documents:
 
 - [正式交車 / 出庫 / 銷售文件決策文件](docs/formal-delivery-sales-document-decision.md)
@@ -232,6 +234,7 @@ Decision documents:
 - [P1-MVP-DASH-1 Step 2 Dashboard Entry](docs/p1-mvp-dash-1-step-2-dashboard-entry.md)
 - [P1-MVP-DASH-1 Step 4C Handoff](docs/p1-mvp-dash-1-step-4c-handoff.md)
 - [P1-UX-TAX-7 Accounting Operations Migration Decision](docs/p1-ux-tax-7-accounting-operations-migration-decision.md)
+- [P1-UX-TAX-7 Step 2 Accounting Operations Candidate List Spec](docs/p1-ux-tax-7-step-2-accounting-operations-candidate-list-spec.md)
 
 Manual QA checklist:
 
