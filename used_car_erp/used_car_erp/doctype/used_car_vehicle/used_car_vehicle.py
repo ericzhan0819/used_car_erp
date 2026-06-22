@@ -47,22 +47,9 @@ SALE_WORKFLOW_FIELDS = (
 	"tax_review_note",
 )
 
-VAT_DEDUCTIBLE_PURCHASE_DOCUMENT_TYPES = {"統一發票"}
+ARTICLE_15_1_PURCHASE_SOURCE_TYPES = {"個人"}
 
-ARTICLE_15_1_PURCHASE_DOCUMENT_TYPES = {
-	"買賣合約",
-	"讓渡書",
-	"匯款紀錄",
-	"收據",
-	"未取得",
-}
-
-TAX_REVIEW_REQUIRED_PURCHASE_DOCUMENT_TYPES = {
-	"拍場單據",
-	"其他",
-	None,
-	"",
-}
+AUCTION_PURCHASE_SOURCE_TYPES = {"拍賣場", "拍場"}
 
 
 class UsedCarVehicle(Document):
@@ -96,14 +83,14 @@ class UsedCarVehicle(Document):
 
 	def _derive_tax_mode_from_purchase_evidence(self):
 		meta = frappe.get_meta("Used Car Vehicle")
-		if not meta.has_field("vehicle_tax_mode") or not meta.has_field("purchase_document_type"):
+		if not meta.has_field("vehicle_tax_mode") or not meta.has_field("purchase_source_type"):
 			return
 
-		tax_mode, review_status = derive_vehicle_tax_mode_from_purchase_document_type(
-			self.get("purchase_document_type")
+		tax_mode, review_status = derive_vehicle_tax_mode_from_purchase_source_type(
+			self.get("purchase_source_type")
 		)
 
-		# 車輛頁只記錄買入憑證，稅務模式由後端推導，避免使用者在車輛頁手動處理正式稅務。
+		# 車輛頁只記錄買入來源，稅務模式由後端初步推導，避免使用者在車輛頁手動處理正式稅務。
 		self.vehicle_tax_mode = tax_mode
 
 		if meta.has_field("tax_review_status"):
@@ -183,13 +170,17 @@ def _get_next_stock_no():
 	return f"{prefix}{max_number + 1:04d}"
 
 
-def derive_vehicle_tax_mode_from_purchase_document_type(purchase_document_type: str | None) -> tuple[str, str]:
-	if purchase_document_type in VAT_DEDUCTIBLE_PURCHASE_DOCUMENT_TYPES:
-		return "一般發票扣抵", "已初步判斷"
-
-	if purchase_document_type in ARTICLE_15_1_PURCHASE_DOCUMENT_TYPES:
+def derive_vehicle_tax_mode_from_purchase_source_type(purchase_source_type: str | None) -> tuple[str, str]:
+	if purchase_source_type in ARTICLE_15_1_PURCHASE_SOURCE_TYPES:
 		return "15-1 特殊扣抵", "已初步判斷"
+	if purchase_source_type in AUCTION_PURCHASE_SOURCE_TYPES:
+		return "拍場需確認", "待確認"
 
+	return "待確認", "待確認"
+
+
+def derive_vehicle_tax_mode_from_purchase_document_type(purchase_document_type: str | None) -> tuple[str, str]:
+	# 相容舊呼叫；業務端稅務推導已改以買入來源為準。
 	return "待確認", "待確認"
 
 

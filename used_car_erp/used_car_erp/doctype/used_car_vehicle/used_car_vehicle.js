@@ -88,6 +88,8 @@ function apply_vehicle_form_mode(frm) {
   apply_vehicle_cashflow_section_label(frm);
   render_vehicle_cashflow_inline_summary(frm);
   apply_tax_fields_visibility(frm);
+  apply_purchase_fields_visibility(frm);
+  apply_registration_flags_visibility(frm);
   apply_vehicle_business_descriptions(frm);
   hide_vehicle_accounting_surface(frm);
   hide_vehicle_technical_system_links(frm);
@@ -156,9 +158,52 @@ function apply_vehicle_form_mode(frm) {
 }
 
 function apply_tax_fields_visibility(frm) {
-  ["sales_tax_section", "vehicle_tax_mode", "tax_review_status", "tax_review_note"].forEach((fieldname) => {
+  ["sales_tax_section", "vehicle_tax_mode", "tax_review_status", "tax_review_note", "purchase_document_type"].forEach((fieldname) => {
     if (frm.fields_dict[fieldname]) {
       frm.toggle_display(fieldname, false);
+    }
+  });
+}
+
+function apply_purchase_fields_visibility(frm) {
+  ["purchase_commission", "other_payable"].forEach((fieldname) => {
+    if (frm.fields_dict[fieldname]) {
+      frm.toggle_display(fieldname, false);
+      frm.set_df_property(fieldname, "hidden", 1);
+    }
+  });
+}
+
+function apply_registration_flags_visibility(frm) {
+  const risk_fields = [
+    "has_unpaid_loan",
+    "has_tax_penalty",
+    "registration_restricted",
+    "insurance_cancelled",
+    "plate_cancelled",
+    "need_document_check",
+  ];
+
+  if (frm._vehicle_edit_mode || frm.is_new()) {
+    ["tax_registration_flags_section", "tax_registration_flags_column", ...risk_fields].forEach((fieldname) => {
+      if (frm.fields_dict[fieldname]) {
+        frm.toggle_display(fieldname, true);
+      }
+    });
+    return;
+  }
+
+  const has_risk = risk_fields.some((fieldname) => Boolean(frm.doc[fieldname]));
+  if (frm.fields_dict.tax_registration_flags_section) {
+    frm.toggle_display("tax_registration_flags_section", has_risk);
+  }
+  if (frm.fields_dict.tax_registration_flags_column) {
+    frm.toggle_display("tax_registration_flags_column", has_risk);
+  }
+
+  risk_fields.forEach((fieldname) => {
+    if (frm.fields_dict[fieldname]) {
+      frm.toggle_display(fieldname, Boolean(frm.doc[fieldname]));
     }
   });
 }
@@ -397,7 +442,6 @@ function allow_sold_vehicle_tax_metadata_edit(frm) {
     frm.set_df_property(fieldname, "read_only", 0);
   });
 
-  frm.set_intro("此車已售出，但正式交車完成前仍可由會計修改稅務確認資訊。", "blue");
   frm.refresh_fields(SOLD_VEHICLE_TAX_METADATA_FIELDS);
 }
 
@@ -415,16 +459,15 @@ function allow_sold_vehicle_sale_workflow_edit(frm) {
     }
   });
 
-  frm.set_intro(
-    "此車已售出，車輛成交資料仍可在正式文件鎖定前修正。",
-    "blue"
-  );
   frm.refresh_fields(SALE_WORKFLOW_FIELDS.filter((fieldname) => frm.fields_dict[fieldname]));
 }
 
 function apply_vehicle_business_descriptions(frm) {
   if (frm.fields_dict.sold_price) {
     frm.set_df_property("sold_price", "description", "成交價屬於售車流程，可作為後續收支與交車確認依據。");
+  }
+  if (frm.fields_dict.purchase_source_type) {
+    frm.set_df_property("purchase_source_type", "description", "業務只需選擇買入來源；買入憑證類型由後續內部流程確認。");
   }
 }
 
@@ -1956,28 +1999,8 @@ function set_vehicle_intake_intro(frm) {
     return;
   }
 
-  if (frm.doc.status === "庫存中" && is_vehicle_stocked(frm)) {
-    frm.set_intro("此車輛已完成入庫。下一步可開始整備，或直接上架銷售。", "green");
-    return;
-  }
-
-  if (frm.doc.status === "整備中") {
-    frm.set_intro("此車輛正在整備中。整備完成後可上架銷售。", "blue");
-    return;
-  }
-
-  if (frm.doc.status === "上架中") {
-    frm.set_intro("此車輛已上架。若客戶已下訂金，可建立訂金保留，車輛將改為保留中。", "green");
-    return;
-  }
-
   if (frm.doc.status === "保留中") {
-    frm.set_intro("此車輛已保留。可建立尾款收款；系統只會建立金流紀錄與傳票草稿，正式入帳仍由會計在「會計作業」確認。交車與出庫流程尚未開放。", "orange");
-    return;
-  }
-
-  if (frm.doc.status === "已售出") {
-    frm.set_intro("此車輛已售出。車輛頁只顯示車輛成交與交車資訊；收入、支出與憑證由會計作業確認。", "blue");
+    frm.set_intro("此車輛已保留。下一步請建立尾款收款。", "orange");
     return;
   }
 
@@ -1986,8 +2009,7 @@ function set_vehicle_intake_intro(frm) {
     return;
   }
 
-  if (frm.doc.stock_entry || frm.doc.serial_no) {
-    frm.set_intro("此車輛已完成入庫，已連結 ERPNext 商品、Serial No 與 Stock Entry。", "green");
+  if (![undefined, null, "", "草稿"].includes(frm.doc.status)) {
     return;
   }
 
@@ -2001,7 +2023,7 @@ function set_vehicle_intake_intro(frm) {
     return;
   }
 
-  frm.set_intro("下一步：按「完成入庫」，系統會自動建立 ERPNext 商品並完成庫存入庫。", "blue");
+  frm.set_intro("此車尚未入庫，請按「完成入庫」。", "blue");
 }
 
 function can_submit_formal_delivery_sales_invoice(frm) {
