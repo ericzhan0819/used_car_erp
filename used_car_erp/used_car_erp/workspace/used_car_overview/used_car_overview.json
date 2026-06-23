@@ -51,11 +51,10 @@
  "sequence_id": 0.5,
  "shortcuts": [
    {
-     "doc_view": "List",
      "label": "新增買入車輛",
-    "link_to": "Used Car Vehicle",
-    "type": "DocType"
-   },
+     "link_to": "guided-vehicle-intake",
+     "type": "Page"
+    },
    {
     "doc_view": "List",
     "label": "車輛列表",

@@ -1,0 +1,19 @@
+{
+ "creation": "2026-06-24 07:35:00.000000",
+ "docstatus": 0,
+ "doctype": "Page",
+ "icon": "add",
+ "idx": 0,
+ "modified": "2026-06-24 07:35:00.000000",
+ "modified_by": "Administrator",
+ "module": "Used Car ERP",
+ "name": "guided-vehicle-intake",
+ "owner": "Administrator",
+ "page_name": "guided-vehicle-intake",
+ "roles": [],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "新增買入車輛"
+}
