@@ -1,0 +1,69 @@
+# Used Car ERP Docs Index
+
+## 1. 文件使用原則
+
+`docs/` 目前同時包含 active docs 與 historical docs。
+
+新任務應優先閱讀 active docs，確認目前產品主線、UX 邊界與下一步實作範圍。
+
+historical docs 只能作為背景、施工紀錄或回溯參考，不應直接主導新任務。
+
+不要因為舊 handoff、formal delivery 或 accounting runtime 文件，而把會計按鈕加回車輛頁。車輛頁應維持業務事實與摘要，不承接會計文件操作入口。
+
+## 2. Active documents
+
+- `docs/current-state.md`：目前專案定位、穩定點、產品主線與下一步邊界。
+- `docs/p1-mvp-business-input-boundary-report.md`：業務輸入與會計作業分工邊界。
+- `docs/p1-mvp-ux-ops-2-guided-business-flow-forms.md`：任務卡片式業務流程總規格。
+- `docs/p1-mvp-ux-ops-2-step-2-guided-vehicle-intake-task-card-spec.md`：新增車輛任務卡 Step 1 / Step 2 規格。
+- `docs/p1-mvp-dash-1-used-car-management-dashboard-mvp.md`：中古車管理總覽與 Dashboard MVP 邊界。
+- `docs/used-car-role-permission-boundary-spec.md`：角色與權限邊界規格。
+- `docs/used-car-role-permission-inventory.md`：現有角色與權限盤點。
+- `docs/used-car-field-permlevel-design.md`：欄位 permlevel 與顯示邊界設計。
+- `docs/vehicle-delivery-payment-accounting-status-boundary-spec.md`：交車、收款與會計狀態邊界。
+
+## 3. Historical / reference documents
+
+以下類型目前視為 historical / reference：
+
+- `p1-acc-*`
+- `formal-delivery-*`
+- `p1-ux-tax-*`
+- `*-handoff.md`
+- smoke / QA handoff 文件
+
+這些文件可用來理解過去施工脈絡、驗證紀錄與已完成基礎能力，但不代表目前 UX 主線，也不應覆蓋 active docs 的產品邊界。
+
+## 4. Current product direction
+
+```text
+Used Car ERP 是 ERPNext 上的中古車業務操作層。
+ERPNext 負責會計、庫存、Sales Invoice、Journal Entry 等底層文件。
+used_car_erp 的業務頁只讓使用者輸入商業事實。
+```
+
+業務端禁止 / 避免字詞：
+
+- Sales Invoice
+- Journal Entry
+- Voucher Draft
+- Money Flow
+- GL Entry
+- 借方 / 貸方
+- 會計科目
+- 預收款沖轉
+
+會計文件與技術術語應留在會計作業、技術文件、內部開發文件或管理 / 會計專用頁面，不應出現在業務任務卡、車輛頁或總覽業務入口。
+
+## 5. Future cleanup plan
+
+本次不搬檔、不刪檔、不建立 archive 目錄，只提出後續可能計畫。
+
+```text
+P1-DOCS-CLEANUP-2 才考慮搬移歷史文件到：
+- docs/archive/handoffs/
+- docs/archive/accounting-runtime/
+- docs/archive/superseded/
+```
+
+P1-DOCS-CLEANUP-1 只建立 docs 索引並更新 current state。
