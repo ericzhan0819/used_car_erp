@@ -4,7 +4,10 @@ from frappe.utils import flt, nowdate
 from used_car_erp.used_car_erp.services.vehicle_item_service import VehicleItemService
 
 
-FALLBACK_STOCK_ENTRY_DIFFERENCE_ACCOUNT = "0100005-UC - 中古車銷貨成本 - O"
+STOCK_ENTRY_DIFFERENCE_ACCOUNT_SETUP_MESSAGE = (
+	"Stock Entry Difference Account 尚未正確設定，請先設定 Company.stock_adjustment_account "
+	"為有效的庫存調整科目；不可使用銷貨成本科目。"
+)
 
 
 class VehicleStockService:
@@ -106,36 +109,29 @@ class VehicleStockService:
 
 	def _resolve_stock_entry_difference_account(self, vehicle):
 		company = self._resolve_company_for_stock_entry(vehicle)
-		company_account = None
 		if frappe.db.exists("Company", company) and frappe.get_meta("Company").has_field("stock_adjustment_account"):
 			company_account = frappe.db.get_value("Company", company, "stock_adjustment_account")
 			if company_account:
 				self._validate_difference_account(company_account, company)
 				return company_account
 
-		try:
-			self._validate_difference_account(FALLBACK_STOCK_ENTRY_DIFFERENCE_ACCOUNT, company)
-		except Exception:
-			frappe.throw(
-				"找不到可用的 Stock Entry Difference Account，請先設定 Company.stock_adjustment_account 或確認 0100005-UC - 中古車銷貨成本 - O。"
-			)
-		return FALLBACK_STOCK_ENTRY_DIFFERENCE_ACCOUNT
+		frappe.throw(STOCK_ENTRY_DIFFERENCE_ACCOUNT_SETUP_MESSAGE)
 
 	def _validate_difference_account(self, account, company):
 		if not account or not frappe.db.exists("Account", account):
-			frappe.throw(
-				"找不到可用的 Stock Entry Difference Account，請先設定 Company.stock_adjustment_account 或確認 0100005-UC - 中古車銷貨成本 - O。"
-			)
+			frappe.throw(STOCK_ENTRY_DIFFERENCE_ACCOUNT_SETUP_MESSAGE)
 
 		account_doc = frappe.get_doc("Account", account)
 		if account_doc.company != company:
-			frappe.throw(f"Stock Entry Difference Account {account} 必須屬於公司 {company}。")
+			frappe.throw(f"{STOCK_ENTRY_DIFFERENCE_ACCOUNT_SETUP_MESSAGE}目前科目 {account} 不屬於公司 {company}。")
 		if int(account_doc.is_group or 0):
-			frappe.throw(f"Stock Entry Difference Account {account} 必須是非群組會計科目。")
+			frappe.throw(f"{STOCK_ENTRY_DIFFERENCE_ACCOUNT_SETUP_MESSAGE}目前科目 {account} 是群組科目。")
 		if int(account_doc.disabled or 0):
-			frappe.throw(f"Stock Entry Difference Account {account} 不可停用。")
+			frappe.throw(f"{STOCK_ENTRY_DIFFERENCE_ACCOUNT_SETUP_MESSAGE}目前科目 {account} 已停用。")
 		if getattr(account_doc, "root_type", None) != "Expense":
-			frappe.throw(f"Stock Entry Difference Account {account} root_type 必須是 Expense。")
+			frappe.throw(f"{STOCK_ENTRY_DIFFERENCE_ACCOUNT_SETUP_MESSAGE}目前科目 {account} root_type 必須是 Expense。")
+		if getattr(account_doc, "account_type", None) == "Cost of Goods Sold":
+			frappe.throw(f"{STOCK_ENTRY_DIFFERENCE_ACCOUNT_SETUP_MESSAGE}目前科目 {account} 是銷貨成本科目。")
 
 	def _stock_entry_detail_has_expense_account(self):
 		return frappe.get_meta("Stock Entry Detail").has_field("expense_account")

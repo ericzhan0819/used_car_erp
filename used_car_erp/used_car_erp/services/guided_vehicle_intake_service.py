@@ -8,30 +8,37 @@ from used_car_erp.used_car_erp.services.vehicle_listing_service import VehicleLi
 
 
 class GuidedVehicleIntakeService:
+	SAVEPOINT = "guided_vehicle_intake"
+
 	def run(self, payload: dict) -> dict:
 		payload = self._normalize_payload(payload)
 		self._validate_payload(payload)
 
-		vehicle = self._create_vehicle(payload)
-		intake_result = VehicleIntakeService().complete_intake(vehicle.name)
-		if not intake_result or not intake_result.get("status"):
-			frappe.throw("車輛已建立，但入庫流程未回傳有效狀態。")
+		frappe.db.savepoint(self.SAVEPOINT)
+		try:
+			vehicle = self._create_vehicle(payload)
+			intake_result = VehicleIntakeService().complete_intake(vehicle.name)
+			if not intake_result or not intake_result.get("status"):
+				frappe.throw("車輛已建立，但入庫流程未回傳有效狀態。")
 
-		preparation_result = VehicleListingService().start_preparation(vehicle.name)
-		if not preparation_result or preparation_result.get("status") != "整備中":
-			frappe.throw("車輛已完成入庫，但無法進入整備中。")
+			preparation_result = VehicleListingService().start_preparation(vehicle.name)
+			if not preparation_result or preparation_result.get("status") != "整備中":
+				frappe.throw("車輛已完成入庫，但無法進入整備中。")
 
-		vehicle.reload()
-		if vehicle.status != "整備中":
-			frappe.throw("車輛已完成入庫，但狀態未進入整備中。")
+			vehicle.reload()
+			if vehicle.status != "整備中":
+				frappe.throw("車輛已完成入庫，但狀態未進入整備中。")
 
-		return {
-			"status": "success",
-			"vehicle": vehicle.name,
-			"vehicle_status": vehicle.status,
-			"route": ["Form", "Used Car Vehicle", vehicle.name],
-			"message": "車輛已建立並進入整備中",
-		}
+			return {
+				"status": "success",
+				"vehicle": vehicle.name,
+				"vehicle_status": vehicle.status,
+				"route": ["Form", "Used Car Vehicle", vehicle.name],
+				"message": "車輛已建立並進入整備中",
+			}
+		except Exception:
+			frappe.db.rollback(save_point=self.SAVEPOINT)
+			raise
 
 	def _normalize_payload(self, payload):
 		if isinstance(payload, str):

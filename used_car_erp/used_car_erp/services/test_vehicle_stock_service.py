@@ -97,6 +97,72 @@ class TestVehicleStockService(FrappeTestCase):
 		self._track_stock_result(result)
 		self.assertEqual(self._financial_doc_counts(), before_counts)
 
+	def test_cost_of_goods_sold_difference_account_is_rejected(self):
+		account = frappe.get_doc(
+			{
+				"doctype": "Account",
+				"name": "中古車測試銷貨成本 - O",
+				"account_name": "中古車測試銷貨成本",
+				"company": "OO",
+				"root_type": "Expense",
+				"report_type": "Profit and Loss",
+				"account_type": "Cost of Goods Sold",
+				"parent_account": self._expense_parent_account(),
+			}
+		).insert()
+		try:
+			with self.assertRaises(frappe.ValidationError) as exc:
+				self.service._validate_difference_account(account.name, "OO")
+			message = str(exc.exception)
+			self.assertIn("stock_adjustment_account", message)
+			self.assertIn("不可使用銷貨成本科目", message)
+		finally:
+			if frappe.db.exists("Account", account.name):
+				frappe.delete_doc("Account", account.name, force=True)
+
+	def test_missing_stock_adjustment_account_does_not_fallback_to_cogs(self):
+		vehicle = type("Vehicle", (), {"company": "OO", "stock_warehouse": None})()
+		with self.assertRaises(frappe.ValidationError) as exc:
+			self.service._resolve_stock_entry_difference_account(vehicle)
+		message = str(exc.exception)
+		self.assertIn("stock_adjustment_account", message)
+		self.assertIn("不可使用銷貨成本科目", message)
+
+	def test_valid_stock_adjustment_account_is_returned(self):
+		account = frappe.get_doc(
+			{
+				"doctype": "Account",
+				"name": "中古車測試庫存調整 - O",
+				"account_name": "中古車測試庫存調整",
+				"company": "OO",
+				"root_type": "Expense",
+				"report_type": "Profit and Loss",
+				"parent_account": self._expense_parent_account(),
+			}
+		).insert()
+		original_account = frappe.db.get_value("Company", "OO", "stock_adjustment_account")
+		try:
+			frappe.db.set_value("Company", "OO", "stock_adjustment_account", account.name)
+			vehicle = type("Vehicle", (), {"company": "OO", "stock_warehouse": None})()
+			self.assertEqual(self.service._resolve_stock_entry_difference_account(vehicle), account.name)
+		finally:
+			frappe.db.set_value("Company", "OO", "stock_adjustment_account", original_account)
+			if frappe.db.exists("Account", account.name):
+				frappe.delete_doc("Account", account.name, force=True)
+
+	def test_invalid_difference_account_message_points_to_stock_adjustment_setup(self):
+		original_account = frappe.db.get_value("Company", "OO", "stock_adjustment_account")
+		try:
+			frappe.db.set_value("Company", "OO", "stock_adjustment_account", "不存在的庫存調整科目 - O")
+			vehicle = type("Vehicle", (), {"company": "OO", "stock_warehouse": None})()
+			with self.assertRaises(frappe.ValidationError) as exc:
+				self.service._resolve_stock_entry_difference_account(vehicle)
+			message = str(exc.exception)
+			self.assertIn("stock_adjustment_account", message)
+			self.assertIn("不可使用銷貨成本科目", message)
+		finally:
+			frappe.db.set_value("Company", "OO", "stock_adjustment_account", original_account)
+
 	def _make_vehicle(self, create_item=True, **overrides):
 		if not self.warehouse and overrides.get("stock_warehouse", self.warehouse) is not None:
 			frappe.throw("找不到可用的非群組 Warehouse，無法建立入庫測試資料。")
@@ -134,3 +200,14 @@ class TestVehicleStockService(FrappeTestCase):
 			"Sales Invoice": frappe.db.count("Sales Invoice"),
 			"Payment Entry": frappe.db.count("Payment Entry"),
 		}
+
+	def _expense_parent_account(self):
+		parent = frappe.db.get_value(
+			"Account",
+			{"company": "OO", "root_type": "Expense", "is_group": 1},
+			"name",
+			order_by="lft asc",
+		)
+		if not parent:
+			frappe.throw("找不到 Expense 群組科目，無法建立庫存調整測試科目。")
+		return parent

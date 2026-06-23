@@ -13,6 +13,8 @@ class FakeFrappe:
 	def __init__(self):
 		self.created_docs = []
 		self.existing_suppliers = set()
+		self.savepoints = []
+		self.rollback_save_points = []
 
 	def throw(self, message):
 		raise self.ValidationError(message)
@@ -32,6 +34,12 @@ class FakeFrappe:
 		if doctype == "Supplier" and name in self.existing_suppliers:
 			return name
 		return None
+
+	def savepoint(self, save_point):
+		self.savepoints.append(save_point)
+
+	def rollback(self, *, save_point=None):
+		self.rollback_save_points.append(save_point)
 
 
 class FakeVehicle:
@@ -67,17 +75,23 @@ vehicle_listing_module = types.ModuleType("used_car_erp.used_car_erp.services.ve
 
 class FakeVehicleIntakeService:
 	calls = []
+	fail = False
 
 	def complete_intake(self, vehicle_name):
 		self.calls.append(vehicle_name)
+		if self.fail:
+			raise RuntimeError("intake failed")
 		return {"status": "庫存中"}
 
 
 class FakeVehicleListingService:
 	calls = []
+	fail = False
 
 	def start_preparation(self, vehicle_name):
 		self.calls.append(vehicle_name)
+		if self.fail:
+			raise RuntimeError("preparation failed")
 		fake_frappe.created_docs[-1].status = "整備中"
 		return {"status": "整備中"}
 
@@ -93,8 +107,12 @@ from used_car_erp.used_car_erp.services.guided_vehicle_intake_service import Gui
 def reset_fakes():
 	fake_frappe.created_docs = []
 	fake_frappe.existing_suppliers = set()
+	fake_frappe.savepoints = []
+	fake_frappe.rollback_save_points = []
 	FakeVehicleIntakeService.calls = []
+	FakeVehicleIntakeService.fail = False
 	FakeVehicleListingService.calls = []
+	FakeVehicleListingService.fail = False
 
 
 def valid_payload(**overrides):
@@ -206,6 +224,42 @@ def test_success_returns_vehicle_route_and_status():
 		"route": ["Form", "Used Car Vehicle", "UCV-GUIDED-0001"],
 		"message": "車輛已建立並進入整備中",
 	}
+	assert fake_frappe.savepoints == ["guided_vehicle_intake"]
+	assert fake_frappe.rollback_save_points == []
+
+
+def test_success_calls_create_intake_and_preparation_in_order():
+	reset_fakes()
+	GuidedVehicleIntakeService().run(valid_payload())
+	assert fake_frappe.created_docs[0].name == "UCV-GUIDED-0001"
+	assert FakeVehicleIntakeService.calls == ["UCV-GUIDED-0001"]
+	assert FakeVehicleListingService.calls == ["UCV-GUIDED-0001"]
+
+
+def test_intake_failure_rolls_back_savepoint_and_reraises():
+	reset_fakes()
+	FakeVehicleIntakeService.fail = True
+	try:
+		GuidedVehicleIntakeService().run(valid_payload())
+	except RuntimeError as exc:
+		assert str(exc) == "intake failed"
+	else:
+		raise AssertionError("expected original intake exception")
+	assert fake_frappe.rollback_save_points == ["guided_vehicle_intake"]
+	assert FakeVehicleListingService.calls == []
+
+
+def test_preparation_failure_rolls_back_savepoint_and_reraises():
+	reset_fakes()
+	FakeVehicleListingService.fail = True
+	try:
+		GuidedVehicleIntakeService().run(valid_payload())
+	except RuntimeError as exc:
+		assert str(exc) == "preparation failed"
+	else:
+		raise AssertionError("expected original preparation exception")
+	assert fake_frappe.rollback_save_points == ["guided_vehicle_intake"]
+	assert FakeVehicleIntakeService.calls == ["UCV-GUIDED-0001"]
 
 
 def run_tests():
@@ -222,6 +276,9 @@ def run_tests():
 		test_service_calls_existing_intake_service,
 		test_service_calls_existing_preparation_service,
 		test_success_returns_vehicle_route_and_status,
+		test_success_calls_create_intake_and_preparation_in_order,
+		test_intake_failure_rolls_back_savepoint_and_reraises,
+		test_preparation_failure_rolls_back_savepoint_and_reraises,
 	]
 	for test in tests:
 		test()
