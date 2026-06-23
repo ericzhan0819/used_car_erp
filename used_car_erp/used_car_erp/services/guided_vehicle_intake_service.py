@@ -54,6 +54,8 @@ class GuidedVehicleIntakeService:
 		return frappe.get_doc(vehicle_data).insert()
 
 	def _build_vehicle_data(self, payload: dict) -> dict:
+		supplier = payload.get("supplier")
+		seller = payload.get("seller") or payload.get("original_owner_name") or payload.get("customer_name")
 		vehicle_data = {
 			"doctype": "Used Car Vehicle",
 			"brand": payload.get("brand"),
@@ -65,8 +67,6 @@ class GuidedVehicleIntakeService:
 			"color": payload.get("color"),
 			"purchase_price": payload.get("purchase_price"),
 			"purchase_source_type": payload.get("purchase_source_type") or "個人",
-			"supplier": payload.get("supplier"),
-			"original_owner_name": payload.get("seller") or payload.get("original_owner_name"),
 			"purchase_staff": payload.get("purchase_staff"),
 			"license_tax_paid": payload.get("license_tax_paid"),
 			"fuel_tax_paid": payload.get("fuel_tax_paid"),
@@ -78,6 +78,12 @@ class GuidedVehicleIntakeService:
 			"need_document_check": payload.get("need_document_check"),
 			"registration_note": payload.get("registration_note"),
 		}
+		if supplier and frappe.db.exists("Supplier", supplier):
+			vehicle_data["supplier"] = supplier
+		elif supplier and not seller:
+			seller = supplier
+		if seller:
+			vehicle_data["original_owner_name"] = seller
 		return {key: value for key, value in vehicle_data.items() if value is not None}
 
 

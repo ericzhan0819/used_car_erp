@@ -109,8 +109,8 @@ function show_guided_vehicle_intake_step_2(vehicle_values) {
         default: "個人",
       },
       {
-        fieldname: "supplier",
-        label: "供應商 / 原車主",
+        fieldname: "seller",
+        label: "客戶 / 原車主",
         fieldtype: "Data",
       },
       {
@@ -201,8 +201,8 @@ function create_guided_vehicle_intake(dialog, vehicle_values, purchase_values) {
     color: vehicle_values.color,
     purchase_price: purchase_values.purchase_price,
     purchase_source_type: purchase_values.purchase_source_type || "個人",
-    supplier: purchase_values.supplier,
-    seller: purchase_values.supplier,
+    seller: purchase_values.seller,
+    original_owner_name: purchase_values.seller,
     purchase_staff: purchase_values.purchase_staff,
     license_tax_paid: purchase_values.license_tax_paid,
     fuel_tax_paid: purchase_values.fuel_tax_paid,

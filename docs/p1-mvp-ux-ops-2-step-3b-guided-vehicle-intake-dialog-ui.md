@@ -39,7 +39,7 @@ Step 2 收集：
 
 - 購車價
 - 買入來源
-- 供應商 / 原車主
+- 客戶 / 原車主
 - 收購業務
 - 牌照稅已繳
 - 燃料稅已繳
@@ -69,8 +69,8 @@ used_car_erp.used_car_erp.services.guided_vehicle_intake_service.run_guided_vehi
 - `color`：顏色
 - `purchase_price`：購車價
 - `purchase_source_type`：買入來源，空白時預設 `個人`
-- `supplier`：供應商 / 原車主
-- `seller`：供應商 / 原車主，後端可映射到原車主姓名
+- `seller`：客戶 / 原車主，自由文字，後端映射到 `original_owner_name`
+- `original_owner_name`：客戶 / 原車主，自由文字，不要求預先建立 ERPNext Supplier
 - `purchase_staff`：收購業務
 - `license_tax_paid`：牌照稅已繳
 - `fuel_tax_paid`：燃料稅已繳
@@ -111,7 +111,21 @@ UI 顯示：
 - 不改 DocType JSON
 - 不改 backend orchestrator
 
-## 7. 下一步
+## 7. Step 3B-FIX-1：客戶稱謂與自由文字買入對象
+
+使用者回報在「供應商 / 原車主」輸入不存在的「測試車主」時，曾出現：
+
+```text
+Could not find 供應商: 測試車主
+```
+
+原因是 Dialog 把自由文字誤送入 `supplier` payload key，backend 又寫入 `Used Car Vehicle.supplier` Link 欄位，導致 Frappe 檢查 ERPNext Supplier 是否存在。
+
+修正後 Guided Vehicle Intake Dialog 的買入對象欄位改為「客戶 / 原車主」。此欄位在業務端是自由文字，不要求預先建立 ERPNext Supplier，並寫入 `original_owner_name`。
+
+若未來要正式連結 ERPNext Customer / Supplier，應另開 Party normalization / customer creation flow，不在本階段處理。
+
+## 8. 下一步
 
 下一步才考慮：
 

@@ -12,6 +12,7 @@ class FakeFrappe:
 
 	def __init__(self):
 		self.created_docs = []
+		self.existing_suppliers = set()
 
 	def throw(self, message):
 		raise self.ValidationError(message)
@@ -26,6 +27,11 @@ class FakeFrappe:
 		doc = FakeVehicle(data)
 		self.created_docs.append(doc)
 		return doc
+
+	def exists(self, doctype, name):
+		if doctype == "Supplier" and name in self.existing_suppliers:
+			return name
+		return None
 
 
 class FakeVehicle:
@@ -47,6 +53,7 @@ frappe_module.ValidationError = fake_frappe.ValidationError
 frappe_module.throw = fake_frappe.throw
 frappe_module.whitelist = fake_frappe.whitelist
 frappe_module.get_doc = fake_frappe.get_doc
+frappe_module.db = fake_frappe
 
 frappe_utils_module = types.ModuleType("frappe.utils")
 frappe_utils_module.flt = lambda value: float(value or 0)
@@ -85,6 +92,7 @@ from used_car_erp.used_car_erp.services.guided_vehicle_intake_service import Gui
 
 def reset_fakes():
 	fake_frappe.created_docs = []
+	fake_frappe.existing_suppliers = set()
 	FakeVehicleIntakeService.calls = []
 	FakeVehicleListingService.calls = []
 
@@ -135,6 +143,47 @@ def test_blank_purchase_source_type_defaults_to_personal():
 	assert fake_frappe.created_docs[0].data["purchase_source_type"] == "個人"
 
 
+def test_seller_free_text_sets_original_owner_name():
+	reset_fakes()
+	GuidedVehicleIntakeService().run(valid_payload(seller="測試車主"))
+	data = fake_frappe.created_docs[0].data
+	assert data["original_owner_name"] == "測試車主"
+	assert "supplier" not in data
+
+
+def test_customer_name_free_text_sets_original_owner_name():
+	reset_fakes()
+	GuidedVehicleIntakeService().run(valid_payload(customer_name="測試客戶"))
+	data = fake_frappe.created_docs[0].data
+	assert data["original_owner_name"] == "測試客戶"
+	assert "supplier" not in data
+
+
+def test_missing_supplier_is_not_written_to_supplier_link():
+	reset_fakes()
+	GuidedVehicleIntakeService().run(valid_payload(supplier="不存在供應商", seller="測試車主"))
+	data = fake_frappe.created_docs[0].data
+	assert "supplier" not in data
+	assert data["original_owner_name"] == "測試車主"
+
+
+def test_missing_supplier_falls_back_to_original_owner_name():
+	reset_fakes()
+	GuidedVehicleIntakeService().run(valid_payload(supplier="舊 payload 車主"))
+	data = fake_frappe.created_docs[0].data
+	assert "supplier" not in data
+	assert data["original_owner_name"] == "舊 payload 車主"
+
+
+def test_existing_supplier_is_written_to_supplier_link():
+	reset_fakes()
+	fake_frappe.existing_suppliers = {"既有供應商"}
+	GuidedVehicleIntakeService().run(valid_payload(supplier="既有供應商", seller="測試車主"))
+	data = fake_frappe.created_docs[0].data
+	assert data["supplier"] == "既有供應商"
+	assert data["original_owner_name"] == "測試車主"
+
+
 def test_service_calls_existing_intake_service():
 	reset_fakes()
 	GuidedVehicleIntakeService().run(valid_payload())
@@ -165,6 +214,11 @@ def run_tests():
 		test_missing_vin_is_rejected,
 		test_non_positive_purchase_price_is_rejected,
 		test_blank_purchase_source_type_defaults_to_personal,
+		test_seller_free_text_sets_original_owner_name,
+		test_customer_name_free_text_sets_original_owner_name,
+		test_missing_supplier_is_not_written_to_supplier_link,
+		test_missing_supplier_falls_back_to_original_owner_name,
+		test_existing_supplier_is_written_to_supplier_link,
 		test_service_calls_existing_intake_service,
 		test_service_calls_existing_preparation_service,
 		test_success_returns_vehicle_route_and_status,
