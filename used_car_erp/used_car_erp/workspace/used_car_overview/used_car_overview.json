@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"uco_overview_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>總覽</b></span>\",\"col\":12}},{\"id\":\"uco_inventory_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>庫存狀態</b></span>\",\"col\":12}},{\"id\":\"uco_card_in_stock\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"在庫\",\"col\":4}},{\"id\":\"uco_card_inventory\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"庫存中\",\"col\":4}},{\"id\":\"uco_card_preparing\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"整備中\",\"col\":4}},{\"id\":\"uco_card_listed\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"上架中\",\"col\":4}},{\"id\":\"uco_card_reserved\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"保留中\",\"col\":4}},{\"id\":\"uco_card_sold\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"已售出\",\"col\":4}},{\"id\":\"uco_shortcut_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>常用作業</b></span>\",\"col\":12}},{\"id\":\"uco_new_vehicle\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"新增車輛\",\"col\":3}},{\"id\":\"uco_vehicle_list\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"車輛列表\",\"col\":3}},{\"id\":\"uco_summary_candidates\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"單車摘要候選\",\"col\":3}}]",
+ "content": "[{\"id\":\"uco_overview_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>總覽</b></span>\",\"col\":12}},{\"id\":\"uco_inventory_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>庫存狀態</b></span>\",\"col\":12}},{\"id\":\"uco_card_in_stock\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"在庫\",\"col\":4}},{\"id\":\"uco_card_inventory\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"庫存中\",\"col\":4}},{\"id\":\"uco_card_preparing\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"整備中\",\"col\":4}},{\"id\":\"uco_card_listed\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"上架中\",\"col\":4}},{\"id\":\"uco_card_reserved\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"保留中\",\"col\":4}},{\"id\":\"uco_card_sold\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"已售出\",\"col\":4}},{\"id\":\"uco_shortcut_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>常用作業</b></span>\",\"col\":12}},{\"id\":\"uco_new_vehicle\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"新增買入車輛\",\"col\":3}},{\"id\":\"uco_vehicle_list\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"車輛列表\",\"col\":3}},{\"id\":\"uco_summary_candidates\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"單車摘要候選\",\"col\":3}}]",
  "creation": "2026-06-21 01:10:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -51,8 +51,8 @@
  "sequence_id": 0.5,
  "shortcuts": [
    {
-    "doc_view": "New",
-    "label": "新增車輛",
+     "doc_view": "List",
+     "label": "新增買入車輛",
     "link_to": "Used Car Vehicle",
     "type": "DocType"
    },
