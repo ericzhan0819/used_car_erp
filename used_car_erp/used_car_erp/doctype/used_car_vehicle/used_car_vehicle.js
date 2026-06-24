@@ -1271,19 +1271,28 @@ function add_non_sold_vehicle_primary_action_button(frm) {
   }
 
   if (frm.doc.status === "整備中" && is_vehicle_stocked(frm)) {
-    add_listing_action_button(
-      frm,
-      "整備完成並上架",
-      "確定將此車輛狀態改為「上架中」？此操作不會異動 ERPNext 庫存。",
-      "used_car_erp.used_car_erp.services.vehicle_listing_service.list_vehicle",
-      "已上架"
-    );
+    add_guided_listing_button(frm);
     return;
   }
 
   if (frm.doc.status === "上架中" && is_vehicle_stocked(frm)) {
     add_create_reservation_button(frm);
   }
+}
+
+function add_guided_listing_button(frm) {
+  frm.add_custom_button(
+    "整備完成並上架",
+    () => {
+      if (!used_car_erp.guided_listing || !used_car_erp.guided_listing.open) {
+        frappe.msgprint("整備完成並上架元件尚未載入，請重新整理後再試。");
+        return;
+      }
+
+      used_car_erp.guided_listing.open(frm);
+    },
+    "車輛作業"
+  );
 }
 
 function add_create_reservation_button(frm) {
