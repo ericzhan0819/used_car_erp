@@ -1,5 +1,9 @@
 # P1-MVP-UX-OPS-2 Step 3D：Direct Guided Intake Launcher Page
 
+Status: superseded by P1-MVP-DASH-2 custom overview page.
+
+本文件保留為歷史決策記錄；runtime 入口已改為 `/app/總覽` custom Page 直接呼叫 shared guided intake Dialog，不再保留 `guided-vehicle-intake` launcher Page。
+
 ## 1. 本階段目的
 
 本階段修正總覽入口，讓使用者在 `/app/總覽` 點「新增買入車輛」後直接開始填表，不需要先進入車輛列表再點一次按鈕。

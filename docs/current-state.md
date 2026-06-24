@@ -42,6 +42,14 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 會計文件與技術術語不暴露在業務頁
 ```
 
+目前總覽入口已改為 custom Page：
+
+```text
+/app/總覽 → custom Page
+```
+
+總覽不再是 Frappe native Workspace。custom Page 作為中古車業務操作面板，提供庫存狀態卡與常用作業，並直接呼叫 shared guided intake Dialog 開啟「新增買入車輛」。
+
 ## 4. 目前已完成主流程摘要
 
 - 車輛主檔 `Used Car Vehicle` 已作為中古車業務主檔。

@@ -202,6 +202,70 @@ def test_existing_supplier_is_written_to_supplier_link():
 	assert data["original_owner_name"] == "測試車主"
 
 
+def test_extended_business_fields_are_written_to_vehicle_payload():
+	reset_fakes()
+	GuidedVehicleIntakeService().run(
+		valid_payload(
+			variant_trim="豪華版",
+			engine_no="ENG-001",
+			interior_color="黑",
+			manufacture_date="2020-01-01",
+			license_date="2020-02-01",
+			fuel_type="汽油",
+			engine_cc=1800,
+			transmission="自排",
+			drivetrain="前驅",
+			doors=4,
+			seats=5,
+			purchase_type="公司買進",
+			source="介紹",
+			purchase_date="2026-06-24",
+			expected_received_date="2026-06-25",
+			received_date="2026-06-26",
+			purchase_document_no="DOC-001",
+			original_owner_phone="0912345678",
+			referral_name="介紹人",
+			referral_phone="0987654321",
+			purchase_note="收購備註",
+			license_tax_due_date="2026-07-01",
+			fuel_tax_due_date="2026-08-01",
+			insurance_expiry_date="2026-09-01",
+			registration_note="監理備註",
+			notes="一般備註",
+		)
+	)
+	data = fake_frappe.created_docs[0].data
+	for fieldname in [
+		"variant_trim",
+		"engine_no",
+		"interior_color",
+		"manufacture_date",
+		"license_date",
+		"fuel_type",
+		"engine_cc",
+		"transmission",
+		"drivetrain",
+		"doors",
+		"seats",
+		"purchase_type",
+		"source",
+		"purchase_date",
+		"expected_received_date",
+		"received_date",
+		"purchase_document_no",
+		"original_owner_phone",
+		"referral_name",
+		"referral_phone",
+		"purchase_note",
+		"license_tax_due_date",
+		"fuel_tax_due_date",
+		"insurance_expiry_date",
+		"registration_note",
+		"notes",
+	]:
+		assert fieldname in data
+
+
 def test_service_calls_existing_intake_service():
 	reset_fakes()
 	GuidedVehicleIntakeService().run(valid_payload())
@@ -273,6 +337,7 @@ def run_tests():
 		test_missing_supplier_is_not_written_to_supplier_link,
 		test_missing_supplier_falls_back_to_original_owner_name,
 		test_existing_supplier_is_written_to_supplier_link,
+		test_extended_business_fields_are_written_to_vehicle_payload,
 		test_service_calls_existing_intake_service,
 		test_service_calls_existing_preparation_service,
 		test_success_returns_vehicle_route_and_status,
