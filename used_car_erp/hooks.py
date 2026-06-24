@@ -30,6 +30,7 @@ app_include_js = [
     "/assets/used_car_erp/js/guided_vehicle_intake_dialog.js",
     "/assets/used_car_erp/js/guided_preparation_expense_dialog.js",
     "/assets/used_car_erp/js/guided_listing_dialog.js",
+    "/assets/used_car_erp/js/guided_reservation_deposit_dialog.js",
 ]
 
 # include js, css files in header of web template

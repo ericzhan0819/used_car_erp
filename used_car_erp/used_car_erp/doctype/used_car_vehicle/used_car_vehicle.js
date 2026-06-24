@@ -509,6 +509,7 @@ function clear_vehicle_action_buttons(frm) {
     "整備完成並上架",
     "下架回庫存",
     "建立訂金保留",
+    "收訂金並保留",
     "建立尾款收款",
     "新增支出",
     "成交前檢查",
@@ -1296,92 +1297,18 @@ function add_guided_listing_button(frm) {
 }
 
 function add_create_reservation_button(frm) {
-  frm.add_custom_button("建立訂金保留", () => {
-    frappe.prompt(
-      [
-        {
-          fieldname: "existing_customer",
-          label: "既有客戶",
-          fieldtype: "Link",
-          options: "Customer",
-          reqd: 0,
-        },
-        {
-          fieldname: "customer_name",
-          label: "客戶姓名",
-          fieldtype: "Data",
-          reqd: 1,
-        },
-        {
-          fieldname: "customer_phone",
-          label: "客戶電話",
-          fieldtype: "Data",
-          reqd: 1,
-        },
-        {
-          fieldname: "deposit_amount",
-          label: "訂金金額",
-          fieldtype: "Currency",
-          reqd: 1,
-        },
-        {
-          fieldname: "payment_method",
-          label: "付款方式",
-          fieldtype: "Select",
-          options: "現金\n匯款\n信用卡\n其他",
-          default: "現金",
-          reqd: 1,
-        },
-        {
-          fieldname: "deposit_date",
-          label: "訂金日期",
-          fieldtype: "Date",
-          default: frappe.datetime.get_today(),
-          reqd: 1,
-        },
-        {
-          fieldname: "payment_reference",
-          label: "付款備註 / 末五碼",
-          fieldtype: "Data",
-          reqd: 0,
-        },
-        {
-          fieldname: "notes",
-          label: "備註",
-          fieldtype: "Small Text",
-          reqd: 0,
-        },
-      ],
-      (values) => {
-        frappe.call({
-          method:
-            "used_car_erp.used_car_erp.services.vehicle_reservation_service.create_reservation",
-          args: {
-            vehicle_name: frm.doc.name,
-            customer: values.existing_customer,
-            customer_name: values.customer_name,
-            customer_phone: values.customer_phone,
-            deposit_amount: values.deposit_amount,
-            payment_method: values.payment_method,
-            deposit_date: values.deposit_date,
-            payment_reference: values.payment_reference,
-            notes: values.notes,
-          },
-          freeze: true,
-          freeze_message: "正在建立保留...",
-          callback() {
-            frappe.show_alert({
-              message: "已建立訂金保留",
-              indicator: "green",
-            });
-            frm.reload_doc();
-          },
-        });
-      },
-      "建立訂金保留",
-      "建立保留"
-    );
-  });
+  frm.add_custom_button(
+    "收訂金並保留",
+    () => {
+      if (!used_car_erp.guided_reservation_deposit || !used_car_erp.guided_reservation_deposit.open) {
+        frappe.msgprint("收訂金並保留元件尚未載入，請重新整理後再試。");
+        return;
+      }
+
+      used_car_erp.guided_reservation_deposit.open(frm);
+    },
+    "車輛作業"
+  );
 }
 
 function add_final_payment_button(frm) {
