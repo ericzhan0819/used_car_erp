@@ -26,7 +26,13 @@ ee208cee docs: close guided preparation expense dialog smoke
 目前 docs 收尾穩定點：
 
 ```text
-ee208cee docs: close guided preparation expense dialog smoke
+606d48e docs: sync expense dialog smoke current state
+```
+
+目前最新規格文件：
+
+```text
+P1-MVP-UX-OPS-2 Step 5：Guided Listing Task Card Spec
 ```
 
 ## 3. 目前產品主線
@@ -78,6 +84,7 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 - Preparation expense Step 4A：沿用 `create_general_expense_money_flow`。
 - Preparation expense Step 4A：底層 Money Flow / Voucher Draft foundation 沿用。
 - Preparation expense Step 4A：browser smoke passed。
+- Guided listing Step 5 spec：已定義「整備完成並上架」任務卡規格，範圍限定文件，不改 runtime / schema / 會計流程。
 
 ## 5. 目前 UX 邊界
 
@@ -112,14 +119,26 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 下一步建議：
 
 ```text
-P1-MVP-UX-OPS-2 Step 4B：Preparation Expense Post-Smoke Polish
+P1-MVP-UX-OPS-2 Step 5A：Guided Listing Dialog Runtime
 ```
 
-或下一張 task card：
+依據文件：
 
 ```text
-整備完成並上架 / 保留收訂金
+docs/p1-mvp-ux-ops-2-step-5-guided-listing-task-card-spec.md
 ```
+
+Step 5A 開始前應先盤點：
+
+```text
+Used Car Vehicle 現有 floor_price / asking_price / sales_note / status 欄位
+是否存在可用上架日期欄位
+車輛頁目前整備 / 上架相關按鈕
+目前角色 / permlevel 是否足以隱藏底價
+總覽上架中卡片是否依 status 統計
+```
+
+Step 5A 若發現缺少上架日期欄位或底價權限不足，應停止並回報，不要在同一任務內擴大 schema 或權限範圍。
 
 ## 7. Historical docs 注意事項
 
