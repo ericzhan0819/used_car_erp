@@ -13,27 +13,26 @@ ERPNext 原生模組負責會計、庫存、正式文件與報表。
 ## 2. 最新穩定點
 
 ```text
-990dab7 feat: add guided reservation deposit dialog
-0c9f626 docs: close reservation deposit smoke
-docs: define guided final payment task card
+e8a25b5 feat: add guided final payment dialog
+docs: close guided final payment smoke
 ```
 
 目前 runtime 穩定點：
 
 ```text
-990dab7 feat: add guided reservation deposit dialog
+e8a25b5 feat: add guided final payment dialog
 ```
 
 目前 docs 收尾穩定點：
 
 ```text
-docs: define guided final payment task card
+docs: close guided final payment smoke
 ```
 
-目前最新規格文件：
+目前最新 smoke 文件：
 
 ```text
-P1-MVP-UX-OPS-2 Step 7：Guided Final Payment Task Card Spec
+P1-MVP-UX-OPS-2 Step 7A：Guided Final Payment Dialog Smoke Close
 ```
 
 ## 3. 目前產品主線
@@ -90,9 +89,12 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 - Guided listing Step 5A：已新增 shared guided listing Dialog，車輛頁可用「整備完成並上架」將 `listing_date` / `floor_price` / `asking_price` / `sales_note` 寫回，並將狀態改為 `上架中`。
 - Guided listing Step 5A：browser smoke passed。
 - Guided reservation / deposit Step 6 spec：已定義「收訂金並保留」任務卡規格，範圍限定文件，不改 runtime / schema / 會計流程。
-- Guided reservation / deposit Step 6A：已新增 shared guided reservation/deposit Dialog，車輛頁可用「收訂金並保留」輸入客戶與訂金資料，成功後顯示「已收訂金，車輛已保留」，並將狀態改為 `保留中`。
+- Guided reservation / deposit Step 6A：已新增 shared guided reservation/deposit Dialog，車輛頁可用「收訂金並保留」輸入客戶、成交價與訂金資料，成功後顯示「已收訂金，車輛已保留」，並將狀態改為 `保留中`。
 - Guided reservation / deposit Step 6A：browser smoke passed。
 - Guided final payment Step 7 spec：已定義「收尾款」任務卡規格，範圍限定文件，不改 runtime / schema / 會計流程。
+- Guided final payment Step 7A：已新增 shared guided final payment Dialog，車輛頁可用「收尾款」輸入尾款資料，成功後顯示「已收尾款」。
+- Guided final payment Step 7A：收尾款 Dialog read-only 顯示成交價 / 訂金 / 建議尾款。
+- Guided final payment Step 7A：browser smoke passed。
 
 ## 5. 目前 UX 邊界
 
@@ -129,37 +131,21 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 下一步建議：
 
 ```text
-P1-MVP-UX-OPS-2 Step 7A：Guided Final Payment Dialog Runtime
+P1-MVP-UX-OPS-2 Step 8：Guided Reservation Cancellation / Deposit Refund Spec
 ```
 
-依據文件：
+原因：目前已確認取消保留後，既有訂金草稿 / 已入帳訂金會影響會計作業端資料一致性，需要先定義取消原因、是否退訂金、退訂金金額、退款方式、草稿未入帳與已入帳時的處理邊界。
+
+Step 8 應先做文件規格，不直接改 runtime。
+
+Step 8 不應：
 
 ```text
-docs/p1-mvp-ux-ops-2-step-7-guided-final-payment-task-card-spec.md
-```
-
-Step 7A 建議範圍：
-
-```text
-新增 shared guided final payment Dialog
-車輛頁「建立尾款收款」改為「收尾款」
-沿用 vehicle_reservation_service.create_final_payment_for_active_reservation
-成功後顯示「已收尾款」
-成功後 reload_doc
-hooks.py 載入新的 shared JS
-```
-
-Step 7A 不應：
-
-```text
-不新增 schema
-不改 Python service
-不改 DocType JSON
-不改會計流程
-不處理成交
-不處理 Sales Invoice
-不處理 Journal Entry
-不處理權限大改
+不直接混入成交確認
+不直接混入 Sales Invoice
+不直接混入 Journal Entry 提交
+不改 15-1 service
+不改管理利潤 service
 ```
 
 ## 7. Historical docs 注意事項
