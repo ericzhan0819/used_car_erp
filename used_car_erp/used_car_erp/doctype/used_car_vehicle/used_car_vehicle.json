@@ -48,6 +48,7 @@
   "purchase_price",
   "floor_price",
   "asking_price",
+  "listing_date",
   "purchase_amounts_column",
   "purchase_commission",
   "other_payable",
@@ -372,6 +373,12 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "開價"
+  },
+  {
+   "description": "車輛整備完成並進入上架中的日期。由「整備完成並上架」任務卡寫入。",
+   "fieldname": "listing_date",
+   "fieldtype": "Date",
+   "label": "上架日期"
   },
   {
    "fieldname": "purchase_amounts_column",

@@ -223,13 +223,11 @@ sales_note：銷售備註
 | --- | --- | --- |
 | 底價 | `floor_price` | 內部底線價，不應讓一般業務看到 |
 | 開價 | `asking_price` | 對外銷售參考價 |
-| 上架日期 | 待 runtime 盤點 | 若無明確欄位，初版可用狀態切換時間，不應在 Step 5A 直接加 schema |
+| 上架日期 | `listing_date` | Step 5S 已新增明確上架日期欄位，Step 5A 可寫入 |
 | 銷售備註 | `sales_note` | 對銷售流程有幫助的備註 |
 | 車輛狀態 | `status` | 成功後改為 `上架中` |
 
-如果 runtime 盤點發現沒有適合的上架日期欄位，應停下來回報。
-
-Step 5A 不應直接新增 `listing_date` DocType 欄位，除非另開 schema 任務並經確認。
+Step 5S 已新增 `listing_date` DocType 欄位，Step 5A runtime 可使用此欄位寫入上架日期。
 
 ---
 
@@ -478,7 +476,7 @@ Step 5A runtime 應只做最小狀態更新：
 更新 status = 上架中
 ```
 
-若有上架日期欄位則更新該欄位；若沒有，不應自行新增 schema。
+Step 5S 已新增 `listing_date` 上架日期欄位，Step 5A runtime 應寫入該欄位。
 
 不應：
 
@@ -571,7 +569,7 @@ P1-MVP-UX-OPS-2 Step 5A：Guided Listing Dialog Runtime
 ```text
 新增 shared guided listing Dialog
 車輛頁接上「整備完成並上架」入口
-使用既有欄位 floor_price / asking_price / sales_note / status
+使用既有欄位 floor_price / asking_price / sales_note / status / listing_date
 成功後 status 改為 上架中
 成功後顯示「車輛已上架」
 ```
@@ -589,7 +587,7 @@ DocType schema 大改
 permission 大改
 ```
 
-若發現缺少上架日期欄位，Step 5A 應停止並回報，不要自行新增欄位。
+Step 5S 已補齊上架日期欄位；Step 5A 不需要再新增 schema。
 
 ---
 
@@ -624,7 +622,7 @@ Step 5A 完成後應能驗證：
 ```text
 不新增 runtime
 不改 DocType JSON
-不新增 listing_date 欄位
+不再新增 listing_date 欄位
 不改 Page / Workspace
 不改 hooks.py
 不改會計流程
@@ -640,7 +638,7 @@ Step 5A 完成後應能驗證：
 不做大規模權限調整
 ```
 
-Step 5A 實作時若發現缺欄位、權限不足或 schema 不足，應停止並回報，不要在同一任務內擴大範圍。
+Step 5A 實作時若發現權限不足或其他 schema 不足，應停止並回報，不要在同一任務內擴大範圍。
 
 ---
 
@@ -655,8 +653,7 @@ P1-MVP-UX-OPS-2 Step 5A：Guided Listing Dialog Runtime
 Step 5A 開始前應先盤點：
 
 ```text
-Used Car Vehicle 現有 floor_price / asking_price / sales_note / status 欄位
-是否存在可用上架日期欄位
+Used Car Vehicle 現有 floor_price / asking_price / sales_note / status / listing_date 欄位
 車輛頁目前整備 / 上架相關按鈕
 目前角色 / permlevel 是否足以隱藏底價
 總覽上架中卡片是否依 status 統計

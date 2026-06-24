@@ -85,6 +85,7 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 - Preparation expense Step 4A：底層 Money Flow / Voucher Draft foundation 沿用。
 - Preparation expense Step 4A：browser smoke passed。
 - Guided listing Step 5 spec：已定義「整備完成並上架」任務卡規格，範圍限定文件，不改 runtime / schema / 會計流程。
+- Guided listing Step 5S：已新增 Used Car Vehicle `listing_date` 上架日期欄位，供 Step 5A runtime 寫入。
 
 ## 5. 目前 UX 邊界
 
@@ -131,14 +132,13 @@ docs/p1-mvp-ux-ops-2-step-5-guided-listing-task-card-spec.md
 Step 5A 開始前應先盤點：
 
 ```text
-Used Car Vehicle 現有 floor_price / asking_price / sales_note / status 欄位
-是否存在可用上架日期欄位
+Used Car Vehicle 現有 floor_price / asking_price / sales_note / status / listing_date 欄位均已具備
 車輛頁目前整備 / 上架相關按鈕
 目前角色 / permlevel 是否足以隱藏底價
 總覽上架中卡片是否依 status 統計
 ```
 
-Step 5A 若發現缺少上架日期欄位或底價權限不足，應停止並回報，不要在同一任務內擴大 schema 或權限範圍。
+Step 5A 若發現底價權限不足，應停止並回報，另開 Step 5P，不要在同一任務內擴大權限範圍。
 
 ## 7. Historical docs 注意事項
 
