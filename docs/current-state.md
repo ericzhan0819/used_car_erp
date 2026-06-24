@@ -13,20 +13,20 @@ ERPNext 原生模組負責會計、庫存、正式文件與報表。
 ## 2. 最新穩定點
 
 ```text
-9aa2a64 feat: replace overview workspace with custom page
-761b7e5 docs: define preparation expense task card spec
+8e7b577 feat: add guided preparation expense dialog
+ee208cee docs: close guided preparation expense dialog smoke
 ```
 
 目前 runtime 穩定點：
 
 ```text
-9aa2a64 feat: replace overview workspace with custom page
+8e7b577 feat: add guided preparation expense dialog
 ```
 
-目前最新規格文件穩定點：
+目前 docs 收尾穩定點：
 
 ```text
-761b7e5 docs: define preparation expense task card spec
+ee208cee docs: close guided preparation expense dialog smoke
 ```
 
 ## 3. 目前產品主線
@@ -73,7 +73,11 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 - 15-1 邊界：購車價作為購入估算基礎，整備 / 維修 / 美容 / 拍場 / 代辦等後續支出不併入 15-1 購入成本。
 - Guided intake：`/app/總覽` 與 `Used Car Vehicle List` 共用 shared guided intake Dialog。
 - Custom overview：`/app/總覽` 已由 native Workspace 改為 custom Page。
-- Preparation expense spec：已定義「新增支出」任務卡規格，尚未實作 runtime。
+- Preparation expense Step 4A：車輛頁「新增支出」已改為 shared guided Dialog。
+- Preparation expense Step 4A：成功後顯示「支出紀錄已建立」。
+- Preparation expense Step 4A：沿用 `create_general_expense_money_flow`。
+- Preparation expense Step 4A：底層 Money Flow / Voucher Draft foundation 沿用。
+- Preparation expense Step 4A：browser smoke passed。
 
 ## 5. 目前 UX 邊界
 
@@ -108,33 +112,14 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 下一步建議：
 
 ```text
-P1-MVP-UX-OPS-2 Step 4A：Guided Preparation Expense Dialog Runtime
+P1-MVP-UX-OPS-2 Step 4B：Preparation Expense Post-Smoke Polish
 ```
 
-Step 4A 應依據：
+或下一張 task card：
 
 ```text
-docs/p1-mvp-ux-ops-2-step-4-preparation-expense-task-card-spec.md
+整備完成並上架 / 保留收訂金
 ```
-
-Step 4A 只做：
-
-- 車輛頁「新增支出」業務任務卡。
-- 支出日期、支出類型、金額、付款方式、付款對象、憑證附件、備註。
-- 薄 wrapper service，如必要。
-- 沿用既有 Money Flow service 建立底層支出紀錄。
-- 成功後刷新車輛頁收支摘要。
-
-Step 4A 不做：
-
-- 總覽新增支出入口。
-- 支出列表重設計。
-- 會計作業頁重設計。
-- Voucher Draft 入帳流程重寫。
-- 科目選擇 UI。
-- 權限大改。
-- DocType schema 大改。
-- Journal Entry / Sales Invoice / Stock Entry runtime 修改。
 
 ## 7. Historical docs 注意事項
 
