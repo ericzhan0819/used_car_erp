@@ -14,7 +14,8 @@ ERPNext 原生模組負責會計、庫存、正式文件與報表。
 
 ```text
 4a004d6 feat: add guided listing dialog
-docs: close guided listing dialog smoke
+26494d6 docs: close guided listing dialog smoke
+docs: define guided reservation deposit task card
 ```
 
 目前 runtime 穩定點：
@@ -26,13 +27,13 @@ docs: close guided listing dialog smoke
 目前 docs 收尾穩定點：
 
 ```text
-docs: close guided listing dialog smoke
+docs: define guided reservation deposit task card
 ```
 
-目前最新 smoke 文件：
+目前最新規格文件：
 
 ```text
-P1-MVP-UX-OPS-2 Step 5A：Guided Listing Dialog Smoke Close
+P1-MVP-UX-OPS-2 Step 6：Guided Reservation / Deposit Task Card Spec
 ```
 
 ## 3. 目前產品主線
@@ -88,6 +89,7 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 - Guided listing Step 5S：已新增 Used Car Vehicle `listing_date` 上架日期欄位，供 Step 5A runtime 寫入。
 - Guided listing Step 5A：已新增 shared guided listing Dialog，車輛頁可用「整備完成並上架」將 `listing_date` / `floor_price` / `asking_price` / `sales_note` 寫回，並將狀態改為 `上架中`。
 - Guided listing Step 5A：browser smoke passed。
+- Guided reservation / deposit Step 6 spec：已定義「收訂金並保留」任務卡規格，範圍限定文件，不改 runtime / schema / 會計流程。
 
 ## 5. 目前 UX 邊界
 
@@ -99,6 +101,8 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 - 收購業務
 - 監理 / 稅務 checklist
 - 整備 / 維修 / 美容 / 代辦 / 拍場支出
+- 上架日期
+- 底價 / 開價
 - 訂金
 - 尾款
 - 成交價
@@ -119,21 +123,42 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 
 ## 6. 目前下一步
 
-下一步建議可二選一：
+下一步建議：
 
 ```text
-P1-MVP-UX-OPS-2 Step 5P：Guided Listing Permission Boundary
+P1-MVP-UX-OPS-2 Step 6A：Guided Reservation / Deposit Dialog Runtime
 ```
 
-或：
+依據文件：
 
 ```text
-P1-MVP-UX-OPS-2 Step 6：Guided Reservation / Deposit Task Card Spec
+docs/p1-mvp-ux-ops-2-step-6-guided-reservation-deposit-task-card-spec.md
 ```
 
-Step 5P 適合在要正式區分主管與一般業務時處理，範圍只應是底價 / 開價的角色、permlevel、可見性與最小權限驗證，不應混入新的上架 runtime。
+Step 6A 建議範圍：
 
-Step 6 適合繼續推完整業務主流程，進入保留 / 收訂金任務卡規格，繼續遵守一張卡處理一件事。
+```text
+新增 shared guided reservation/deposit Dialog
+車輛頁「建立訂金保留」改為「收訂金並保留」
+沿用 vehicle_reservation_service.create_reservation
+成功後顯示「已收訂金，車輛已保留」
+成功後 reload_doc
+hooks.py 載入新的 shared JS
+```
+
+Step 6A 不應：
+
+```text
+不新增 schema
+不改 Python service
+不改 DocType JSON
+不改會計流程
+不處理尾款
+不處理成交
+不處理 Sales Invoice
+不處理 Journal Entry
+不處理權限大改
+```
 
 ## 7. Historical docs 注意事項
 
