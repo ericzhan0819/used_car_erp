@@ -1147,107 +1147,18 @@ function add_general_expense_money_flow_button(frm) {
     return;
   }
 
-  const payment_method_field = get_money_flow_payment_method_prompt_field();
-
   frm.add_custom_button(
     "新增支出",
     () => {
-      frappe.prompt(
-        [
-          {
-            fieldname: "payment_date",
-            label: "支出日期",
-            fieldtype: "Date",
-            default: frappe.datetime.get_today(),
-            reqd: 1,
-          },
-          {
-            fieldname: "flow_type",
-            label: "支出類型",
-            fieldtype: "Select",
-            options: "整備支出\n維修支出\n美容支出\n代辦支出\n拍場支出\n其他支出",
-            reqd: 1,
-          },
-          {
-            fieldname: "amount",
-            label: "金額",
-            fieldtype: "Currency",
-            reqd: 1,
-          },
-          payment_method_field,
-          {
-            fieldname: "payment_reference",
-            label: "付款參考",
-            fieldtype: "Data",
-            reqd: 0,
-          },
-          {
-            fieldname: "notes",
-            label: "備註",
-            fieldtype: "Small Text",
-            reqd: 0,
-          },
-          {
-            fieldname: "evidence_attachment",
-            label: "憑證附件",
-            fieldtype: "Attach",
-            reqd: 0,
-          },
-        ],
-        (values) => {
-          frappe.call({
-            method:
-              "used_car_erp.used_car_erp.services.vehicle_money_flow_service.create_general_expense_money_flow",
-            args: {
-              vehicle: frm.doc.name,
-              payment_date: values.payment_date,
-              flow_type: values.flow_type,
-              amount: values.amount,
-              payment_method: values.payment_method,
-              payment_reference: values.payment_reference,
-              notes: values.notes,
-              evidence_attachment: values.evidence_attachment,
-            },
-            freeze: true,
-            freeze_message: "正在建立支出金流...",
-            callback(response) {
-              const result = response.message || {};
-              const message =
-                result.money_flow || result.voucher_draft
-                  ? [
-                      "已建立支出金流與待審核傳票草稿",
-                      result.money_flow ? `金流紀錄：${result.money_flow}` : null,
-                      result.voucher_draft ? `傳票草稿：${result.voucher_draft}` : null,
-                    ]
-                      .filter(Boolean)
-                      .join("<br>")
-                  : "已建立支出金流與待審核傳票草稿";
+      if (!used_car_erp.guided_preparation_expense || !used_car_erp.guided_preparation_expense.open) {
+        frappe.msgprint("新增支出元件尚未載入，請重新整理後再試。");
+        return;
+      }
 
-              frappe.show_alert({
-                message,
-                indicator: "green",
-              });
-              frm.reload_doc();
-            },
-          });
-        },
-        "新增支出",
-        "建立支出"
-      );
+      used_car_erp.guided_preparation_expense.open(frm);
     },
     "車輛作業"
   );
-}
-
-function get_money_flow_payment_method_prompt_field() {
-  return {
-    fieldname: "payment_method",
-    label: "付款方式",
-    fieldtype: "Select",
-    options: "現金\n匯款\n信用卡\n其他",
-    default: "現金",
-    reqd: 1,
-  };
 }
 
 function add_recalculate_cost_summary_button(frm) {
