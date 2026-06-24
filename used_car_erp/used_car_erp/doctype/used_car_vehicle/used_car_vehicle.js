@@ -511,6 +511,7 @@ function clear_vehicle_action_buttons(frm) {
     "建立訂金保留",
     "收訂金並保留",
     "建立尾款收款",
+    "收尾款",
     "新增支出",
     "成交前檢查",
     "確認成交",
@@ -743,8 +744,8 @@ function get_reserved_vehicle_next_step(frm, active_reservation) {
 
   if (!has_final_money_flow || !has_final_voucher_draft) {
     return {
-      current_stage: "已保留，等待建立尾款收款",
-      next_step: "建立尾款收款",
+      current_stage: "已保留，等待收尾款",
+      next_step: "收尾款",
       primary_action: "create_final_payment",
       can_check_delivery: false,
       can_complete_sale: false,
@@ -846,6 +847,7 @@ function refresh_reserved_vehicle_action_buttons(frm) {
   }
 
   frm.remove_custom_button("建立尾款收款");
+  frm.remove_custom_button("收尾款");
   frm.remove_custom_button("成交前檢查");
   frm.remove_custom_button("確認成交");
 
@@ -1312,75 +1314,18 @@ function add_create_reservation_button(frm) {
 }
 
 function add_final_payment_button(frm) {
-  frm.add_custom_button("建立尾款收款", () => {
-    frappe.prompt(
-      [
-        {
-          fieldname: "amount",
-          label: "尾款金額",
-          fieldtype: "Currency",
-          reqd: 1,
-        },
-        {
-          fieldname: "payment_method",
-          label: "付款方式",
-          fieldtype: "Select",
-          options: "現金\n匯款\n信用卡\n其他",
-          default: "現金",
-          reqd: 1,
-        },
-        {
-          fieldname: "payment_date",
-          label: "尾款日期",
-          fieldtype: "Date",
-          default: frappe.datetime.get_today(),
-          reqd: 1,
-        },
-        {
-          fieldname: "payment_reference",
-          label: "付款備註 / 末五碼",
-          fieldtype: "Data",
-          reqd: 0,
-        },
-        {
-          fieldname: "notes",
-          label: "備註",
-          fieldtype: "Small Text",
-          reqd: 0,
-        },
-      ],
-      (values) => {
-        frappe.confirm(
-          "建立尾款收款後，系統只會建立金流紀錄與傳票草稿，不會交車、出庫、開銷售發票或建立收款單。是否繼續？",
-          () => {
-            frappe.call({
-              method:
-                "used_car_erp.used_car_erp.services.vehicle_reservation_service.create_final_payment_for_active_reservation",
-              args: {
-                vehicle_name: frm.doc.name,
-                amount: values.amount,
-                payment_method: values.payment_method,
-                payment_date: values.payment_date,
-                payment_reference: values.payment_reference,
-                notes: values.notes,
-              },
-              freeze: true,
-              freeze_message: "正在建立尾款金流...",
-              callback() {
-                frappe.show_alert({
-                  message: "已建立尾款金流與傳票草稿",
-                  indicator: "green",
-                });
-                frm.reload_doc();
-              },
-            });
-          }
-        );
-      },
-      "建立尾款收款",
-      "建立尾款"
-    );
-  });
+  frm.add_custom_button(
+    "收尾款",
+    () => {
+      if (!used_car_erp.guided_final_payment || !used_car_erp.guided_final_payment.open) {
+        frappe.msgprint("收尾款元件尚未載入，請重新整理後再試。");
+        return;
+      }
+
+      used_car_erp.guided_final_payment.open(frm);
+    },
+    "車輛作業"
+  );
 }
 
 function add_cancel_reservation_button(frm) {
@@ -1847,7 +1792,7 @@ function set_vehicle_intake_intro(frm) {
   }
 
   if (frm.doc.status === "保留中") {
-    frm.set_intro("此車輛已保留。下一步請建立尾款收款。", "orange");
+    frm.set_intro("此車輛已保留。下一步請收尾款。", "orange");
     return;
   }
 

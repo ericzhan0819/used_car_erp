@@ -24,7 +24,7 @@ class TestUsedCarControlledWriteAdoption(FrappeTestCase):
 		) as money_flow_service:
 			money_flow_service.return_value.create_deposit_money_flow_from_reservation.return_value = {"money_flow": "MF-1", "voucher_draft": "VD-1"}
 
-			VehicleReservationService().create_reservation("VEH-1", "客戶", "0912345678", 1000, "現金")
+			VehicleReservationService().create_reservation("VEH-1", "客戶", "0912345678", 60000, 1000, "現金")
 
 		controlled_insert.assert_called_once()
 		self.assertEqual(controlled_insert.call_args.kwargs["action"], "used_car_reservation.create")

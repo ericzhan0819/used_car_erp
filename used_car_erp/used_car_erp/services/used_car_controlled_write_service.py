@@ -23,7 +23,7 @@ CONTROLLED_WRITE_ALLOWED_FIELDS = {
 			"status",
 			"created_by_service",
 		},
-		"Used Car Vehicle": {"status"},
+		"Used Car Vehicle": {"status", "sold_price"},
 	},
 	"used_car_money_flow.deposit.create": {
 		"Used Car Money Flow": {

@@ -25,6 +25,7 @@ frappe.provide("used_car_erp.guided_reservation_deposit");
         },
         { fieldname: "customer_name", label: "客戶姓名", fieldtype: "Data", reqd: 1 },
         { fieldname: "customer_phone", label: "客戶電話", fieldtype: "Data", reqd: 1 },
+        { fieldname: "sold_price", label: "成交價", fieldtype: "Currency", reqd: 1 },
         { fieldname: "deposit_amount", label: "訂金金額", fieldtype: "Currency", reqd: 1 },
         {
           fieldname: "payment_method",
@@ -99,8 +100,16 @@ frappe.provide("used_car_erp.guided_reservation_deposit");
       frappe.msgprint("請填寫客戶電話。");
       return false;
     }
+    if (flt(values.sold_price) <= 0) {
+      frappe.msgprint("成交價必須大於 0。");
+      return false;
+    }
     if (flt(values.deposit_amount) <= 0) {
       frappe.msgprint("訂金金額必須大於 0。");
+      return false;
+    }
+    if (flt(values.deposit_amount) > flt(values.sold_price)) {
+      frappe.msgprint("訂金不能大於成交價。");
       return false;
     }
     if (!values.payment_method || !PAYMENT_METHODS.includes(values.payment_method)) {
@@ -122,6 +131,7 @@ frappe.provide("used_car_erp.guided_reservation_deposit");
         vehicle_name: frm.doc.name,
         customer_name: values.customer_name,
         customer_phone: values.customer_phone,
+        sold_price: values.sold_price,
         deposit_amount: values.deposit_amount,
         payment_method: values.payment_method,
         deposit_date: values.deposit_date,

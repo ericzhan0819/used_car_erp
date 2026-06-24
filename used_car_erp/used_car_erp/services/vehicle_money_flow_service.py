@@ -321,6 +321,7 @@ def verify_vehicle_money_flow_voucher_service():
 			vehicle_name=vehicle.name,
 			customer_name="王小明",
 			customer_phone="0912345678",
+			sold_price=60000,
 			deposit_amount=10000,
 			payment_method="現金",
 			deposit_date=nowdate(),

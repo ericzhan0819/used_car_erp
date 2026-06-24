@@ -18,7 +18,7 @@ class TestUsedCarActionGateAdoption(FrappeTestCase):
 		self._assert_gate_blocks_first(
 			"used_car_erp.used_car_erp.services.vehicle_reservation_service.assert_can_perform_used_car_action",
 			"used_car_reservation.create",
-			lambda: self.reservation_service.create_reservation("MISSING-VEHICLE", "", "", 0, "INVALID"),
+			lambda: self.reservation_service.create_reservation("MISSING-VEHICLE", "", "", 0, 0, "INVALID"),
 		)
 
 	def test_create_final_payment_for_active_reservation_gate_blocks_first(self):

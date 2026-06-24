@@ -68,6 +68,7 @@ class TestVehicleReservationService(FrappeTestCase):
 
 		self.assertEqual(result.get("previous_status"), "上架中")
 		self.assertEqual(vehicle.status, "保留中")
+		self.assertEqual(vehicle.sold_price, 60000)
 
 	def test_create_reservation_creates_reservation_document(self):
 		vehicle = self._make_listed_vehicle()
@@ -105,6 +106,16 @@ class TestVehicleReservationService(FrappeTestCase):
 		vehicle = self._make_listed_vehicle()
 
 		self.assertRaises(frappe.ValidationError, self._create_reservation, vehicle, deposit_amount=0)
+
+	def test_sold_price_must_be_positive(self):
+		vehicle = self._make_listed_vehicle()
+
+		self.assertRaises(frappe.ValidationError, self._create_reservation, vehicle, sold_price=0)
+
+	def test_deposit_amount_cannot_exceed_sold_price(self):
+		vehicle = self._make_listed_vehicle()
+
+		self.assertRaises(frappe.ValidationError, self._create_reservation, vehicle, sold_price=10000, deposit_amount=10001)
 
 	def test_customer_name_is_required(self):
 		vehicle = self._make_listed_vehicle()
@@ -194,6 +205,7 @@ class TestVehicleReservationService(FrappeTestCase):
 			"vehicle_name": vehicle.name,
 			"customer_name": f"測試客戶{frappe.generate_hash(length=6)}",
 			"customer_phone": f"09{frappe.generate_hash(length=8)}",
+			"sold_price": 60000,
 			"deposit_amount": 10000,
 			"payment_method": "現金",
 		}

@@ -561,6 +561,7 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 				vehicle_name=vehicle.name,
 				customer_name=f"測試客戶{frappe.generate_hash(length=6)}",
 				customer_phone=f"09{frappe.generate_hash(length=8)}",
+				sold_price=60000,
 				deposit_amount=10000,
 				payment_method="現金",
 			)
@@ -846,6 +847,7 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 			vehicle_name=vehicle.name,
 			customer_name=f"測試客戶{frappe.generate_hash(length=6)}",
 			customer_phone=f"09{frappe.generate_hash(length=8)}",
+			sold_price=60000,
 			deposit_amount=10000,
 			payment_method="現金",
 		)

@@ -35,6 +35,7 @@ class VehicleReservationService:
 		vehicle_name: str,
 		customer_name: str,
 		customer_phone: str,
+		sold_price,
 		deposit_amount,
 		payment_method: str,
 		deposit_date=None,
@@ -47,7 +48,7 @@ class VehicleReservationService:
 			message="你沒有建立中古車保留單的權限。",
 		)
 		self._validate_customer_inputs(customer_name, customer_phone)
-		self._validate_deposit_amount(deposit_amount)
+		self._validate_sale_amounts(sold_price, deposit_amount)
 		self._validate_payment_method(payment_method)
 
 		try:
@@ -91,7 +92,7 @@ class VehicleReservationService:
 				"Used Car Vehicle",
 				vehicle.name,
 				action="used_car_reservation.create",
-				values={"status": "保留中"},
+				values={"status": "保留中", "sold_price": sold_price},
 			)
 			frappe.db.commit()
 		except Exception:
@@ -109,6 +110,7 @@ class VehicleReservationService:
 			"customer": resolved_customer,
 			"customer_name": customer_name,
 			"customer_phone": customer_phone,
+			"sold_price": flt(sold_price),
 			"deposit_amount": flt(deposit_amount),
 			"payment_method": payment_method,
 			"changed": True,
@@ -983,9 +985,13 @@ class VehicleReservationService:
 		if not customer_phone:
 			frappe.throw("客戶電話為必填。")
 
-	def _validate_deposit_amount(self, deposit_amount):
+	def _validate_sale_amounts(self, sold_price, deposit_amount):
+		if flt(sold_price) <= 0:
+			frappe.throw("成交價必須大於 0。")
 		if flt(deposit_amount) <= 0:
 			frappe.throw("訂金金額必須大於 0。")
+		if flt(deposit_amount) > flt(sold_price):
+			frappe.throw("訂金不能大於成交價。")
 
 	def _validate_payment_method(self, payment_method: str):
 		if payment_method not in VALID_PAYMENT_METHODS:
@@ -1050,6 +1056,7 @@ def create_reservation(
 	vehicle_name: str,
 	customer_name: str,
 	customer_phone: str,
+	sold_price,
 	deposit_amount,
 	payment_method: str,
 	deposit_date=None,
@@ -1062,6 +1069,7 @@ def create_reservation(
 		vehicle_name=vehicle_name,
 		customer_name=customer_name,
 		customer_phone=customer_phone,
+		sold_price=sold_price,
 		deposit_amount=deposit_amount,
 		payment_method=payment_method,
 		deposit_date=deposit_date,
@@ -1186,6 +1194,7 @@ def verify_vehicle_reservation_service():
 			vehicle_name=vehicle.name,
 			customer_name="王小明",
 			customer_phone="0912345678",
+			sold_price=60000,
 			deposit_amount=10000,
 			payment_method="現金",
 			deposit_date=nowdate(),
