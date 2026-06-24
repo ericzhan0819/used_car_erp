@@ -28,6 +28,11 @@ ACTION_ROLE_MAP = {
 		"Used Car Manager",
 		"Used Car Owner",
 	},
+	"used_car_reservation.cancel_with_deposit_handling": {
+		"Used Car Sales",
+		"Used Car Manager",
+		"Used Car Owner",
+	},
 	"used_car_reservation.complete_sale": {
 		"Used Car Sales",
 		"Used Car Manager",
@@ -39,6 +44,11 @@ ACTION_ROLE_MAP = {
 		"Used Car Owner",
 	},
 	"used_car_money_flow.final_payment.create": {
+		"Used Car Sales",
+		"Used Car Manager",
+		"Used Car Owner",
+	},
+	"used_car_money_flow.deposit_refund.create": {
 		"Used Car Sales",
 		"Used Car Manager",
 		"Used Car Owner",

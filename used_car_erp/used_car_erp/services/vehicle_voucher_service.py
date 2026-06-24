@@ -148,6 +148,65 @@ class VehicleVoucherService:
 			controlled_action="used_car_money_flow.final_payment.create",
 		)
 
+	def create_deposit_refund_voucher_draft_from_money_flow_service(self, money_flow_name: str):
+		return self._create_deposit_refund_voucher_draft(
+			money_flow_name,
+			controlled_action="used_car_money_flow.deposit_refund.create",
+		)
+
+	def _create_deposit_refund_voucher_draft(self, money_flow_name: str, controlled_action: str | None = None):
+		money_flow = frappe.get_doc("Used Car Money Flow", money_flow_name)
+		self._validate_money_flow_for_deposit_refund_draft(money_flow)
+		credit_account, debit_account = self._resolve_deposit_accounts()
+		self._validate_same_company_accounts([debit_account, credit_account])
+
+		draft_values = {
+			"doctype": "Used Car Voucher Draft",
+			"status": "待審核",
+			"posting_date": money_flow.payment_date,
+			"money_flow": money_flow.name,
+			"vehicle": money_flow.vehicle,
+			"reservation": money_flow.reservation,
+			"customer": money_flow.customer,
+			"memo": f"訂金退款：{money_flow.stock_no or money_flow.vehicle} / {money_flow.customer_name or ''}",
+			"review_note": "系統自動建議科目，請會計確認。",
+			"lines": [
+				{
+					"account": debit_account,
+					"debit": money_flow.amount,
+					"credit": 0,
+					"note": "訂金退款沖回",
+				},
+				{
+					"account": credit_account,
+					"debit": 0,
+					"credit": money_flow.amount,
+					"note": money_flow.payment_method or "退款付款科目",
+				},
+			],
+		}
+		if controlled_action:
+			draft = insert_service_controlled_doc(
+				frappe.get_doc(draft_values),
+				action=controlled_action,
+				allowed_doctype="Used Car Voucher Draft",
+				fieldnames=draft_values.keys(),
+			)
+		else:
+			draft = frappe.get_doc(draft_values).insert()
+
+		if controlled_action:
+			db_set_service_controlled_values(
+				"Used Car Money Flow",
+				money_flow.name,
+				action=controlled_action,
+				values={"voucher_draft": draft.name},
+			)
+		else:
+			frappe.db.set_value("Used Car Money Flow", money_flow.name, "voucher_draft", draft.name)
+
+		return draft.name
+
 	def _create_final_payment_voucher_draft(self, money_flow_name: str, controlled_action: str | None = None):
 		money_flow = frappe.get_doc("Used Car Money Flow", money_flow_name)
 		self._validate_money_flow_for_draft(money_flow, "尾款收款")
@@ -325,6 +384,11 @@ class VehicleVoucherService:
 		if money_flow.direction != "支出":
 			frappe.throw("一般支出金流方向必須為支出。")
 		self._validate_money_flow_for_draft(money_flow, money_flow.flow_type)
+
+	def _validate_money_flow_for_deposit_refund_draft(self, money_flow):
+		if money_flow.direction != "支出":
+			frappe.throw("退款金流方向必須為支出。")
+		self._validate_money_flow_for_draft(money_flow, "退款")
 
 	def _validate_draft_ready_for_confirm(self, draft):
 		if draft.status != "待審核":

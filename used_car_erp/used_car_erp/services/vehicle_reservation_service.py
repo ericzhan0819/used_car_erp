@@ -630,6 +630,98 @@ class VehicleReservationService:
 
 		return self.cancel_reservation(reservation_name, reason)
 
+	def cancel_active_reservation_with_deposit_handling(
+		self,
+		vehicle_name: str,
+		reason: str,
+		refund_payment_method: str | None = None,
+		refund_date=None,
+		refund_reference: str | None = None,
+		refund_notes: str | None = None,
+	):
+		assert_can_perform_used_car_action(
+			"used_car_reservation.cancel_with_deposit_handling",
+			message="你沒有取消中古車保留單的權限。",
+		)
+		if not reason:
+			frappe.throw("取消原因為必填。")
+
+		reservation_name = frappe.db.get_value(
+			"Used Car Reservation",
+			{"vehicle": vehicle_name, "status": "有效"},
+			"name",
+			order_by="creation desc",
+		)
+		if not reservation_name:
+			frappe.throw("找不到此車輛的有效保留紀錄。")
+
+		try:
+			reservation = frappe.get_doc("Used Car Reservation", reservation_name)
+			reservation.check_permission("read")
+			vehicle = frappe.get_doc("Used Car Vehicle", reservation.vehicle)
+			vehicle.check_permission("read")
+			previous_status = vehicle.status
+
+			if vehicle.status != "保留中":
+				frappe.throw("車輛狀態不是保留中。")
+			if reservation.final_money_flow or reservation.final_voucher_draft or reservation.final_journal_entry:
+				frappe.throw("此車已記錄尾款，請先由管理者或會計處理後再取消。")
+
+			deposit_money_flow = self._resolve_money_flow(reservation, "money_flow", "訂金收款")
+			deposit_voucher_draft = self._resolve_voucher_draft(reservation, "voucher_draft", deposit_money_flow) if deposit_money_flow else None
+			deposit_is_posted = self._is_deposit_posted(reservation, deposit_money_flow, deposit_voucher_draft)
+			refund_result = None
+
+			if deposit_is_posted:
+				if not refund_payment_method:
+					frappe.throw("退款方式為必填。")
+				refund_result = VehicleMoneyFlowService().create_deposit_refund_money_flow_from_reservation(
+					reservation_name=reservation.name,
+					refund_payment_method=refund_payment_method,
+					refund_date=refund_date,
+					refund_reference=refund_reference,
+					refund_notes=refund_notes,
+				)
+			else:
+				self._void_unposted_deposit_documents(deposit_money_flow, deposit_voucher_draft, reason)
+
+			cancelled_at = now()
+			reservation.flags.ignore_accounting_link_validation = True
+			save_service_controlled_doc(
+				reservation,
+				action="used_car_reservation.cancel_with_deposit_handling",
+				allowed_doctype="Used Car Reservation",
+				values={
+					"status": "已取消",
+					"cancellation_reason": reason,
+					"cancelled_at": cancelled_at,
+					"cancelled_by": frappe.session.user,
+				},
+			)
+			db_set_service_controlled_values(
+				"Used Car Vehicle",
+				vehicle.name,
+				action="used_car_reservation.cancel_with_deposit_handling",
+				values={"status": "上架中"},
+			)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			raise
+
+		return {
+			"reservation": reservation.name,
+			"vehicle_name": vehicle.name,
+			"previous_status": previous_status,
+			"vehicle_status": "上架中",
+			"reservation_status": "已取消",
+			"refund_required": bool(deposit_is_posted),
+			"refund_money_flow": refund_result.get("money_flow") if refund_result else None,
+			"refund_voucher_draft": refund_result.get("voucher_draft") if refund_result else None,
+			"changed": True,
+			"message": "已取消保留。",
+		}
+
 	def get_active_reservation_for_vehicle(self, vehicle_name: str):
 		reservation_name = frappe.db.get_value(
 			"Used Car Reservation",
@@ -710,6 +802,51 @@ class VehicleReservationService:
 			return journal_entry
 
 		return None
+
+	def _is_deposit_posted(self, reservation, money_flow_name: str | None, voucher_draft_name: str | None):
+		if reservation.get("journal_entry"):
+			return True
+		if money_flow_name and frappe.db.exists("Used Car Money Flow", money_flow_name):
+			money_flow = frappe.get_doc("Used Car Money Flow", money_flow_name)
+			if money_flow.status == "已入帳" or money_flow.journal_entry:
+				return True
+		if voucher_draft_name and frappe.db.exists("Used Car Voucher Draft", voucher_draft_name):
+			voucher_draft = frappe.get_doc("Used Car Voucher Draft", voucher_draft_name)
+			if voucher_draft.status == "已入帳" or voucher_draft.journal_entry:
+				return True
+		return False
+
+	def _void_unposted_deposit_documents(self, money_flow_name: str | None, voucher_draft_name: str | None, reason: str):
+		if voucher_draft_name and frappe.db.exists("Used Car Voucher Draft", voucher_draft_name):
+			voucher_draft = frappe.get_doc("Used Car Voucher Draft", voucher_draft_name)
+			if voucher_draft.status in ("待審核", "已退回"):
+				if voucher_draft.journal_entry:
+					frappe.throw("訂金已完成內部確認，請改走退款處理。")
+				save_service_controlled_doc(
+					voucher_draft,
+					action="used_car_reservation.cancel_with_deposit_handling",
+					allowed_doctype="Used Car Voucher Draft",
+					values={
+						"status": "已作廢",
+						"reviewed_by": frappe.session.user,
+						"reviewed_at": now(),
+						"review_note": reason,
+					},
+				)
+			elif voucher_draft.status != "已作廢":
+				frappe.throw("訂金已完成內部確認，請改走退款處理。")
+
+		if money_flow_name and frappe.db.exists("Used Car Money Flow", money_flow_name):
+			money_flow = frappe.get_doc("Used Car Money Flow", money_flow_name)
+			if money_flow.status in ("待審核", "已作廢"):
+				db_set_service_controlled_values(
+					"Used Car Money Flow",
+					money_flow.name,
+					action="used_car_reservation.cancel_with_deposit_handling",
+					values={"status": "已作廢"},
+				)
+			elif money_flow.status != "已作廢":
+				frappe.throw("訂金已完成內部確認，請改走退款處理。")
 
 	def _format_reservation_flow_status(self, money_flow_name, voucher_draft_name, journal_entry_name):
 		if journal_entry_name:
@@ -1141,6 +1278,26 @@ def cancel_reservation(reservation_name: str, reason: str):
 def cancel_active_reservation_for_vehicle(vehicle_name: str, reason: str):
 	service = VehicleReservationService()
 	return service.cancel_active_reservation_for_vehicle(vehicle_name, reason)
+
+
+@frappe.whitelist()
+def cancel_active_reservation_with_deposit_handling(
+	vehicle_name: str,
+	reason: str,
+	refund_payment_method: str | None = None,
+	refund_date=None,
+	refund_reference: str | None = None,
+	refund_notes: str | None = None,
+):
+	service = VehicleReservationService()
+	return service.cancel_active_reservation_with_deposit_handling(
+		vehicle_name=vehicle_name,
+		reason=reason,
+		refund_payment_method=refund_payment_method,
+		refund_date=refund_date,
+		refund_reference=refund_reference,
+		refund_notes=refund_notes,
+	)
 
 
 @frappe.whitelist()

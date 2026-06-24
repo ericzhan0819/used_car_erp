@@ -172,6 +172,75 @@ class TestVehicleReservationService(FrappeTestCase):
 
 		self.assertEqual(frappe.db.get_value("Serial No", vehicle.serial_no, "modified"), before_modified)
 
+	def test_cancel_with_deposit_handling_voids_unposted_deposit_documents(self):
+		vehicle = self._make_listed_vehicle()
+		result = self._create_reservation(vehicle)
+		before_journal_count = frappe.db.count("Journal Entry")
+
+		cancel_result = self.service.cancel_active_reservation_with_deposit_handling(vehicle.name, "測試取消")
+		vehicle.reload()
+		reservation = frappe.get_doc("Used Car Reservation", result.get("reservation"))
+		money_flow = frappe.get_doc("Used Car Money Flow", result.get("money_flow"))
+		voucher_draft = frappe.get_doc("Used Car Voucher Draft", result.get("voucher_draft"))
+
+		self.assertFalse(cancel_result.get("refund_required"))
+		self.assertEqual(vehicle.status, "上架中")
+		self.assertEqual(reservation.status, "已取消")
+		self.assertEqual(money_flow.status, "已作廢")
+		self.assertEqual(voucher_draft.status, "已作廢")
+		self.assertEqual(frappe.db.count("Journal Entry"), before_journal_count)
+
+	def test_cancel_with_deposit_handling_creates_refund_for_posted_deposit(self):
+		vehicle = self._make_listed_vehicle()
+		result = self._create_reservation(vehicle)
+		from used_car_erp.used_car_erp.services.vehicle_voucher_service import VehicleVoucherService
+
+		confirm_result = VehicleVoucherService().confirm_voucher_draft(result.get("voucher_draft"), "TEST DEPOSIT CONFIRM")
+		before_journal_count = frappe.db.count("Journal Entry")
+
+		cancel_result = self.service.cancel_active_reservation_with_deposit_handling(
+			vehicle.name,
+			"測試取消",
+			refund_payment_method="現金",
+			refund_reference="TEST REFUND",
+		)
+		vehicle.reload()
+		reservation = frappe.get_doc("Used Car Reservation", result.get("reservation"))
+		deposit_money_flow = frappe.get_doc("Used Car Money Flow", result.get("money_flow"))
+		deposit_voucher_draft = frappe.get_doc("Used Car Voucher Draft", result.get("voucher_draft"))
+		refund_money_flow = frappe.get_doc("Used Car Money Flow", cancel_result.get("refund_money_flow"))
+		refund_voucher_draft = frappe.get_doc("Used Car Voucher Draft", cancel_result.get("refund_voucher_draft"))
+
+		self.assertTrue(cancel_result.get("refund_required"))
+		self.assertEqual(vehicle.status, "上架中")
+		self.assertEqual(reservation.status, "已取消")
+		self.assertEqual(deposit_money_flow.status, "已入帳")
+		self.assertEqual(deposit_voucher_draft.status, "已入帳")
+		self.assertEqual(refund_money_flow.flow_type, "退款")
+		self.assertEqual(refund_money_flow.direction, "支出")
+		self.assertEqual(refund_money_flow.status, "待審核")
+		self.assertEqual(refund_voucher_draft.status, "待審核")
+		self.assertEqual(frappe.db.count("Journal Entry"), before_journal_count)
+
+		self.created_reservations.append(result.get("reservation"))
+		self._cleanup_linked_doc("Used Car Voucher Draft", cancel_result.get("refund_voucher_draft"))
+		self._cleanup_linked_doc("Used Car Money Flow", cancel_result.get("refund_money_flow"))
+		self._cleanup_linked_doc("Journal Entry", confirm_result.get("journal_entry"))
+
+	def test_cancel_with_deposit_handling_rejects_existing_final_payment(self):
+		vehicle = self._make_listed_vehicle()
+		result = self._create_reservation(vehicle)
+		VehicleReservationService().create_final_payment_for_active_reservation(vehicle.name, 50000, "現金")
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.service.cancel_active_reservation_with_deposit_handling(vehicle.name, "測試取消")
+		vehicle.reload()
+		reservation = frappe.get_doc("Used Car Reservation", result.get("reservation"))
+
+		self.assertIn("此車已記錄尾款", str(failure.exception))
+		self.assertEqual(reservation.status, "有效")
+		self.assertEqual(vehicle.status, "保留中")
+
 	def _make_vehicle(self, **overrides):
 		vehicle_data = {
 			"doctype": "Used Car Vehicle",
@@ -224,6 +293,18 @@ class TestVehicleReservationService(FrappeTestCase):
 			self.created_serial_nos.append(result.get("serial_no"))
 		if result.get("item"):
 			self.created_items.append(result.get("item"))
+
+	def _cleanup_linked_doc(self, doctype, name):
+		if not name or not frappe.db.exists(doctype, name):
+			return
+		if doctype == "Journal Entry":
+			doc = frappe.get_doc(doctype, name)
+			if doc.docstatus == 1:
+				doc.cancel()
+			elif doc.docstatus == 0:
+				frappe.delete_doc(doctype, name, force=True)
+			return
+		frappe.delete_doc(doctype, name, force=True)
 
 	def _restricted_doc_counts(self):
 		return {

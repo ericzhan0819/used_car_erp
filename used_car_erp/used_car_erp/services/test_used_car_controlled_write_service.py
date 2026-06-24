@@ -78,6 +78,34 @@ class TestUsedCarControlledWriteService(FrappeTestCase):
 		with self.assertRaises(UsedCarControlledWriteError):
 			assert_controlled_write_policy("used_car_reservation.cancel", "Used Car Reservation", {"final_payment_amount"})
 
+	def test_cancel_with_deposit_handling_allows_only_cancellation_and_void_fields(self):
+		assert_controlled_write_policy(
+			"used_car_reservation.cancel_with_deposit_handling",
+			"Used Car Reservation",
+			{"status", "cancellation_reason", "cancelled_at", "cancelled_by"},
+		)
+		assert_controlled_write_policy("used_car_reservation.cancel_with_deposit_handling", "Used Car Vehicle", {"status"})
+		assert_controlled_write_policy("used_car_reservation.cancel_with_deposit_handling", "Used Car Money Flow", {"status"})
+		assert_controlled_write_policy(
+			"used_car_reservation.cancel_with_deposit_handling",
+			"Used Car Voucher Draft",
+			{"status", "reviewed_by", "reviewed_at", "review_note"},
+		)
+
+	def test_deposit_refund_create_allows_money_flow_and_voucher_draft_fields(self):
+		assert_controlled_write_policy(
+			"used_car_money_flow.deposit_refund.create",
+			"Used Car Money Flow",
+			{"doctype", "flow_type", "direction", "status", "reservation", "voucher_draft"},
+		)
+		assert_controlled_write_policy(
+			"used_car_money_flow.deposit_refund.create",
+			"Used Car Voucher Draft",
+			{"doctype", "posting_date", "money_flow", "reservation", "lines"},
+		)
+		with self.assertRaises(UsedCarControlledWriteError):
+			assert_controlled_write_policy("used_car_money_flow.deposit_refund.create", "Journal Entry", {"doctype"})
+
 	def test_complete_sale_allows_vehicle_completion_summary_fields(self):
 		assert_controlled_write_policy(
 			"used_car_reservation.complete_sale",

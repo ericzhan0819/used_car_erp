@@ -202,6 +202,59 @@ class VehicleMoneyFlowService:
 			"message": "已建立尾款金流紀錄與傳票草稿。",
 		}
 
+	def create_deposit_refund_money_flow_from_reservation(
+		self,
+		reservation_name: str,
+		refund_payment_method: str,
+		refund_date=None,
+		refund_reference: str | None = None,
+		refund_notes: str | None = None,
+	):
+		assert_can_perform_used_car_action(
+			"used_car_money_flow.deposit_refund.create",
+			message="你沒有建立中古車訂金退款的權限。",
+		)
+		reservation = frappe.get_doc("Used Car Reservation", reservation_name)
+		reservation.check_permission("read")
+		self._validate_reservation_for_deposit_refund_money_flow(reservation, refund_payment_method)
+
+		money_flow_values = {
+			"doctype": "Used Car Money Flow",
+			"flow_type": "退款",
+			"direction": "支出",
+			"status": "待審核",
+			"vehicle": reservation.vehicle,
+			"reservation": reservation.name,
+			"stock_no": reservation.stock_no,
+			"customer": reservation.customer,
+			"customer_name": reservation.customer_name,
+			"customer_phone": reservation.customer_phone,
+			"amount": reservation.deposit_amount,
+			"payment_date": refund_date or nowdate(),
+			"payment_method": refund_payment_method,
+			"payment_reference": refund_reference,
+			"notes": refund_notes,
+			"created_by_service": 1,
+		}
+		money_flow = insert_service_controlled_doc(
+			frappe.get_doc(money_flow_values),
+			action="used_car_money_flow.deposit_refund.create",
+			allowed_doctype="Used Car Money Flow",
+			fieldnames=money_flow_values.keys(),
+		)
+
+		voucher_draft = VehicleVoucherService().create_deposit_refund_voucher_draft_from_money_flow_service(money_flow.name)
+		money_flow.reload()
+
+		return {
+			"reservation": reservation.name,
+			"money_flow": money_flow.name,
+			"voucher_draft": voucher_draft,
+			"amount": flt(money_flow.amount),
+			"status": money_flow.status,
+			"message": "已建立訂金退款待處理資料。",
+		}
+
 	def _validate_reservation_for_deposit_money_flow(self, reservation):
 		if reservation.status != "有效":
 			frappe.throw("只有有效保留紀錄可以建立訂金金流。")
@@ -242,6 +295,16 @@ class VehicleMoneyFlowService:
 		if frappe.db.exists("Used Car Money Flow", {"reservation": reservation.name, "flow_type": "尾款收款", "status": ["!=", "已作廢"]}):
 			frappe.throw("此保留紀錄已有未作廢的尾款金流紀錄。")
 		return deposit_money_flow, deposit_voucher_draft
+
+	def _validate_reservation_for_deposit_refund_money_flow(self, reservation, payment_method: str):
+		if reservation.status != "有效":
+			frappe.throw("只有有效保留紀錄可以建立訂金退款。")
+		if flt(reservation.deposit_amount) <= 0:
+			frappe.throw("訂金金額必須大於 0，才能建立訂金退款。")
+		if payment_method not in VALID_PAYMENT_METHODS:
+			frappe.throw("退款方式必須是：現金、匯款、信用卡、其他。")
+		if frappe.db.exists("Used Car Money Flow", {"reservation": reservation.name, "flow_type": "退款", "status": ["!=", "已作廢"]}):
+			frappe.throw("此保留紀錄已有未作廢的退款資料。")
 
 	def _resolve_deposit_money_flow(self, reservation):
 		if reservation.money_flow and frappe.db.exists("Used Car Money Flow", reservation.money_flow):

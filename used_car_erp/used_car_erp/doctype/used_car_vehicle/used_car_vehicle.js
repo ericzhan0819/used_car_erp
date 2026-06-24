@@ -1330,37 +1330,12 @@ function add_final_payment_button(frm) {
 
 function add_cancel_reservation_button(frm) {
   frm.add_custom_button("取消保留", () => {
-    frappe.prompt(
-      [
-        {
-          fieldname: "reason",
-          label: "取消原因",
-          fieldtype: "Small Text",
-          reqd: 1,
-        },
-      ],
-      (values) => {
-        frappe.call({
-          method:
-            "used_car_erp.used_car_erp.services.vehicle_reservation_service.cancel_active_reservation_for_vehicle",
-          args: {
-            vehicle_name: frm.doc.name,
-            reason: values.reason,
-          },
-          freeze: true,
-          freeze_message: "正在取消保留...",
-          callback() {
-            frappe.show_alert({
-              message: "已取消保留，車輛已回到上架中",
-              indicator: "green",
-            });
-            frm.reload_doc();
-          },
-        });
-      },
-      "取消保留",
-      "取消保留"
-    );
+    if (!used_car_erp.guided_reservation_cancellation || !used_car_erp.guided_reservation_cancellation.open) {
+      frappe.msgprint("取消保留元件尚未載入，請重新整理後再試。");
+      return;
+    }
+
+    used_car_erp.guided_reservation_cancellation.open(frm);
   });
 }
 

@@ -288,6 +288,49 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 			"現金",
 		)
 
+	def test_create_deposit_refund_creates_money_flow_and_voucher_draft(self):
+		result = self._create_reservation_for_listed_vehicle()
+		confirm_result = self.voucher_service.confirm_voucher_draft(result.get("voucher_draft"), "TEST DEPOSIT CONFIRM")
+		self.created_journal_entries.append(confirm_result.get("journal_entry"))
+
+		refund_result = self.money_flow_service.create_deposit_refund_money_flow_from_reservation(
+			result.get("reservation"),
+			refund_payment_method="現金",
+			refund_reference="TEST REFUND",
+			refund_notes="TEST REFUND NOTE",
+		)
+		self.created_money_flows.append(refund_result.get("money_flow"))
+		self.created_voucher_drafts.append(refund_result.get("voucher_draft"))
+		money_flow = frappe.get_doc("Used Car Money Flow", refund_result.get("money_flow"))
+		draft = frappe.get_doc("Used Car Voucher Draft", refund_result.get("voucher_draft"))
+
+		self.assertEqual(money_flow.flow_type, "退款")
+		self.assertEqual(money_flow.direction, "支出")
+		self.assertEqual(money_flow.status, "待審核")
+		self.assertEqual(money_flow.amount, 10000)
+		self.assertEqual(draft.status, "待審核")
+		self.assertEqual(draft.money_flow, money_flow.name)
+		self.assertEqual(draft.total_debit, draft.total_credit)
+		self.assertEqual(draft.difference, 0)
+
+	def test_duplicate_deposit_refund_is_rejected(self):
+		result = self._create_reservation_for_listed_vehicle()
+		confirm_result = self.voucher_service.confirm_voucher_draft(result.get("voucher_draft"), "TEST DEPOSIT CONFIRM")
+		self.created_journal_entries.append(confirm_result.get("journal_entry"))
+		refund_result = self.money_flow_service.create_deposit_refund_money_flow_from_reservation(
+			result.get("reservation"),
+			refund_payment_method="現金",
+		)
+		self.created_money_flows.append(refund_result.get("money_flow"))
+		self.created_voucher_drafts.append(refund_result.get("voucher_draft"))
+
+		self.assertRaises(
+			frappe.ValidationError,
+			self.money_flow_service.create_deposit_refund_money_flow_from_reservation,
+			result.get("reservation"),
+			"現金",
+		)
+
 	def test_create_general_expense_creates_money_flow_and_voucher_draft(self):
 		vehicle = self._make_listed_vehicle()
 		result = self._create_general_expense_for_vehicle(vehicle.name)
