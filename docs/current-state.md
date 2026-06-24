@@ -14,7 +14,8 @@ ERPNext 原生模組負責會計、庫存、正式文件與報表。
 
 ```text
 e8a25b5 feat: add guided final payment dialog
-docs: close guided final payment smoke
+bd8c4b6 docs: close guided final payment smoke
+docs: define reservation cancellation refund spec
 ```
 
 目前 runtime 穩定點：
@@ -26,13 +27,13 @@ e8a25b5 feat: add guided final payment dialog
 目前 docs 收尾穩定點：
 
 ```text
-docs: close guided final payment smoke
+docs: define reservation cancellation refund spec
 ```
 
-目前最新 smoke 文件：
+目前最新規格文件：
 
 ```text
-P1-MVP-UX-OPS-2 Step 7A：Guided Final Payment Dialog Smoke Close
+P1-MVP-UX-OPS-2 Step 8：Guided Reservation Cancellation / Deposit Refund Spec
 ```
 
 ## 3. 目前產品主線
@@ -95,6 +96,7 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 - Guided final payment Step 7A：已新增 shared guided final payment Dialog，車輛頁可用「收尾款」輸入尾款資料，成功後顯示「已收尾款」。
 - Guided final payment Step 7A：收尾款 Dialog read-only 顯示成交價 / 訂金 / 建議尾款。
 - Guided final payment Step 7A：browser smoke passed。
+- Guided reservation cancellation / deposit refund Step 8 spec：已盤點取消保留、訂金收款、尾款收款、草稿作廢與退款承載能力，並定義「取消保留 / 處理訂金」任務卡規格。
 
 ## 5. 目前 UX 邊界
 
@@ -112,6 +114,8 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 - 尾款
 - 成交價
 - 收支摘要
+- 取消保留原因
+- 退訂金業務事實
 
 業務頁不應顯示：
 
@@ -131,21 +135,37 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 下一步建議：
 
 ```text
-P1-MVP-UX-OPS-2 Step 8：Guided Reservation Cancellation / Deposit Refund Spec
+P1-MVP-UX-OPS-2 Step 8A：Guided Reservation Cancellation Dialog Runtime
 ```
 
-原因：目前已確認取消保留後，既有訂金草稿 / 已入帳訂金會影響會計作業端資料一致性，需要先定義取消原因、是否退訂金、退訂金金額、退款方式、草稿未入帳與已入帳時的處理邊界。
-
-Step 8 應先做文件規格，不直接改 runtime。
-
-Step 8 不應：
+依據文件：
 
 ```text
-不直接混入成交確認
-不直接混入 Sales Invoice
-不直接混入 Journal Entry 提交
-不改 15-1 service
-不改管理利潤 service
+docs/p1-mvp-ux-ops-2-step-8-guided-reservation-cancellation-deposit-refund-spec.md
+```
+
+Step 8A 建議範圍：
+
+```text
+新增 shared guided cancellation Dialog
+車輛頁「取消保留」改為 shared Dialog
+未入帳訂金：取消保留 + 作廢訂金待處理資料 + 車輛回上架中
+已入帳訂金：取消保留 + 建立全額退款待處理資料 + 車輛回上架中
+成功後 reload_doc
+```
+
+Step 8A 不應：
+
+```text
+不新增 schema
+不改 DocType JSON
+不處理部分退款
+不處理沒收訂金
+不處理已收尾款後取消
+不處理已完成成交後取消
+不直接建立 Journal Entry
+不直接建立 Sales Invoice
+不直接提交會計文件
 ```
 
 ## 7. Historical docs 注意事項
