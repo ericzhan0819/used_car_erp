@@ -13,27 +13,32 @@ ERPNext 原生模組負責會計、庫存、正式文件與報表。
 ## 2. 最新穩定點
 
 ```text
-e8a25b5 feat: add guided final payment dialog
-bd8c4b6 docs: close guided final payment smoke
-docs: define reservation cancellation refund spec
+847a2aa feat: add guided reservation cancellation dialog
+docs: close guided reservation cancellation smoke
 ```
 
 目前 runtime 穩定點：
 
 ```text
-e8a25b5 feat: add guided final payment dialog
+847a2aa feat: add guided reservation cancellation dialog
 ```
 
 目前 docs 收尾穩定點：
 
 ```text
-docs: define reservation cancellation refund spec
+docs: close guided reservation cancellation smoke
 ```
 
-目前最新規格文件：
+目前最新 smoke 文件：
 
 ```text
-P1-MVP-UX-OPS-2 Step 8：Guided Reservation Cancellation / Deposit Refund Spec
+P1-MVP-UX-OPS-2 Step 8A：Guided Reservation Cancellation Dialog Smoke Close
+```
+
+目前已知會計 polish 記錄：
+
+```text
+P1-MVP-ACC-POLISH：Advance Account Journal Entry Warning
 ```
 
 ## 3. 目前產品主線
@@ -97,6 +102,12 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 - Guided final payment Step 7A：收尾款 Dialog read-only 顯示成交價 / 訂金 / 建議尾款。
 - Guided final payment Step 7A：browser smoke passed。
 - Guided reservation cancellation / deposit refund Step 8 spec：已盤點取消保留、訂金收款、尾款收款、草稿作廢與退款承載能力，並定義「取消保留 / 處理訂金」任務卡規格。
+- Guided reservation cancellation Step 8A：已新增 shared guided cancellation Dialog，車輛頁「取消保留」改為「取消保留 / 處理訂金」任務卡。
+- Guided reservation cancellation Step 8A：未入帳訂金取消會作廢待處理資料並讓車輛回 `上架中`。
+- Guided reservation cancellation Step 8A：已入帳訂金取消會建立全額退款待內部確認資料，不直接建立 Journal Entry。
+- Guided reservation cancellation Step 8A：已建立尾款後取消會被阻擋。
+- Guided reservation cancellation Step 8A：browser smoke passed。
+- Accounting polish note：會計入帳時若使用 advance account `0202136 - 預收款項 - O` 產生 Journal Entry，ERPNext 會提示該 Journal Entry 不會進入 Payment Reconciliation；目前記錄為 non-blocking warning，後續評估科目 polish 或 Payment Entry 原生流程。
 
 ## 5. 目前 UX 邊界
 
@@ -135,37 +146,24 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 下一步建議：
 
 ```text
-P1-MVP-UX-OPS-2 Step 8A：Guided Reservation Cancellation Dialog Runtime
+P1-MVP-UX-OPS-2 Step 9：Guided Sale Completion Task Card Spec
 ```
 
-依據文件：
+或先處理會計 polish：
 
 ```text
-docs/p1-mvp-ux-ops-2-step-8-guided-reservation-cancellation-deposit-refund-spec.md
+P1-MVP-ACC-POLISH-1：Review Used Car advance account warning
 ```
 
-Step 8A 建議範圍：
+目前建議：若 advance account warning 不阻擋 Journal Entry submit，先不急著改會計 runtime，優先完成業務 MVP 主流程的成交確認任務卡。
+
+Step 9 不應：
 
 ```text
-新增 shared guided cancellation Dialog
-車輛頁「取消保留」改為 shared Dialog
-未入帳訂金：取消保留 + 作廢訂金待處理資料 + 車輛回上架中
-已入帳訂金：取消保留 + 建立全額退款待處理資料 + 車輛回上架中
-成功後 reload_doc
-```
-
-Step 8A 不應：
-
-```text
-不新增 schema
-不改 DocType JSON
-不處理部分退款
-不處理沒收訂金
-不處理已收尾款後取消
-不處理已完成成交後取消
-不直接建立 Journal Entry
-不直接建立 Sales Invoice
-不直接提交會計文件
+不直接重構 Payment Entry
+不直接改 15-1 service
+不直接改管理利潤 service
+不把會計技術文件連結加回業務頁
 ```
 
 ## 7. Historical docs 注意事項
