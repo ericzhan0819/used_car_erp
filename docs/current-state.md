@@ -13,27 +13,26 @@ ERPNext 原生模組負責會計、庫存、正式文件與報表。
 ## 2. 最新穩定點
 
 ```text
-4a004d6 feat: add guided listing dialog
-26494d6 docs: close guided listing dialog smoke
-docs: define guided reservation deposit task card
+990dab7 feat: add guided reservation deposit dialog
+docs: close guided reservation deposit smoke
 ```
 
 目前 runtime 穩定點：
 
 ```text
-4a004d6 feat: add guided listing dialog
+990dab7 feat: add guided reservation deposit dialog
 ```
 
 目前 docs 收尾穩定點：
 
 ```text
-docs: define guided reservation deposit task card
+docs: close guided reservation deposit smoke
 ```
 
-目前最新規格文件：
+目前最新 smoke 文件：
 
 ```text
-P1-MVP-UX-OPS-2 Step 6：Guided Reservation / Deposit Task Card Spec
+P1-MVP-UX-OPS-2 Step 6A：Guided Reservation / Deposit Dialog Smoke Close
 ```
 
 ## 3. 目前產品主線
@@ -90,6 +89,8 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 - Guided listing Step 5A：已新增 shared guided listing Dialog，車輛頁可用「整備完成並上架」將 `listing_date` / `floor_price` / `asking_price` / `sales_note` 寫回，並將狀態改為 `上架中`。
 - Guided listing Step 5A：browser smoke passed。
 - Guided reservation / deposit Step 6 spec：已定義「收訂金並保留」任務卡規格，範圍限定文件，不改 runtime / schema / 會計流程。
+- Guided reservation / deposit Step 6A：已新增 shared guided reservation/deposit Dialog，車輛頁可用「收訂金並保留」輸入客戶與訂金資料，成功後顯示「已收訂金，車輛已保留」，並將狀態改為 `保留中`。
+- Guided reservation / deposit Step 6A：browser smoke passed。
 
 ## 5. 目前 UX 邊界
 
@@ -123,42 +124,21 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 
 ## 6. 目前下一步
 
-下一步建議：
+下一步建議可二選一：
 
 ```text
-P1-MVP-UX-OPS-2 Step 6A：Guided Reservation / Deposit Dialog Runtime
+P1-MVP-UX-OPS-2 Step 6B：Reserved Vehicle Status Copy Polish
 ```
 
-依據文件：
+或：
 
 ```text
-docs/p1-mvp-ux-ops-2-step-6-guided-reservation-deposit-task-card-spec.md
+P1-MVP-UX-OPS-2 Step 7：Guided Final Payment Task Card Spec
 ```
 
-Step 6A 建議範圍：
+Step 6B 適合先整理保留中 dashboard 文案，避免業務頁出現「傳票草稿」「金流」等技術語意。
 
-```text
-新增 shared guided reservation/deposit Dialog
-車輛頁「建立訂金保留」改為「收訂金並保留」
-沿用 vehicle_reservation_service.create_reservation
-成功後顯示「已收訂金，車輛已保留」
-成功後 reload_doc
-hooks.py 載入新的 shared JS
-```
-
-Step 6A 不應：
-
-```text
-不新增 schema
-不改 Python service
-不改 DocType JSON
-不改會計流程
-不處理尾款
-不處理成交
-不處理 Sales Invoice
-不處理 Journal Entry
-不處理權限大改
-```
+Step 7 適合繼續推完整業務主流程，進入收尾款任務卡規格，繼續遵守一張卡處理一件事。
 
 ## 7. Historical docs 注意事項
 
