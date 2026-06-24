@@ -13,26 +13,26 @@ ERPNext 原生模組負責會計、庫存、正式文件與報表。
 ## 2. 最新穩定點
 
 ```text
-8e7b577 feat: add guided preparation expense dialog
-ee208cee docs: close guided preparation expense dialog smoke
+4a004d6 feat: add guided listing dialog
+docs: close guided listing dialog smoke
 ```
 
 目前 runtime 穩定點：
 
 ```text
-8e7b577 feat: add guided preparation expense dialog
+4a004d6 feat: add guided listing dialog
 ```
 
 目前 docs 收尾穩定點：
 
 ```text
-606d48e docs: sync expense dialog smoke current state
+docs: close guided listing dialog smoke
 ```
 
-目前最新規格文件：
+目前最新 smoke 文件：
 
 ```text
-P1-MVP-UX-OPS-2 Step 5：Guided Listing Task Card Spec
+P1-MVP-UX-OPS-2 Step 5A：Guided Listing Dialog Smoke Close
 ```
 
 ## 3. 目前產品主線
@@ -86,6 +86,8 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 - Preparation expense Step 4A：browser smoke passed。
 - Guided listing Step 5 spec：已定義「整備完成並上架」任務卡規格，範圍限定文件，不改 runtime / schema / 會計流程。
 - Guided listing Step 5S：已新增 Used Car Vehicle `listing_date` 上架日期欄位，供 Step 5A runtime 寫入。
+- Guided listing Step 5A：已新增 shared guided listing Dialog，車輛頁可用「整備完成並上架」將 `listing_date` / `floor_price` / `asking_price` / `sales_note` 寫回，並將狀態改為 `上架中`。
+- Guided listing Step 5A：browser smoke passed。
 
 ## 5. 目前 UX 邊界
 
@@ -117,28 +119,21 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 
 ## 6. 目前下一步
 
-下一步建議：
+下一步建議可二選一：
 
 ```text
-P1-MVP-UX-OPS-2 Step 5A：Guided Listing Dialog Runtime
+P1-MVP-UX-OPS-2 Step 5P：Guided Listing Permission Boundary
 ```
 
-依據文件：
+或：
 
 ```text
-docs/p1-mvp-ux-ops-2-step-5-guided-listing-task-card-spec.md
+P1-MVP-UX-OPS-2 Step 6：Guided Reservation / Deposit Task Card Spec
 ```
 
-Step 5A 開始前應先盤點：
+Step 5P 適合在要正式區分主管與一般業務時處理，範圍只應是底價 / 開價的角色、permlevel、可見性與最小權限驗證，不應混入新的上架 runtime。
 
-```text
-Used Car Vehicle 現有 floor_price / asking_price / sales_note / status / listing_date 欄位均已具備
-車輛頁目前整備 / 上架相關按鈕
-目前角色 / permlevel 是否足以隱藏底價
-總覽上架中卡片是否依 status 統計
-```
-
-Step 5A 若發現底價權限不足，應停止並回報，另開 Step 5P，不要在同一任務內擴大權限範圍。
+Step 6 適合繼續推完整業務主流程，進入保留 / 收訂金任務卡規格，繼續遵守一張卡處理一件事。
 
 ## 7. Historical docs 注意事項
 
