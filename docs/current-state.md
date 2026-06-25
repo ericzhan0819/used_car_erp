@@ -130,6 +130,7 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 - P1-MVP-OPS Step 3：已完成資金帳戶最小模型規格，確認 `cash_account` 只表示真正資金位置，初期帳戶為 `現金`、`主要銀行`、`其他`；待收 / 待付不作為資金帳戶，而由 `settlement_status` 表示；採購付款要進 Money Flow；資金帳戶需要期初餘額；本階段不做私人代墊與刷卡未撥款。
 - P1-MVP-OPS Step 3A-1：已新增 `Used Car Cash Account` schema foundation；`Used Car Money Flow` 已新增 `cash_account` / `settlement_status` / `counterparty_name` 欄位；初始資金帳戶為 `現金` / `主要銀行` / `其他`。本階段不改 Dialog、不改 service wiring、不改會計 runtime。
 - P1-MVP-OPS Step 3A-2：已完成 service wiring；Money Flow service 現在會寫入 `cash_account` / `settlement_status` / `counterparty_name`；`現金` / `匯款` / `其他` / `信用卡` 會保守推導到 `現金` / `主要銀行` / `其他`。本階段不改 Dialog、不改車輛頁摘要、不改會計 runtime。
+- P1-MVP-OPS Step 3A-3A：已完成新增支出 Dialog 資金欄位接線。新增支出 Dialog 現在可輸入交易對象、收付狀態、資金帳戶。本階段只處理新增支出 Dialog，未修改訂金 / 尾款 / 退款 Dialog，未改 DocType schema、service wiring、會計 runtime。
 
 ## 5. 目前 UX 邊界
 
@@ -168,21 +169,21 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 下一步建議：
 
 ```text
-P1-MVP-OPS Step 3A-3：guided Dialog 接欄位
+P1-MVP-OPS Step 3A-3B：收訂金 / 收尾款 Dialog 接資金欄位
 ```
 
 原因：
 
 ```text
-P1-MVP-OPS Step 3A-2 已完成既有新增支出、訂金、尾款與退款 service wiring。
-下一步要讓 guided Dialog 接入 cash_account / settlement_status / counterparty_name。
+P1-MVP-OPS Step 3A-3A 已完成新增支出 Dialog 的 cash_account / settlement_status / counterparty_name 接線。
+下一步要讓收訂金 / 收尾款 Dialog 接入資金欄位。
 仍不改 Journal Entry / Sales Invoice / Payment Entry，不處理 advance account warning。
 ```
 
-Step 3A-2 建議範圍：
+Step 3A-3B 建議範圍：
 
 ```text
-更新 guided Dialog 欄位輸入
+更新收訂金 / 收尾款 guided Dialog 欄位輸入
 保留既有 Money Flow / Voucher Draft / 會計 runtime 邊界
 ```
 
@@ -204,7 +205,7 @@ Step 3A 不應：
 建議 commit message：
 
 ```text
-feat: wire cash account fields into money flow services
+feat: add cash account inputs to sales payment dialogs
 ```
 
 ## 7. Historical docs 注意事項

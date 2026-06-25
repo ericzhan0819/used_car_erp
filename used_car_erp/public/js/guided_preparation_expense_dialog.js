@@ -3,6 +3,7 @@ frappe.provide("used_car_erp.guided_preparation_expense");
 (function () {
   const EXPENSE_FLOW_TYPES = ["維修支出", "美容支出", "代辦支出", "拍場支出", "整備支出", "其他支出"];
   const PAYMENT_METHODS = ["現金", "匯款", "信用卡", "其他"];
+  const SETTLEMENT_STATUSES = ["已付款", "待付款"];
 
   function open(frm) {
     if (!frm || !frm.doc || !frm.doc.name) {
@@ -31,6 +32,22 @@ frappe.provide("used_car_erp.guided_preparation_expense");
           default: "現金",
           reqd: 1,
         },
+        {
+          fieldname: "counterparty_name",
+          label: "交易對象",
+          fieldtype: "Data",
+          reqd: 0,
+          description: "例如維修廠、美容店、代辦、拍場或其他付款對象",
+        },
+        {
+          fieldname: "settlement_status",
+          label: "收付狀態",
+          fieldtype: "Select",
+          options: SETTLEMENT_STATUSES.join("\n"),
+          default: "已付款",
+          reqd: 1,
+        },
+        { fieldname: "cash_account", label: "資金帳戶", fieldtype: "Link", options: "Used Car Cash Account", reqd: 0 },
         { fieldname: "payment_reference", label: "付款對象 / 付款參考", fieldtype: "Data", reqd: 1 },
         { fieldname: "evidence_attachment", label: "憑證附件", fieldtype: "Attach", reqd: 0 },
         { fieldname: "notes", label: "備註", fieldtype: "Small Text", reqd: 0 },
@@ -73,6 +90,14 @@ frappe.provide("used_car_erp.guided_preparation_expense");
       frappe.msgprint("請選擇付款方式。");
       return false;
     }
+    if (!values.settlement_status) {
+      frappe.msgprint("請選擇收付狀態。");
+      return false;
+    }
+    if (values.settlement_status === "已付款" && !values.cash_account) {
+      frappe.msgprint("已付款的支出需要選擇資金帳戶。");
+      return false;
+    }
     if (!values.payment_reference) {
       frappe.msgprint("請填寫付款對象 / 付款參考。");
       return false;
@@ -90,6 +115,9 @@ frappe.provide("used_car_erp.guided_preparation_expense");
         amount: values.amount,
         payment_method: values.payment_method,
         payment_reference: values.payment_reference,
+        cash_account: values.cash_account,
+        settlement_status: values.settlement_status,
+        counterparty_name: values.counterparty_name,
         notes: values.notes,
         evidence_attachment: values.evidence_attachment,
       },

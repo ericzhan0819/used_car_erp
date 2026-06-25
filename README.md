@@ -42,7 +42,7 @@ docs/p1-mvp-ops-step-3-minimal-cash-account-model.md
 
 Step 3 資金帳戶最小模型已確認：`cash_account` 只表示真正資金位置，初期帳戶為 `現金`、`主要銀行`、`其他`；待收 / 待付由 `settlement_status` 表示；採購付款要進 Money Flow；本階段不做私人代墊與刷卡未撥款。
 
-P1-MVP-OPS Step 3A-2 已完成 service wiring。Money Flow service 現在會寫入 `cash_account` / `settlement_status` / `counterparty_name`；`現金` / `匯款` / `其他` / `信用卡` 會保守推導到 `現金` / `主要銀行` / `其他`。本階段不改 Dialog、不改車輛頁摘要、不改會計 runtime。下一步是 `P1-MVP-OPS Step 3A-3：guided Dialog 接欄位`。
+P1-MVP-OPS Step 3A-3A 已完成新增支出 Dialog 資金欄位接線。新增支出 Dialog 現在可輸入交易對象、收付狀態、資金帳戶；本階段只處理新增支出 Dialog，未修改訂金 / 尾款 / 退款 Dialog，未改 DocType schema、service wiring、會計 runtime。下一步是 `P1-MVP-OPS Step 3A-3B：收訂金 / 收尾款 Dialog 接資金欄位`。
 
 ### Current Workflow / Historical Runtime Notes
 
