@@ -126,6 +126,7 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 - Guided reservation cancellation Step 8A：已建立尾款後取消會被阻擋。
 - Guided reservation cancellation Step 8A：browser smoke passed。
 - Accounting polish note：會計入帳時若使用 advance account `0202136 - 預收款項 - O` 產生 Journal Entry，ERPNext 會提示該 Journal Entry 不會進入 Payment Reconciliation；目前記錄為 non-blocking warning，後續評估科目 polish 或 Payment Entry 原生流程。
+- P1-MVP-OPS Step 2：已完成 Money Flow 主帳欄位盤點，確認 `Used Car Money Flow` 已有車輛、金額、日期、付款方式、憑證附件、Voucher Draft / Journal Entry 連結等基礎，但缺資金帳戶、通用交易對象、憑證狀態、營運結清狀態、是否交記帳士，以及與 `Used Car Vehicle Cost` 的明確邊界 / 連結。
 
 ## 5. 目前 UX 邊界
 
@@ -164,43 +165,43 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 下一步建議：
 
 ```text
-P1-MVP-OPS Step 2：Money Flow 主帳欄位盤點
+P1-MVP-OPS Step 3：資金帳戶最小模型規格
 ```
 
 原因：
 
 ```text
-MVP 主線已從完整會計閉環轉向車行營運管理帳。
-成交確認 runtime、Payment Entry 重構與 advance account warning polish 都不應先做。
-應先確認 Used Car Money Flow 是否足以承接資金帳、單車損益、文件檢查與記帳士交接。
+P1-MVP-OPS Step 2 已確認 Money Flow 要成為營運主帳，最優先缺口是資金帳戶。
+payment_method 只能表示現金 / 匯款 / 信用卡 / 其他，不能表示現金帳、主要銀行、待收款、待付款、老闆代墊。
+沒有資金帳戶就無法可靠產出現金餘額、銀行餘額、待收款、待付款與資金流水摘要。
 ```
 
-Step 2 範圍：
+Step 3 範圍：
 
 ```text
-盤點 Used Car Money Flow 現有欄位
-盤點 Money Flow 建立來源與 flow type
-盤點是否已有資金帳戶 / 付款方式 / 交易對象 / 憑證狀態 / 是否結清 / 是否交給記帳士 / 是否影響毛利 / 是否影響稅務整理
-盤點現有車輛頁收支摘要如何讀取 Money Flow
-盤點會計作業如何消費 Money Flow / Voucher Draft
+定義 Used Car Cash Account / 資金帳戶最小模型
+定義初期資金帳戶：現金、主要銀行、待收款、待付款、老闆代墊、其他
+定義 payment_method 與 cash_account 的分工
+定義 Money Flow 如何連到資金帳戶
+定義哪些 flow_type 預設進哪個資金帳戶
+定義不動會計 runtime 的過渡方案
 ```
 
-Step 2 不應：
+Step 3 不應：
 
 ```text
-不改 schema
-不改 runtime
-不新增 DocType
+不直接改 schema
+不直接新增 DocType runtime
 不改 Journal Entry / Sales Invoice / Payment Entry
 不處理 advance account warning
 不直接做成交確認任務卡 runtime
-不把會計技術文件連結加回業務頁
+不合併 Money Flow 與 Vehicle Cost runtime
 ```
 
 建議 commit message：
 
 ```text
-docs: audit money flow ledger fields
+docs: define minimal cash account model
 ```
 
 ## 7. Historical docs 注意事項
