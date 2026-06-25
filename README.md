@@ -42,7 +42,13 @@ docs/p1-mvp-ops-step-3-minimal-cash-account-model.md
 
 Step 3 資金帳戶最小模型已確認：`cash_account` 只表示真正資金位置，初期帳戶為 `現金`、`主要銀行`、`其他`；待收 / 待付由 `settlement_status` 表示；採購付款要進 Money Flow；本階段不做私人代墊與刷卡未撥款。
 
-P1-MVP-OPS Step 3A-3C 已完成取消保留 / 處理訂金 Dialog 的退款資金欄位接線。退款分支現在可輸入退款狀態與退款資金帳戶；交易對象由客戶資料推導，不要求業務重複輸入。本階段未修改新增支出 Dialog、收訂金 Dialog、收尾款 Dialog、DocType schema、會計 runtime。下一步是 `P1-MVP-OPS Step 3A-4：車輛頁收支摘要顯示資金帳戶 / 收付狀態 / 交易對象`。
+P1-MVP-OPS Step 3A-4 已完成車輛頁收支摘要資金欄位顯示。車輛頁收支摘要現在顯示資金帳戶、收付狀態、交易對象。本階段只做明細顯示，不做 Dashboard、不做現金 / 銀行餘額、不做統計、不改會計 runtime。下一步可評估 Step 3A-5：資金欄位 smoke close / UX polish，或 Step 3B：採購付款 Money Flow。
+
+Step 3A-4 修正車輛頁收支摘要 render timing，現在一般檢視狀態即可顯示資金欄位，不需進入編輯狀態。
+
+Step 3A-4 修正收支摘要掛載位置，避免 collapsible section 在檢視模式未展開時導致摘要消失。
+
+Step 3A-4 修正收支摘要重複 render 問題，現在車輛頁只會保留單一收支摘要表格，並忽略過期 async callback。
 
 ### Current Workflow / Historical Runtime Notes
 

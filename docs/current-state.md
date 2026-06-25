@@ -133,6 +133,10 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 - P1-MVP-OPS Step 3A-3A：已完成新增支出 Dialog 資金欄位接線。新增支出 Dialog 現在可輸入交易對象、收付狀態、資金帳戶。本階段只處理新增支出 Dialog，未修改訂金 / 尾款 / 退款 Dialog，未改 DocType schema、service wiring、會計 runtime。
 - P1-MVP-OPS Step 3A-3B：已完成收訂金並保留 / 收尾款 Dialog 資金欄位接線。收訂金並保留與收尾款 Dialog 現在可輸入收款狀態與資金帳戶；交易對象由客戶資料推導，不要求業務重複輸入。本階段未修改新增支出 Dialog、取消保留 / 退款 Dialog、DocType schema、會計 runtime。
 - P1-MVP-OPS Step 3A-3C：已完成取消保留 / 處理訂金 Dialog 的退款資金欄位接線。退款分支現在可輸入退款狀態與退款資金帳戶；交易對象由客戶資料推導，不要求業務重複輸入。本階段未修改新增支出 Dialog、收訂金 Dialog、收尾款 Dialog、DocType schema、會計 runtime。
+- P1-MVP-OPS Step 3A-4：已完成車輛頁收支摘要資金欄位顯示。車輛頁收支摘要現在顯示資金帳戶、收付狀態、交易對象。本階段只做明細顯示，不做 Dashboard、不做現金 / 銀行餘額、不做統計、不改會計 runtime。
+- Step 3A-4 修正車輛頁收支摘要 render timing，現在一般檢視狀態即可顯示資金欄位，不需進入編輯狀態。
+- Step 3A-4 修正收支摘要掛載位置，避免 collapsible section 在檢視模式未展開時導致摘要消失。
+- Step 3A-4 修正收支摘要重複 render 問題，現在車輛頁只會保留單一收支摘要表格，並忽略過期 async callback。
 
 ## 5. 目前 UX 邊界
 
@@ -171,22 +175,24 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 下一步建議：
 
 ```text
-P1-MVP-OPS Step 3A-4：車輛頁收支摘要顯示資金帳戶 / 收付狀態 / 交易對象
+P1-MVP-OPS Step 3A-5：資金欄位 smoke close / UX polish
+或 P1-MVP-OPS Step 3B：採購付款 Money Flow
 ```
 
 原因：
 
 ```text
-P1-MVP-OPS Step 3A-3C 已完成取消保留 / 處理訂金 Dialog 的退款資金欄位接線。
-下一步要讓車輛頁收支摘要顯示資金帳戶 / 收付狀態 / 交易對象。
+P1-MVP-OPS Step 3A-4 已完成車輛頁收支摘要資金欄位顯示。
+下一步可做資金欄位 browser smoke 收尾與 UX polish，或進入採購付款 Money Flow。
 仍不改 Journal Entry / Sales Invoice / Payment Entry，不處理 advance account warning。
 ```
 
-Step 3A-4 建議範圍：
+已完成 Step 3A-4 範圍：
 
 ```text
 更新車輛頁收支摘要顯示資金帳戶 / 收付狀態 / 交易對象
 保留既有 Money Flow / Voucher Draft / 會計 runtime 邊界
+不做 Dashboard、不做現金 / 銀行餘額、不做統計
 ```
 
 Step 3A 不應：
