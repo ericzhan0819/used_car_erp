@@ -42,6 +42,8 @@ class VehicleReservationService:
 		payment_reference: str | None = None,
 		notes: str | None = None,
 		customer: str | None = None,
+		cash_account: str | None = None,
+		settlement_status: str | None = None,
 	):
 		assert_can_perform_used_car_action(
 			"used_car_reservation.create",
@@ -85,7 +87,11 @@ class VehicleReservationService:
 				fieldnames=reservation_values.keys(),
 			)
 
-			money_flow_result = VehicleMoneyFlowService().create_deposit_money_flow_from_reservation(reservation.name)
+			money_flow_result = VehicleMoneyFlowService().create_deposit_money_flow_from_reservation(
+				reservation.name,
+				cash_account=cash_account,
+				settlement_status=settlement_status,
+			)
 
 			# 訂金保留只切換中古車業務狀態；正式會計傳票必須由傳票草稿人工確認後才建立。
 			db_set_service_controlled_values(
@@ -125,6 +131,8 @@ class VehicleReservationService:
 		payment_date=None,
 		payment_reference: str | None = None,
 		notes: str | None = None,
+		cash_account: str | None = None,
+		settlement_status: str | None = None,
 	):
 		assert_can_perform_used_car_action(
 			"used_car_money_flow.final_payment.create",
@@ -151,6 +159,8 @@ class VehicleReservationService:
 				payment_date=payment_date,
 				payment_reference=payment_reference,
 				notes=notes,
+				cash_account=cash_account,
+				settlement_status=settlement_status,
 			)
 			frappe.db.commit()
 		except Exception:
@@ -1200,6 +1210,8 @@ def create_reservation(
 	payment_reference: str | None = None,
 	notes: str | None = None,
 	customer: str | None = None,
+	cash_account: str | None = None,
+	settlement_status: str | None = None,
 ):
 	service = VehicleReservationService()
 	return service.create_reservation(
@@ -1213,6 +1225,8 @@ def create_reservation(
 		payment_reference=payment_reference,
 		notes=notes,
 		customer=customer,
+		cash_account=cash_account,
+		settlement_status=settlement_status,
 	)
 
 
@@ -1224,6 +1238,8 @@ def create_final_payment_for_active_reservation(
 	payment_date=None,
 	payment_reference: str | None = None,
 	notes: str | None = None,
+	cash_account: str | None = None,
+	settlement_status: str | None = None,
 ):
 	service = VehicleReservationService()
 	return service.create_final_payment_for_active_reservation(
@@ -1233,6 +1249,8 @@ def create_final_payment_for_active_reservation(
 		payment_date=payment_date,
 		payment_reference=payment_reference,
 		notes=notes,
+		cash_account=cash_account,
+		settlement_status=settlement_status,
 	)
 
 

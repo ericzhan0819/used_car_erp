@@ -2,6 +2,7 @@ frappe.provide("used_car_erp.guided_reservation_deposit");
 
 (function () {
   const PAYMENT_METHODS = ["現金", "匯款", "信用卡", "其他"];
+  const SETTLEMENT_STATUSES = ["已收款", "待收款"];
 
   function open(frm) {
     if (!frm || !frm.doc || !frm.doc.name) {
@@ -41,6 +42,21 @@ frappe.provide("used_car_erp.guided_reservation_deposit");
           fieldtype: "Date",
           default: frappe.datetime.get_today(),
           reqd: 1,
+        },
+        {
+          fieldname: "settlement_status",
+          label: "收款狀態",
+          fieldtype: "Select",
+          options: SETTLEMENT_STATUSES.join("\n"),
+          default: "已收款",
+          reqd: 1,
+        },
+        {
+          fieldname: "cash_account",
+          label: "資金帳戶",
+          fieldtype: "Link",
+          options: "Used Car Cash Account",
+          reqd: 0,
         },
         { fieldname: "payment_reference", label: "付款備註 / 末五碼", fieldtype: "Data", reqd: 0 },
         { fieldname: "notes", label: "備註", fieldtype: "Small Text", reqd: 0 },
@@ -120,6 +136,14 @@ frappe.provide("used_car_erp.guided_reservation_deposit");
       frappe.msgprint("請選擇訂金日期。");
       return false;
     }
+    if (!values.settlement_status || !SETTLEMENT_STATUSES.includes(values.settlement_status)) {
+      frappe.msgprint("請選擇收款狀態。");
+      return false;
+    }
+    if (values.settlement_status === "已收款" && !values.cash_account) {
+      frappe.msgprint("已收款的訂金需要選擇資金帳戶。");
+      return false;
+    }
 
     return true;
   }
@@ -135,6 +159,8 @@ frappe.provide("used_car_erp.guided_reservation_deposit");
         deposit_amount: values.deposit_amount,
         payment_method: values.payment_method,
         deposit_date: values.deposit_date,
+        settlement_status: values.settlement_status,
+        cash_account: values.cash_account,
         payment_reference: values.payment_reference,
         notes: values.notes,
       },

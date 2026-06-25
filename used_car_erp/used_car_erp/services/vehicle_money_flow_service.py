@@ -80,7 +80,12 @@ class VehicleMoneyFlowService:
 			"message": "已建立一般支出金流紀錄與傳票草稿。",
 		}
 
-	def create_deposit_money_flow_from_reservation(self, reservation_name: str):
+	def create_deposit_money_flow_from_reservation(
+		self,
+		reservation_name: str,
+		cash_account: str | None = None,
+		settlement_status: str | None = None,
+	):
 		assert_can_perform_used_car_action(
 			"used_car_money_flow.deposit.create",
 			message="你沒有建立中古車訂金金流的權限。",
@@ -103,8 +108,8 @@ class VehicleMoneyFlowService:
 			"amount": reservation.deposit_amount,
 			"payment_date": reservation.deposit_date,
 			"payment_method": reservation.payment_method,
-			"cash_account": self._infer_cash_account_from_payment_method(reservation.payment_method),
-			"settlement_status": self._default_settlement_status("收入"),
+			"cash_account": cash_account or self._infer_cash_account_from_payment_method(reservation.payment_method),
+			"settlement_status": settlement_status or self._default_settlement_status("收入"),
 			"payment_reference": reservation.payment_reference,
 			"counterparty_name": reservation.customer_name,
 			"notes": reservation.notes,
