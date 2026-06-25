@@ -14,6 +14,13 @@ class TestUsedCarControlledWriteService(FrappeTestCase):
 			{"doctype", "vehicle", "deposit_amount", "created_by_service"},
 		)
 
+	def test_reservation_create_allows_vehicle_sale_summary_fields(self):
+		assert_controlled_write_policy(
+			"used_car_reservation.create",
+			"Used Car Vehicle",
+			{"status", "customer", "sold_price", "reserved_date", "sales_staff", "sales_note"},
+		)
+
 	def test_reservation_create_rejects_unapproved_reservation_field(self):
 		with self.assertRaises(UsedCarControlledWriteError):
 			assert_controlled_write_policy("used_car_reservation.create", "Used Car Reservation", {"journal_entry"})
@@ -104,7 +111,11 @@ class TestUsedCarControlledWriteService(FrappeTestCase):
 			"Used Car Reservation",
 			{"status", "cancellation_reason", "cancelled_at", "cancelled_by"},
 		)
-		assert_controlled_write_policy("used_car_reservation.cancel_with_deposit_handling", "Used Car Vehicle", {"status"})
+		assert_controlled_write_policy(
+			"used_car_reservation.cancel_with_deposit_handling",
+			"Used Car Vehicle",
+			{"status", "customer", "sold_price", "reserved_date", "sales_staff", "sales_note"},
+		)
 		assert_controlled_write_policy("used_car_reservation.cancel_with_deposit_handling", "Used Car Money Flow", {"status"})
 		assert_controlled_write_policy(
 			"used_car_reservation.cancel_with_deposit_handling",
@@ -130,7 +141,7 @@ class TestUsedCarControlledWriteService(FrappeTestCase):
 		assert_controlled_write_policy(
 			"used_car_reservation.complete_sale",
 			"Used Car Vehicle",
-			{"status", "completed_reservation", "deposit_money_flow", "final_voucher_draft"},
+			{"status", "sold_date", "completed_reservation", "deposit_money_flow", "final_voucher_draft"},
 		)
 
 	def test_unknown_action_raises(self):

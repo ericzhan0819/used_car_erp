@@ -137,6 +137,8 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 - Step 3A-4 修正車輛頁收支摘要 render timing，現在一般檢視狀態即可顯示資金欄位，不需進入編輯狀態。
 - Step 3A-4 修正收支摘要掛載位置，避免 collapsible section 在檢視模式未展開時導致摘要消失。
 - Step 3A-4 修正收支摘要重複 render 問題，現在車輛頁只會保留單一收支摘要表格，並忽略過期 async callback。
+- P1-MVP-OPS Step 3A-4B：已完成保留 / 成交流程同步 Used Car Vehicle 售車摘要欄位。收訂金並保留後，車輛頁會同步 customer、sold_price、reserved_date、sales_staff、sales_note；取消保留回上架中時，會清除 active reservation 的售車摘要欄位，避免留下誤導資料；確認成交時會補 sold_date，但不自動填 delivery_date。本階段未修改 Dialog、DocType schema、Money Flow 寫入、會計 runtime。
+- 取消保留清除售車摘要時，sold_price 以 0 回復，避免 DB not-null 欄位寫入 NULL。
 
 ## 5. 目前 UX 邊界
 

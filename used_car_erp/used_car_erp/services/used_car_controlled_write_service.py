@@ -23,7 +23,7 @@ CONTROLLED_WRITE_ALLOWED_FIELDS = {
 			"status",
 			"created_by_service",
 		},
-		"Used Car Vehicle": {"status", "sold_price"},
+		"Used Car Vehicle": {"status", "customer", "sold_price", "reserved_date", "sales_staff", "sales_note"},
 	},
 	"used_car_money_flow.deposit.create": {
 		"Used Car Money Flow": {
@@ -142,11 +142,11 @@ CONTROLLED_WRITE_ALLOWED_FIELDS = {
 	},
 	"used_car_reservation.cancel": {
 		"Used Car Reservation": {"status", "cancellation_reason", "cancelled_at", "cancelled_by"},
-		"Used Car Vehicle": {"status"},
+		"Used Car Vehicle": {"status", "customer", "sold_price", "reserved_date", "sales_staff", "sales_note"},
 	},
 	"used_car_reservation.cancel_with_deposit_handling": {
 		"Used Car Reservation": {"status", "cancellation_reason", "cancelled_at", "cancelled_by"},
-		"Used Car Vehicle": {"status"},
+		"Used Car Vehicle": {"status", "customer", "sold_price", "reserved_date", "sales_staff", "sales_note"},
 		"Used Car Money Flow": {"status"},
 		"Used Car Voucher Draft": {"status", "reviewed_by", "reviewed_at", "review_note"},
 	},
@@ -199,6 +199,7 @@ CONTROLLED_WRITE_ALLOWED_FIELDS = {
 			"final_money_flow",
 			"final_voucher_draft",
 			"final_journal_entry",
+			"sold_date",
 		},
 		"Used Car Reservation": {"status", "completed_at", "completed_by", "completion_note"},
 	},

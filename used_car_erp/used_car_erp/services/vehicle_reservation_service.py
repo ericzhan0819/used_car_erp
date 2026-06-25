@@ -64,6 +64,7 @@ class VehicleReservationService:
 				frappe.throw("指定的 ERPNext 客戶不存在。")
 
 			previous_status = vehicle.status
+			reservation_deposit_date = deposit_date or nowdate()
 			reservation_values = {
 				"doctype": "Used Car Reservation",
 				"vehicle": vehicle.name,
@@ -73,7 +74,7 @@ class VehicleReservationService:
 				"customer_name": customer_name,
 				"customer_phone": customer_phone,
 				"deposit_amount": deposit_amount,
-				"deposit_date": deposit_date or nowdate(),
+				"deposit_date": reservation_deposit_date,
 				"payment_method": payment_method,
 				"payment_reference": payment_reference,
 				"notes": notes,
@@ -98,7 +99,14 @@ class VehicleReservationService:
 				"Used Car Vehicle",
 				vehicle.name,
 				action="used_car_reservation.create",
-				values={"status": "保留中", "sold_price": sold_price},
+				values={
+					"status": "保留中",
+					"customer": resolved_customer,
+					"sold_price": sold_price,
+					"reserved_date": reservation_deposit_date,
+					"sales_staff": frappe.session.user,
+					"sales_note": notes,
+				},
 			)
 			frappe.db.commit()
 		except Exception:
@@ -603,7 +611,7 @@ class VehicleReservationService:
 					"Used Car Vehicle",
 					vehicle.name,
 					action="used_car_reservation.cancel",
-					values={"status": "上架中"},
+					values=self._build_vehicle_active_reservation_clear_values(),
 				)
 				status = "上架中"
 			else:
@@ -716,7 +724,7 @@ class VehicleReservationService:
 				"Used Car Vehicle",
 				vehicle.name,
 				action="used_car_reservation.cancel_with_deposit_handling",
-				values={"status": "上架中"},
+				values=self._build_vehicle_active_reservation_clear_values(),
 			)
 			frappe.db.commit()
 		except Exception:
@@ -1109,6 +1117,8 @@ class VehicleReservationService:
 		meta = frappe.get_meta("Used Car Vehicle")
 		vehicle.flags.ignore_sale_completion_validation = True
 		controlled_values = {}
+		if meta.has_field("sold_date") and not vehicle.get("sold_date"):
+			controlled_values["sold_date"] = (values.get("completed_at") or nowdate()).split(" ")[0]
 		for fieldname, value in values.items():
 			if fieldname == "status" or (meta.has_field(fieldname) and value):
 				controlled_values[fieldname] = value
@@ -1125,6 +1135,16 @@ class VehicleReservationService:
 			frappe.throw("車輛必須完成入庫後，才能建立訂金保留。")
 		if vehicle.status != "上架中":
 			frappe.throw("只有上架中車輛可以建立訂金保留。")
+
+	def _build_vehicle_active_reservation_clear_values(self):
+		return {
+			"status": "上架中",
+			"customer": None,
+			"sold_price": 0,
+			"reserved_date": None,
+			"sales_staff": None,
+			"sales_note": None,
+		}
 
 	def _validate_no_active_reservation(self, vehicle_name: str):
 		if frappe.db.exists("Used Car Reservation", {"vehicle": vehicle_name, "status": "有效"}):
