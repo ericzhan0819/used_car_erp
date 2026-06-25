@@ -29,6 +29,26 @@ class TestUsedCarControlledWriteService(FrappeTestCase):
 			{"voucher_draft"},
 		)
 
+	def test_money_flow_create_actions_allow_cash_account_fields(self):
+		cash_account_fields = {"cash_account", "settlement_status", "counterparty_name"}
+		for action in (
+			"used_car_money_flow.general_expense.create",
+			"used_car_money_flow.deposit.create",
+			"used_car_money_flow.final_payment.create",
+			"used_car_money_flow.deposit_refund.create",
+		):
+			assert_controlled_write_policy(action, "Used Car Money Flow", cash_account_fields)
+
+	def test_money_flow_create_actions_reject_unapproved_money_flow_field(self):
+		for action in (
+			"used_car_money_flow.general_expense.create",
+			"used_car_money_flow.deposit.create",
+			"used_car_money_flow.final_payment.create",
+			"used_car_money_flow.deposit_refund.create",
+		):
+			with self.assertRaises(UsedCarControlledWriteError):
+				assert_controlled_write_policy(action, "Used Car Money Flow", {"unauthorized_field"})
+
 	def test_deposit_money_flow_allows_voucher_draft_lines(self):
 		assert_controlled_write_policy(
 			"used_car_money_flow.deposit.create",

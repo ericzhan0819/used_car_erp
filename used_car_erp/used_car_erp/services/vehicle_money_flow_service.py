@@ -32,6 +32,9 @@ class VehicleMoneyFlowService:
 		payment_reference: str | None = None,
 		notes: str | None = None,
 		evidence_attachment: str | None = None,
+		cash_account: str | None = None,
+		settlement_status: str | None = None,
+		counterparty_name: str | None = None,
 	):
 		assert_can_perform_used_car_action(
 			"used_car_money_flow.general_expense.create",
@@ -51,7 +54,10 @@ class VehicleMoneyFlowService:
 			"amount": amount,
 			"payment_date": payment_date or nowdate(),
 			"payment_method": payment_method,
+			"cash_account": cash_account or self._infer_cash_account_from_payment_method(payment_method),
+			"settlement_status": settlement_status or self._default_settlement_status("支出"),
 			"payment_reference": payment_reference,
+			"counterparty_name": counterparty_name or payment_reference,
 			"evidence_attachment": evidence_attachment,
 			"notes": notes,
 			"created_by_service": 1,
@@ -97,7 +103,10 @@ class VehicleMoneyFlowService:
 			"amount": reservation.deposit_amount,
 			"payment_date": reservation.deposit_date,
 			"payment_method": reservation.payment_method,
+			"cash_account": self._infer_cash_account_from_payment_method(reservation.payment_method),
+			"settlement_status": self._default_settlement_status("收入"),
 			"payment_reference": reservation.payment_reference,
+			"counterparty_name": reservation.customer_name,
 			"notes": reservation.notes,
 			"created_by_service": 1,
 		}
@@ -135,6 +144,9 @@ class VehicleMoneyFlowService:
 		payment_date=None,
 		payment_reference: str | None = None,
 		notes: str | None = None,
+		cash_account: str | None = None,
+		settlement_status: str | None = None,
+		counterparty_name: str | None = None,
 	):
 		assert_can_perform_used_car_action(
 			"used_car_money_flow.final_payment.create",
@@ -158,7 +170,10 @@ class VehicleMoneyFlowService:
 			"amount": amount,
 			"payment_date": payment_date or nowdate(),
 			"payment_method": payment_method,
+			"cash_account": cash_account or self._infer_cash_account_from_payment_method(payment_method),
+			"settlement_status": settlement_status or self._default_settlement_status("收入"),
 			"payment_reference": payment_reference,
+			"counterparty_name": counterparty_name or reservation.customer_name,
 			"notes": notes,
 			"created_by_service": 1,
 		}
@@ -232,7 +247,10 @@ class VehicleMoneyFlowService:
 			"amount": reservation.deposit_amount,
 			"payment_date": refund_date or nowdate(),
 			"payment_method": refund_payment_method,
+			"cash_account": self._infer_cash_account_from_payment_method(refund_payment_method),
+			"settlement_status": self._default_settlement_status("支出"),
 			"payment_reference": refund_reference,
+			"counterparty_name": reservation.customer_name,
 			"notes": refund_notes,
 			"created_by_service": 1,
 		}
@@ -305,6 +323,29 @@ class VehicleMoneyFlowService:
 			frappe.throw("退款方式必須是：現金、匯款、信用卡、其他。")
 		if frappe.db.exists("Used Car Money Flow", {"reservation": reservation.name, "flow_type": "退款", "status": ["!=", "已作廢"]}):
 			frappe.throw("此保留紀錄已有未作廢的退款資料。")
+
+	def _infer_cash_account_from_payment_method(self, payment_method: str | None):
+		account_by_payment_method = {
+			"現金": "現金",
+			"匯款": "主要銀行",
+			"其他": "其他",
+			"信用卡": "其他",
+		}
+		account_name = account_by_payment_method.get(payment_method)
+		if not account_name:
+			return None
+		return frappe.db.get_value(
+			"Used Car Cash Account",
+			{"account_name": account_name, "is_active": 1},
+			"name",
+		)
+
+	def _default_settlement_status(self, direction: str | None):
+		if direction == "收入":
+			return "已收款"
+		if direction == "支出":
+			return "已付款"
+		return None
 
 	def _resolve_deposit_money_flow(self, reservation):
 		if reservation.money_flow and frappe.db.exists("Used Car Money Flow", reservation.money_flow):
@@ -619,6 +660,9 @@ def create_general_expense_money_flow(
 	payment_reference: str | None = None,
 	notes: str | None = None,
 	evidence_attachment: str | None = None,
+	cash_account: str | None = None,
+	settlement_status: str | None = None,
+	counterparty_name: str | None = None,
 ):
 	service = VehicleMoneyFlowService()
 	return service.create_general_expense_money_flow(
@@ -630,6 +674,9 @@ def create_general_expense_money_flow(
 		payment_reference=payment_reference,
 		notes=notes,
 		evidence_attachment=evidence_attachment,
+		cash_account=cash_account,
+		settlement_status=settlement_status,
+		counterparty_name=counterparty_name,
 	)
 
 
@@ -641,6 +688,9 @@ def create_final_payment_money_flow_from_reservation(
 	payment_date=None,
 	payment_reference: str | None = None,
 	notes: str | None = None,
+	cash_account: str | None = None,
+	settlement_status: str | None = None,
+	counterparty_name: str | None = None,
 ):
 	service = VehicleMoneyFlowService()
 	return service.create_final_payment_money_flow_from_reservation(
@@ -650,4 +700,7 @@ def create_final_payment_money_flow_from_reservation(
 		payment_date=payment_date,
 		payment_reference=payment_reference,
 		notes=notes,
+		cash_account=cash_account,
+		settlement_status=settlement_status,
+		counterparty_name=counterparty_name,
 	)

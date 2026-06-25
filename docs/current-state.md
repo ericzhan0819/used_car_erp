@@ -129,6 +129,7 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 - P1-MVP-OPS Step 2：已完成 Money Flow 主帳欄位盤點，確認 `Used Car Money Flow` 已有車輛、金額、日期、付款方式、憑證附件、Voucher Draft / Journal Entry 連結等基礎，但缺資金帳戶、通用交易對象、憑證狀態、營運結清狀態、是否交記帳士，以及與 `Used Car Vehicle Cost` 的明確邊界 / 連結。
 - P1-MVP-OPS Step 3：已完成資金帳戶最小模型規格，確認 `cash_account` 只表示真正資金位置，初期帳戶為 `現金`、`主要銀行`、`其他`；待收 / 待付不作為資金帳戶，而由 `settlement_status` 表示；採購付款要進 Money Flow；資金帳戶需要期初餘額；本階段不做私人代墊與刷卡未撥款。
 - P1-MVP-OPS Step 3A-1：已新增 `Used Car Cash Account` schema foundation；`Used Car Money Flow` 已新增 `cash_account` / `settlement_status` / `counterparty_name` 欄位；初始資金帳戶為 `現金` / `主要銀行` / `其他`。本階段不改 Dialog、不改 service wiring、不改會計 runtime。
+- P1-MVP-OPS Step 3A-2：已完成 service wiring；Money Flow service 現在會寫入 `cash_account` / `settlement_status` / `counterparty_name`；`現金` / `匯款` / `其他` / `信用卡` 會保守推導到 `現金` / `主要銀行` / `其他`。本階段不改 Dialog、不改車輛頁摘要、不改會計 runtime。
 
 ## 5. 目前 UX 邊界
 
@@ -167,22 +168,22 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 下一步建議：
 
 ```text
-P1-MVP-OPS Step 3A-2：service wiring
+P1-MVP-OPS Step 3A-3：guided Dialog 接欄位
 ```
 
 原因：
 
 ```text
-P1-MVP-OPS Step 3A-1 已建立最小 schema foundation。
-下一步要把新增支出、訂金、尾款、退款與後續採購付款寫入 cash_account / settlement_status / counterparty_name。
+P1-MVP-OPS Step 3A-2 已完成既有新增支出、訂金、尾款與退款 service wiring。
+下一步要讓 guided Dialog 接入 cash_account / settlement_status / counterparty_name。
 仍不改 Journal Entry / Sales Invoice / Payment Entry，不處理 advance account warning。
 ```
 
 Step 3A-2 建議範圍：
 
 ```text
-更新新增支出 / 訂金 / 尾款 / 退款 / 採購付款的欄位接線
-更新車輛頁收支摘要顯示資金帳戶與收付狀態
+更新 guided Dialog 欄位輸入
+保留既有 Money Flow / Voucher Draft / 會計 runtime 邊界
 ```
 
 Step 3A 不應：
@@ -203,7 +204,7 @@ Step 3A 不應：
 建議 commit message：
 
 ```text
-feat: add minimal cash account model
+feat: wire cash account fields into money flow services
 ```
 
 ## 7. Historical docs 注意事項
