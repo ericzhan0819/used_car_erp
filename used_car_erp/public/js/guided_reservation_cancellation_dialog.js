@@ -115,6 +115,21 @@ frappe.provide("used_car_erp.guided_reservation_cancellation");
           reqd: 1,
         },
         {
+          fieldname: "settlement_status",
+          label: "退款狀態",
+          fieldtype: "Select",
+          options: "已付款\n待付款",
+          default: "已付款",
+          reqd: 1,
+        },
+        {
+          fieldname: "cash_account",
+          label: "退款資金帳戶",
+          fieldtype: "Link",
+          options: "Used Car Cash Account",
+          reqd: 0,
+        },
+        {
           fieldname: "refund_date",
           label: "退款日期",
           fieldtype: "Date",
@@ -221,6 +236,14 @@ frappe.provide("used_car_erp.guided_reservation_cancellation");
         frappe.msgprint("請選擇退款方式。");
         return false;
       }
+      if (!values.settlement_status) {
+        frappe.msgprint("請選擇退款狀態。");
+        return false;
+      }
+      if (values.settlement_status === "已付款" && !values.cash_account) {
+        frappe.msgprint("已退回訂金時需要選擇退款資金帳戶。");
+        return false;
+      }
       if (!values.refund_date) {
         frappe.msgprint("請選擇退款日期。");
         return false;
@@ -241,6 +264,8 @@ frappe.provide("used_car_erp.guided_reservation_cancellation");
         refund_date: deposit_posted ? values.refund_date : undefined,
         refund_reference: deposit_posted ? values.refund_reference : undefined,
         refund_notes: deposit_posted ? values.refund_notes : undefined,
+        cash_account: deposit_posted ? values.cash_account : undefined,
+        settlement_status: deposit_posted ? values.settlement_status : undefined,
       },
       freeze: true,
       freeze_message: "正在取消保留...",

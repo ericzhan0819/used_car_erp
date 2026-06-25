@@ -229,6 +229,8 @@ class VehicleMoneyFlowService:
 		refund_date=None,
 		refund_reference: str | None = None,
 		refund_notes: str | None = None,
+		cash_account: str | None = None,
+		settlement_status: str | None = None,
 	):
 		assert_can_perform_used_car_action(
 			"used_car_money_flow.deposit_refund.create",
@@ -252,8 +254,8 @@ class VehicleMoneyFlowService:
 			"amount": reservation.deposit_amount,
 			"payment_date": refund_date or nowdate(),
 			"payment_method": refund_payment_method,
-			"cash_account": self._infer_cash_account_from_payment_method(refund_payment_method),
-			"settlement_status": self._default_settlement_status("支出"),
+			"cash_account": cash_account or self._infer_cash_account_from_payment_method(refund_payment_method),
+			"settlement_status": settlement_status or self._default_settlement_status("支出"),
 			"payment_reference": refund_reference,
 			"counterparty_name": reservation.customer_name,
 			"notes": refund_notes,

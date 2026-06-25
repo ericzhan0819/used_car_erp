@@ -648,6 +648,8 @@ class VehicleReservationService:
 		refund_date=None,
 		refund_reference: str | None = None,
 		refund_notes: str | None = None,
+		cash_account: str | None = None,
+		settlement_status: str | None = None,
 	):
 		assert_can_perform_used_car_action(
 			"used_car_reservation.cancel_with_deposit_handling",
@@ -691,6 +693,8 @@ class VehicleReservationService:
 					refund_date=refund_date,
 					refund_reference=refund_reference,
 					refund_notes=refund_notes,
+					cash_account=cash_account,
+					settlement_status=settlement_status,
 				)
 			else:
 				self._void_unposted_deposit_documents(deposit_money_flow, deposit_voucher_draft, reason)
@@ -1306,6 +1310,8 @@ def cancel_active_reservation_with_deposit_handling(
 	refund_date=None,
 	refund_reference: str | None = None,
 	refund_notes: str | None = None,
+	cash_account: str | None = None,
+	settlement_status: str | None = None,
 ):
 	service = VehicleReservationService()
 	return service.cancel_active_reservation_with_deposit_handling(
@@ -1315,6 +1321,8 @@ def cancel_active_reservation_with_deposit_handling(
 		refund_date=refund_date,
 		refund_reference=refund_reference,
 		refund_notes=refund_notes,
+		cash_account=cash_account,
+		settlement_status=settlement_status,
 	)
 
 
