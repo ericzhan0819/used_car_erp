@@ -2,7 +2,45 @@
 
 Used car business operations layer for ERPNext.
 
-### Current Workflow
+### Current MVP Direction
+
+目前 MVP 主線已從完整 ERPNext 會計閉環，調整為中古車行營運管理帳：
+
+```text
+車行營運管理帳
++ 資金帳
++ 單車損益
++ 文件檢查
++ 成交結案列印
++ 記帳士交接包
+```
+
+現階段 `Used Car Money Flow` 是 MVP 主帳。它記錄車行營運事實，不等同正式會計分錄。
+
+MVP 驗收重點是：
+
+```text
+每台車花多少
+每台車收多少
+每台車賺賠多少
+現金 / 銀行還有多少
+待收 / 待付多少
+哪些文件缺漏
+成交後能否列印車輛結案明細
+申報期能否整理資料給記帳士
+```
+
+ERPNext 的 Journal Entry、Sales Invoice、Payment Entry、Payment Reconciliation 與正式會計閉環，目前降級為後期 / 選配 / 會計輔助層；除非阻擋營運管理帳 MVP，否則短期不再優先擴張會計 runtime。
+
+目前方向文件：
+
+```text
+docs/p1-mvp-ops-used-car-operation-ledger-direction.md
+```
+
+### Current Workflow / Historical Runtime Notes
+
+以下記錄既有 runtime 能力與歷史施工脈絡。後續新任務應以 `docs/current-state.md`、`docs/README.md` 與 `docs/p1-mvp-ops-used-car-operation-ledger-direction.md` 為準。
 
 目前主流程聚焦中古車買賣內部作業：
 

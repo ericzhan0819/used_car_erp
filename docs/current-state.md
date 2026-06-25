@@ -43,26 +43,44 @@ P1-MVP-ACC-POLISH：Advance Account Journal Entry Warning
 
 ## 3. 目前產品主線
 
+目前產品主線正式調整為：
+
 ```text
-P1-MVP-UX-OPS-2：Guided Business Flow Forms
+P1-MVP-OPS：中古車行營運管理帳
 ```
 
 核心方向：
+
+```text
+車行營運管理帳
++ 資金帳
++ 單車損益
++ 文件檢查
++ 成交結案列印
++ 記帳士交接包
+```
+
+`P1-MVP-UX-OPS-2：Guided Business Flow Forms` 已完成多個業務任務卡 runtime，是目前業務輸入層的重要基礎，但後續 MVP 不再以完整 ERPNext 會計閉環作為主線。
+
+目前主線改為：
+
+```text
+業務端 = 任務卡片式輸入營運事實
+Money Flow = MVP 主帳 / 營運事實紀錄
+管理帳層 = 單車損益、現金、銀行、待收、待付、缺憑證
+會計交接層 = 記帳士交接資料、結案明細、申報期彙整
+正式會計閉環 = 後期 / 選配 / 會計輔助層
+```
+
+核心邊界維持：
 
 - 業務端使用任務卡片。
 - 一張卡處理一件事。
 - 業務不直接面對完整 ERPNext DocType 表單。
 - 業務頁不暴露會計文件與會計術語。
-- 會計作業承接 Journal Entry / Sales Invoice / Voucher Draft 等正式流程。
-
-目前產品主線已轉為：
-
-```text
-業務端 = 任務卡片式輸入
-會計端 = 會計作業
-車輛頁 = 業務事實與摘要
-會計文件與技術術語不暴露在業務頁
-```
+- Money Flow 記錄車行營運事實，不等同正式會計分錄。
+- Journal Entry / Sales Invoice / Payment Entry / Reconciliation 不再是 MVP 驗收主軸。
+- 紙本資料夾仍保存正式文件，ERP 負責索引、檢查、統計、列印與交接。
 
 目前總覽入口已改為 custom Page：
 
@@ -70,7 +88,7 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 /app/總覽 → custom Page
 ```
 
-總覽不再是 Frappe native Workspace。custom Page 作為中古車業務操作面板，提供庫存狀態卡與常用作業，並直接呼叫 shared guided intake Dialog 開啟「新增買入車輛」。
+總覽作為中古車業務操作面板，提供庫存狀態卡與常用作業，並直接呼叫 shared guided intake Dialog 開啟「新增買入車輛」。後續 Dashboard 指標應逐步往老闆可用的營運總覽收斂，例如現金 / 銀行餘額、待收款、缺憑證與本月成交台數。
 
 ## 4. 目前已完成主流程摘要
 
@@ -146,24 +164,43 @@ P1-MVP-UX-OPS-2：Guided Business Flow Forms
 下一步建議：
 
 ```text
-P1-MVP-UX-OPS-2 Step 9：Guided Sale Completion Task Card Spec
+P1-MVP-OPS Step 2：Money Flow 主帳欄位盤點
 ```
 
-或先處理會計 polish：
+原因：
 
 ```text
-P1-MVP-ACC-POLISH-1：Review Used Car advance account warning
+MVP 主線已從完整會計閉環轉向車行營運管理帳。
+成交確認 runtime、Payment Entry 重構與 advance account warning polish 都不應先做。
+應先確認 Used Car Money Flow 是否足以承接資金帳、單車損益、文件檢查與記帳士交接。
 ```
 
-目前建議：若 advance account warning 不阻擋 Journal Entry submit，先不急著改會計 runtime，優先完成業務 MVP 主流程的成交確認任務卡。
-
-Step 9 不應：
+Step 2 範圍：
 
 ```text
-不直接重構 Payment Entry
-不直接改 15-1 service
-不直接改管理利潤 service
+盤點 Used Car Money Flow 現有欄位
+盤點 Money Flow 建立來源與 flow type
+盤點是否已有資金帳戶 / 付款方式 / 交易對象 / 憑證狀態 / 是否結清 / 是否交給記帳士 / 是否影響毛利 / 是否影響稅務整理
+盤點現有車輛頁收支摘要如何讀取 Money Flow
+盤點會計作業如何消費 Money Flow / Voucher Draft
+```
+
+Step 2 不應：
+
+```text
+不改 schema
+不改 runtime
+不新增 DocType
+不改 Journal Entry / Sales Invoice / Payment Entry
+不處理 advance account warning
+不直接做成交確認任務卡 runtime
 不把會計技術文件連結加回業務頁
+```
+
+建議 commit message：
+
+```text
+docs: audit money flow ledger fields
 ```
 
 ## 7. Historical docs 注意事項
