@@ -37,9 +37,10 @@ ERPNext 的 Journal Entry、Sales Invoice、Payment Entry、Payment Reconciliati
 ```text
 docs/p1-mvp-ops-used-car-operation-ledger-direction.md
 docs/p1-mvp-ops-step-2-money-flow-ledger-field-audit.md
+docs/p1-mvp-ops-step-3-minimal-cash-account-model.md
 ```
 
-Step 2 Money Flow 主帳欄位盤點已確認目前最優先缺口是資金帳戶。下一步建議先定義 `Used Car Cash Account` / 資金帳戶最小模型，而不是直接擴張成交確認 runtime、Payment Entry 或 advance account warning polish。
+Step 3 資金帳戶最小模型已確認：`cash_account` 只表示真正資金位置，初期帳戶為 `現金`、`主要銀行`、`其他`；待收 / 待付由 `settlement_status` 表示；採購付款要進 Money Flow；本階段不做私人代墊與刷卡未撥款。下一步建議做 `P1-MVP-OPS Step 3A：Minimal Cash Account Runtime`，而不是直接擴張成交確認 runtime、Payment Entry 或 advance account warning polish。
 
 ### Current Workflow / Historical Runtime Notes
 
