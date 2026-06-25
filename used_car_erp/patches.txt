@@ -7,3 +7,4 @@ used_car_erp.patches.v1_0.create_used_car_roles
 # Patches added in this section will be executed after doctypes are migrated
 used_car_erp.patches.v0_1.rename_used_car_workspace
 used_car_erp.patches.v1_0.seed_taiwan_accounting_item_codes
+used_car_erp.patches.v1_0.seed_used_car_cash_accounts

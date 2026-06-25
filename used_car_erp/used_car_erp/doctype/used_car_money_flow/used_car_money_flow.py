@@ -18,6 +18,16 @@ VALID_FLOW_TYPES = (
 	"其他支出",
 )
 VALID_PAYMENT_METHODS = ("現金", "匯款", "信用卡", "其他")
+VALID_SETTLEMENT_STATUSES = (
+	"待收款",
+	"已收款",
+	"部分收款",
+	"待付款",
+	"已付款",
+	"部分付款",
+	"不需收付",
+	"已取消",
+)
 
 
 class UsedCarMoneyFlow(Document):
@@ -38,6 +48,7 @@ class UsedCarMoneyFlow(Document):
 		self._validate_required_fields()
 		self._validate_amount()
 		self._validate_payment_method()
+		self._validate_settlement_status()
 
 	def _prevent_money_flow_no_change(self):
 		if self.is_new():
@@ -70,6 +81,10 @@ class UsedCarMoneyFlow(Document):
 	def _validate_payment_method(self):
 		if self.payment_method not in VALID_PAYMENT_METHODS:
 			frappe.throw("付款方式必須是：現金、匯款、信用卡、其他。")
+
+	def _validate_settlement_status(self):
+		if self.settlement_status and self.settlement_status not in VALID_SETTLEMENT_STATUSES:
+			frappe.throw("收付狀態必須是：待收款、已收款、部分收款、待付款、已付款、部分付款、不需收付、已取消。")
 
 
 def _get_next_money_flow_no():

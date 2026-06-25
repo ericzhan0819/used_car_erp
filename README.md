@@ -40,7 +40,9 @@ docs/p1-mvp-ops-step-2-money-flow-ledger-field-audit.md
 docs/p1-mvp-ops-step-3-minimal-cash-account-model.md
 ```
 
-Step 3 資金帳戶最小模型已確認：`cash_account` 只表示真正資金位置，初期帳戶為 `現金`、`主要銀行`、`其他`；待收 / 待付由 `settlement_status` 表示；採購付款要進 Money Flow；本階段不做私人代墊與刷卡未撥款。下一步建議做 `P1-MVP-OPS Step 3A：Minimal Cash Account Runtime`，而不是直接擴張成交確認 runtime、Payment Entry 或 advance account warning polish。
+Step 3 資金帳戶最小模型已確認：`cash_account` 只表示真正資金位置，初期帳戶為 `現金`、`主要銀行`、`其他`；待收 / 待付由 `settlement_status` 表示；採購付款要進 Money Flow；本階段不做私人代墊與刷卡未撥款。
+
+P1-MVP-OPS Step 3A-1 已新增 `Used Car Cash Account` schema foundation。`Used Car Money Flow` 已新增 `cash_account` / `settlement_status` / `counterparty_name` 欄位。初始資金帳戶為 `現金` / `主要銀行` / `其他`。本階段不改 Dialog、不改 service wiring、不改會計 runtime。下一步是 `P1-MVP-OPS Step 3A-2：service wiring`。
 
 ### Current Workflow / Historical Runtime Notes
 

@@ -24,8 +24,11 @@
   "amount",
   "payment_date",
   "payment_method",
+  "cash_account",
+  "settlement_status",
   "payment_column",
   "payment_reference",
+  "counterparty_name",
   "evidence_attachment",
   "notes",
   "accounting_section",
@@ -162,6 +165,20 @@
    "reqd": 1
   },
   {
+   "fieldname": "cash_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "資金帳戶",
+   "options": "Used Car Cash Account"
+  },
+  {
+   "fieldname": "settlement_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "收付狀態",
+   "options": "待收款\n已收款\n部分收款\n待付款\n已付款\n部分付款\n不需收付\n已取消"
+  },
+  {
    "fieldname": "payment_column",
    "fieldtype": "Column Break"
   },
@@ -170,6 +187,11 @@
    "fieldtype": "Data",
    "label": "付款備註 / 末五碼",
    "read_only": 1
+  },
+  {
+   "fieldname": "counterparty_name",
+   "fieldtype": "Data",
+   "label": "交易對象"
   },
   {
    "description": "收據、發票、合約、付款截圖等交易憑證",
@@ -348,7 +370,7 @@
    "permlevel": 2
   }
  ],
- "search_fields": "money_flow_no,vehicle,reservation,customer_name,flow_type,status",
+ "search_fields": "money_flow_no,vehicle,reservation,customer_name,counterparty_name,flow_type,status,settlement_status",
  "show_name_in_global_search": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
