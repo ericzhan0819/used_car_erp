@@ -10,29 +10,26 @@ ERPNext 原生模組負責會計、庫存、正式文件與報表。
 
 `used_car_erp` 的業務頁應讓使用者輸入商業事實，並由系統與會計作業承接底層資料流。
 
-## 2. 最新穩定點
+---
 
-```text
-847a2aa feat: add guided reservation cancellation dialog
-docs: close guided reservation cancellation smoke
-```
+## 2. 最新穩定點
 
 目前 runtime 穩定點：
 
 ```text
-847a2aa feat: add guided reservation cancellation dialog
+4aa3dc4 feat: add guided purchase payment dialog
 ```
 
 目前 docs 收尾穩定點：
 
 ```text
-docs: close guided reservation cancellation smoke
+docs: close guided purchase payment dialog smoke
 ```
 
 目前最新 smoke 文件：
 
 ```text
-P1-MVP-UX-OPS-2 Step 8A：Guided Reservation Cancellation Dialog Smoke Close
+P1-MVP-OPS Step 3B-2A：Guided Purchase Payment Dialog Browser Smoke Close
 ```
 
 目前已知會計 polish 記錄：
@@ -40,6 +37,10 @@ P1-MVP-UX-OPS-2 Step 8A：Guided Reservation Cancellation Dialog Smoke Close
 ```text
 P1-MVP-ACC-POLISH：Advance Account Journal Entry Warning
 ```
+
+Advance account warning 目前仍記錄為 non-blocking，不作為下一步主線。
+
+---
 
 ## 3. 目前產品主線
 
@@ -60,9 +61,7 @@ P1-MVP-OPS：中古車行營運管理帳
 + 記帳士交接包
 ```
 
-`P1-MVP-UX-OPS-2：Guided Business Flow Forms` 已完成多個業務任務卡 runtime，是目前業務輸入層的重要基礎，但後續 MVP 不再以完整 ERPNext 會計閉環作為主線。
-
-目前主線改為：
+目前主線：
 
 ```text
 業務端 = 任務卡片式輸入營運事實
@@ -72,7 +71,7 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 正式會計閉環 = 後期 / 選配 / 會計輔助層
 ```
 
-核心邊界維持：
+核心邊界：
 
 - 業務端使用任務卡片。
 - 一張卡處理一件事。
@@ -82,13 +81,15 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 - Journal Entry / Sales Invoice / Payment Entry / Reconciliation 不再是 MVP 驗收主軸。
 - 紙本資料夾仍保存正式文件，ERP 負責索引、檢查、統計、列印與交接。
 
-目前總覽入口已改為 custom Page：
+目前總覽入口：
 
 ```text
 /app/總覽 → custom Page
 ```
 
 總覽作為中古車業務操作面板，提供庫存狀態卡與常用作業，並直接呼叫 shared guided intake Dialog 開啟「新增買入車輛」。後續 Dashboard 指標應逐步往老闆可用的營運總覽收斂，例如現金 / 銀行餘額、待收款、缺憑證與本月成交台數。
+
+---
 
 ## 4. 目前已完成主流程摘要
 
@@ -103,44 +104,25 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 - 15-1 邊界：購車價作為購入估算基礎，整備 / 維修 / 美容 / 拍場 / 代辦等後續支出不併入 15-1 購入成本。
 - Guided intake：`/app/總覽` 與 `Used Car Vehicle List` 共用 shared guided intake Dialog。
 - Custom overview：`/app/總覽` 已由 native Workspace 改為 custom Page。
-- Preparation expense Step 4A：車輛頁「新增支出」已改為 shared guided Dialog。
-- Preparation expense Step 4A：成功後顯示「支出紀錄已建立」。
-- Preparation expense Step 4A：沿用 `create_general_expense_money_flow`。
-- Preparation expense Step 4A：底層 Money Flow / Voucher Draft foundation 沿用。
-- Preparation expense Step 4A：browser smoke passed。
-- Guided listing Step 5 spec：已定義「整備完成並上架」任務卡規格，範圍限定文件，不改 runtime / schema / 會計流程。
-- Guided listing Step 5S：已新增 Used Car Vehicle `listing_date` 上架日期欄位，供 Step 5A runtime 寫入。
-- Guided listing Step 5A：已新增 shared guided listing Dialog，車輛頁可用「整備完成並上架」將 `listing_date` / `floor_price` / `asking_price` / `sales_note` 寫回，並將狀態改為 `上架中`。
-- Guided listing Step 5A：browser smoke passed。
-- Guided reservation / deposit Step 6 spec：已定義「收訂金並保留」任務卡規格，範圍限定文件，不改 runtime / schema / 會計流程。
-- Guided reservation / deposit Step 6A：已新增 shared guided reservation/deposit Dialog，車輛頁可用「收訂金並保留」輸入客戶、成交價與訂金資料，成功後顯示「已收訂金，車輛已保留」，並將狀態改為 `保留中`。
-- Guided reservation / deposit Step 6A：browser smoke passed。
-- Guided final payment Step 7 spec：已定義「收尾款」任務卡規格，範圍限定文件，不改 runtime / schema / 會計流程。
-- Guided final payment Step 7A：已新增 shared guided final payment Dialog，車輛頁可用「收尾款」輸入尾款資料，成功後顯示「已收尾款」。
-- Guided final payment Step 7A：收尾款 Dialog read-only 顯示成交價 / 訂金 / 建議尾款。
-- Guided final payment Step 7A：browser smoke passed。
-- Guided reservation cancellation / deposit refund Step 8 spec：已盤點取消保留、訂金收款、尾款收款、草稿作廢與退款承載能力，並定義「取消保留 / 處理訂金」任務卡規格。
-- Guided reservation cancellation Step 8A：已新增 shared guided cancellation Dialog，車輛頁「取消保留」改為「取消保留 / 處理訂金」任務卡。
-- Guided reservation cancellation Step 8A：未入帳訂金取消會作廢待處理資料並讓車輛回 `上架中`。
-- Guided reservation cancellation Step 8A：已入帳訂金取消會建立全額退款待內部確認資料，不直接建立 Journal Entry。
-- Guided reservation cancellation Step 8A：已建立尾款後取消會被阻擋。
-- Guided reservation cancellation Step 8A：browser smoke passed。
-- Accounting polish note：會計入帳時若使用 advance account `0202136 - 預收款項 - O` 產生 Journal Entry，ERPNext 會提示該 Journal Entry 不會進入 Payment Reconciliation；目前記錄為 non-blocking warning，後續評估科目 polish 或 Payment Entry 原生流程。
-- P1-MVP-OPS Step 2：已完成 Money Flow 主帳欄位盤點，確認 `Used Car Money Flow` 已有車輛、金額、日期、付款方式、憑證附件、Voucher Draft / Journal Entry 連結等基礎，但缺資金帳戶、通用交易對象、憑證狀態、營運結清狀態、是否交記帳士，以及與 `Used Car Vehicle Cost` 的明確邊界 / 連結。
-- P1-MVP-OPS Step 3：已完成資金帳戶最小模型規格，確認 `cash_account` 只表示真正資金位置，初期帳戶為 `現金`、`主要銀行`、`其他`；待收 / 待付不作為資金帳戶，而由 `settlement_status` 表示；採購付款要進 Money Flow；資金帳戶需要期初餘額；本階段不做私人代墊與刷卡未撥款。
-- P1-MVP-OPS Step 3A-1：已新增 `Used Car Cash Account` schema foundation；`Used Car Money Flow` 已新增 `cash_account` / `settlement_status` / `counterparty_name` 欄位；初始資金帳戶為 `現金` / `主要銀行` / `其他`。本階段不改 Dialog、不改 service wiring、不改會計 runtime。
-- P1-MVP-OPS Step 3A-2：已完成 service wiring；Money Flow service 現在會寫入 `cash_account` / `settlement_status` / `counterparty_name`；`現金` / `匯款` / `其他` / `信用卡` 會保守推導到 `現金` / `主要銀行` / `其他`。本階段不改 Dialog、不改車輛頁摘要、不改會計 runtime。
-- P1-MVP-OPS Step 3A-3A：已完成新增支出 Dialog 資金欄位接線。新增支出 Dialog 現在可輸入交易對象、收付狀態、資金帳戶。本階段只處理新增支出 Dialog，未修改訂金 / 尾款 / 退款 Dialog，未改 DocType schema、service wiring、會計 runtime。
-- P1-MVP-OPS Step 3A-3B：已完成收訂金並保留 / 收尾款 Dialog 資金欄位接線。收訂金並保留與收尾款 Dialog 現在可輸入收款狀態與資金帳戶；交易對象由客戶資料推導，不要求業務重複輸入。本階段未修改新增支出 Dialog、取消保留 / 退款 Dialog、DocType schema、會計 runtime。
-- P1-MVP-OPS Step 3A-3C：已完成取消保留 / 處理訂金 Dialog 的退款資金欄位接線。退款分支現在可輸入退款狀態與退款資金帳戶；交易對象由客戶資料推導，不要求業務重複輸入。本階段未修改新增支出 Dialog、收訂金 Dialog、收尾款 Dialog、DocType schema、會計 runtime。
-- P1-MVP-OPS Step 3A-4：已完成車輛頁收支摘要資金欄位顯示。車輛頁收支摘要現在顯示資金帳戶、收付狀態、交易對象。本階段只做明細顯示，不做 Dashboard、不做現金 / 銀行餘額、不做統計、不改會計 runtime。
-- Step 3A-4 修正車輛頁收支摘要 render timing，現在一般檢視狀態即可顯示資金欄位，不需進入編輯狀態。
-- Step 3A-4 修正收支摘要掛載位置，避免 collapsible section 在檢視模式未展開時導致摘要消失。
-- Step 3A-4 修正收支摘要重複 render 問題，現在車輛頁只會保留單一收支摘要表格，並忽略過期 async callback。
-- P1-MVP-OPS Step 3A-4B：已完成保留 / 成交流程同步 Used Car Vehicle 售車摘要欄位。收訂金並保留後，車輛頁會同步 customer、sold_price、reserved_date、sales_staff、sales_note；取消保留回上架中時，會清除 active reservation 的售車摘要欄位，避免留下誤導資料；確認成交時會補 sold_date，但不自動填 delivery_date。本階段未修改 Dialog、DocType schema、Money Flow 寫入、會計 runtime。
-- 取消保留清除售車摘要時，sold_price 以 0 回復，避免 DB not-null 欄位寫入 NULL。
+- Guided preparation expense：車輛頁「新增支出」已改為 shared guided Dialog。
+- Guided listing：車輛頁可用「整備完成並上架」寫入 `listing_date` / `floor_price` / `asking_price` / `sales_note` / `status = 上架中`。
+- Guided reservation / deposit：車輛頁可用「收訂金並保留」輸入客戶、成交價與訂金資料，成功後車輛進入 `保留中`。
+- Guided final payment：車輛頁可用「收尾款」輸入尾款資料，成功後顯示「已收尾款」。
+- Guided reservation cancellation：車輛頁「取消保留」已改為「取消保留 / 處理訂金」任務卡。
+- P1-MVP-OPS Step 2：已完成 Money Flow 主帳欄位盤點。
+- P1-MVP-OPS Step 3：已完成資金帳戶最小模型規格。
+- P1-MVP-OPS Step 3A-1：已新增 `Used Car Cash Account` schema foundation；`Used Car Money Flow` 已新增 `cash_account` / `settlement_status` / `counterparty_name` 欄位。
+- P1-MVP-OPS Step 3A-2：已完成 service wiring；Money Flow service 現在會寫入 `cash_account` / `settlement_status` / `counterparty_name`。
+- P1-MVP-OPS Step 3A-3A：已完成新增支出 Dialog 資金欄位接線。
+- P1-MVP-OPS Step 3A-3B：已完成收訂金並保留 / 收尾款 Dialog 資金欄位接線。
+- P1-MVP-OPS Step 3A-3C：已完成取消保留 / 處理訂金 Dialog 的退款資金欄位接線。
+- P1-MVP-OPS Step 3A-4：已完成車輛頁收支摘要資金欄位顯示。
+- P1-MVP-OPS Step 3A-4B：已完成保留 / 成交流程同步 Used Car Vehicle 售車摘要欄位。
 - P1-MVP-OPS Step 3B-1：已完成購車付款 Money Flow service foundation。`Used Car Money Flow.flow_type` 已支援 `購車付款`，`VehicleMoneyFlowService.create_purchase_payment_money_flow` 可建立支出方向、待審核、已付款 / 待付款 / 部分付款的購車付款紀錄，並保留 `purchase_price` 作為管理毛利成本基礎。本階段未新增 JS Dialog、車輛頁按鈕、Voucher Draft 或正式會計文件。
 - P1-MVP-OPS Step 3B-2：已完成 Guided Purchase Payment Dialog。車輛頁新增「新增購車付款」任務卡，接線至 `create_purchase_payment_money_flow`，可建立購車付款 Money Flow，成功後刷新車輛頁收支摘要。本階段未新增 Dashboard 餘額、未新增購車付款摘要統計、未建立 Voucher Draft、未改正式會計流程。
+- P1-MVP-OPS Step 3B-2A：已完成 Guided Purchase Payment Dialog browser smoke close。首次測試遇到 `Used Car Money Flow.flow_type` Select options metadata 尚未同步，執行 migrate / reload-doc 類操作後通過。購車付款可成功建立並顯示於車輛頁收支摘要。
+
+---
 
 ## 5. 目前 UX 邊界
 
@@ -152,6 +134,7 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 - 收購業務
 - 監理 / 稅務 checklist
 - 整備 / 維修 / 美容 / 代辦 / 拍場支出
+- 購車付款
 - 上架日期
 - 底價 / 開價
 - 訂金
@@ -174,7 +157,45 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 - formal delivery 技術流程
 - preflight 技術語言
 
-## 6. 目前下一步
+---
+
+## 6. Metadata sync 注意事項
+
+本階段確認：
+
+```text
+即使沒有新增欄位，只要 DocType Select options 有變更，也需要 migrate 或 reload-doc 同步 site DB metadata。
+```
+
+本次實際問題：
+
+```text
+金流類型 cannot be "購車付款".
+```
+
+原因是 repo 已更新 `Used Car Money Flow.flow_type` options，但 site DB metadata 尚未同步。
+
+修正方式：
+
+```bash
+cd ~/frappe/frappe-bench
+bench --site erpnext-coa.test migrate
+bench --site erpnext-coa.test clear-cache
+bench restart
+```
+
+或小範圍：
+
+```bash
+cd ~/frappe/frappe-bench
+bench --site erpnext-coa.test reload-doc used_car_erp doctype used_car_money_flow
+bench --site erpnext-coa.test clear-cache
+bench restart
+```
+
+---
+
+## 7. 目前下一步
 
 下一步建議：
 
@@ -185,43 +206,43 @@ P1-MVP-OPS Step 3B-3：Vehicle purchase payment summary polish
 原因：
 
 ```text
-P1-MVP-OPS Step 3B-2 已完成車輛頁「新增購車付款」guided Dialog。
-下一步可補單車購車付款摘要 polish，例如已付 / 待付顯示與 UX 細節。
+P1-MVP-OPS Step 3B-2A 已完成 browser smoke close。
+購車付款可建立並出現在車輛頁收支摘要。
+下一步可補單車購車付款摘要 polish，例如購車價、已記錄購車付款、待付款差額。
 仍不改 Journal Entry / Sales Invoice / Payment Entry，不處理 advance account warning，不新增 Dashboard 餘額。
 ```
 
-已完成 Step 3B-2 範圍：
+已完成 Step 3B-2A 範圍：
 
 ```text
-車輛頁新增「新增購車付款」任務卡
-新增 shared guided purchase payment Dialog
-接線至 create_purchase_payment_money_flow
-成功後刷新車輛頁收支摘要
-不做 Dashboard 餘額、不做購車付款摘要統計、不做 Voucher Draft、不做正式會計重構
+確認新增購車付款 Dialog 可用
+確認購車付款可建立
+確認 metadata sync 問題與修正方式
+確認成功後收支摘要可顯示購車付款
+不改 runtime、不改 schema、不改正式會計流程
 ```
 
-Step 3A 不應：
+Step 3B-3 不應：
 
 ```text
-不做刷卡未撥款
-不做私人代墊
+不做 Dashboard 總餘額
 不做多銀行管理 UI
-不做部分收付明細
 不做資金轉帳
 不做月結批次付款
 不改 Journal Entry / Sales Invoice / Payment Entry
 不處理 advance account warning
-不直接做成交確認任務卡 runtime
-不合併 Money Flow 與 Vehicle Cost runtime
+不把購車付款重複算入管理毛利成本
 ```
 
 建議 commit message：
 
 ```text
-feat: add guided purchase payment dialog
+feat: show purchase payment summary on vehicle page
 ```
 
-## 7. Historical docs 注意事項
+---
+
+## 8. Historical docs 注意事項
 
 `docs/` 中仍保留大量 P1-ACC、formal-delivery、handoff、smoke 文件。
 
