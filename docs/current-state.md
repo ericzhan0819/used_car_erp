@@ -29,7 +29,7 @@ docs: review cash account balance schema gap
 目前最新 spec / review 文件：
 
 ```text
-P1-MVP-OPS Step 3C-1：Cash Account Balance Schema Gap Review
+P1-MVP-OPS Step 3C-2：Cash Account Balance Read-only Service
 ```
 
 目前已知會計 polish 記錄：
@@ -126,6 +126,7 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 - P1-MVP-OPS Step 3B-3C：已完成 Purchase payment summary browser smoke close。購車付款摘要確認位於採購 / 買入資料區附近；購車付款摘要不再出現在收支摘要上方；收支摘要維持尚無收支紀錄或近 20 筆收支紀錄明細；新增購車付款後採購區摘要與收支摘要可更新。本階段不改 runtime、不改 schema、不改正式會計流程。
 - P1-MVP-OPS Step 3C-0：已完成 Cash account balance foundation spec。定義資金帳戶餘額 read-only foundation、Money Flow 納入 / 排除規則、部分付款 / 部分收款暫定語意、期初餘額、與單車損益 / 正式會計邊界。本階段 docs-only，不改 runtime、不改 schema、不新增 Dashboard。
 - P1-MVP-OPS Step 3C-1：已完成 Cash Account balance schema gap review。結論為 no schema change required；現有 `Used Car Cash Account` 的 `opening_balance` / `opening_balance_date` / `is_active` 與 `Used Car Money Flow` 的 `direction` / `settlement_status` / `status` 已足夠支撐下一步 read-only balance service。本階段 docs-only，不改 runtime、不改 schema、不新增 Dashboard。
+- P1-MVP-OPS Step 3C-2：已完成 Cash Account balance read-only service。新增 `cash_account_balance_service`，可依 `Used Car Cash Account.opening_balance` 與符合條件的 `Used Car Money Flow` 計算各資金帳戶收入、支出與餘額；`as_of_date` 有值時，付款日期空白的 Money Flow 會保守排除並記錄於 `excluded_summary.missing_payment_date`。本階段只新增 read-only service 與 tests，不新增 Dashboard、不改 schema、不改正式會計流程。
 
 ---
 
@@ -206,15 +207,15 @@ bench restart
 下一步建議：
 
 ```text
-P1-MVP-OPS Step 3C-2：Cash Account balance read-only service
+P1-MVP-OPS Step 3C-4：Overview cash balance display
 ```
 
 原因：
 
 ```text
-P1-MVP-OPS Step 3C-1 已確認無需新增 schema。
-下一步可新增 read-only service，依 opening_balance + included Money Flow income - included Money Flow expense 計算各資金帳戶餘額。
-本階段仍不做 Dashboard、不做正式會計、不做銀行對帳、不處理 Payment Entry / Journal Entry / Reconciliation。
+P1-MVP-OPS Step 3C-2 已完成 read-only balance service 與核心測試。
+下一步可在總覽顯示現金 / 主要銀行 / 其他資金帳戶餘額。
+仍應維持只讀，不做轉帳、不做銀行對帳、不處理 Payment Entry / Journal Entry / Reconciliation。
 ```
 
 建議 commit message：

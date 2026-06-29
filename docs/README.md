@@ -117,6 +117,12 @@ P1-MVP-OPS Step 3C-1 已完成：
 Cash Account balance schema gap review
 ```
 
+P1-MVP-OPS Step 3C-2 已完成：
+
+```text
+Cash Account balance read-only service
+```
+
 結論：
 
 ```text
@@ -126,16 +132,17 @@ Cash Account balance schema gap review
 車輛頁收支摘要維持為尚無收支紀錄或近 20 筆收支紀錄明細。
 資金帳戶餘額 foundation 已定義 opening balance + included Money Flow 的 read-only 計算邊界。
 Cash Account / Money Flow 現有 schema 足夠支撐下一步 read-only balance service，Step 3C-1 不需新增 schema。
+已新增 `cash_account_balance_service`，可依 Used Car Cash Account.opening_balance 與符合條件的 Used Car Money Flow 計算各資金帳戶收入、支出與餘額。本階段只新增 read-only service 與 tests，不新增 Dashboard、不改 schema、不改正式會計流程。
 Used Car Money Flow.flow_type Select options 有 metadata 變更時，需要 migrate 或 reload-doc 同步 site DB metadata。
 ```
 
 下一步建議：
 
 ```text
-P1-MVP-OPS Step 3C-2：Cash Account balance read-only service
+P1-MVP-OPS Step 3C-4：Overview cash balance display
 ```
 
-Step 3C-2 應新增 read-only service，依 `opening_balance + included Money Flow income - included Money Flow expense` 計算各資金帳戶餘額；不做 Dashboard、不做正式會計、不做銀行對帳。
+Step 3C-4 可在總覽顯示現金 / 主要銀行 / 其他資金帳戶餘額；仍維持只讀，不做轉帳、不做銀行對帳、不做正式會計。
 
 ---
 
