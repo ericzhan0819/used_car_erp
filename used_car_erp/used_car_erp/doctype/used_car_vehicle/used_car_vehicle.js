@@ -105,6 +105,7 @@ function apply_vehicle_form_mode(frm) {
 
   if (frm.doc.status === "已售出") {
     add_general_expense_money_flow_button(frm);
+    add_purchase_payment_money_flow_button(frm);
     add_sold_vehicle_primary_action_button(frm);
     set_vehicle_fields_read_only(frm, true);
     allow_sold_vehicle_tax_metadata_edit(frm);
@@ -115,6 +116,7 @@ function apply_vehicle_form_mode(frm) {
   if (is_reserved_vehicle(frm)) {
     load_active_reservation_for_reserved_vehicle(frm);
     add_general_expense_money_flow_button(frm);
+    add_purchase_payment_money_flow_button(frm);
     add_reserved_vehicle_secondary_buttons(frm);
     set_vehicle_fields_read_only(frm, true);
 
@@ -140,6 +142,7 @@ function apply_vehicle_form_mode(frm) {
 
   add_non_sold_vehicle_primary_action_button(frm);
   add_general_expense_money_flow_button(frm);
+  add_purchase_payment_money_flow_button(frm);
 
   if (frm._vehicle_edit_mode) {
     set_vehicle_fields_read_only(frm, false);
@@ -610,6 +613,7 @@ function clear_vehicle_action_buttons(frm) {
     "建立尾款收款",
     "收尾款",
     "新增支出",
+    "新增購車付款",
     "成交前檢查",
     "確認成交",
     "取消保留",
@@ -1256,6 +1260,25 @@ function add_general_expense_money_flow_button(frm) {
       }
 
       used_car_erp.guided_preparation_expense.open(frm);
+    },
+    "車輛作業"
+  );
+}
+
+function add_purchase_payment_money_flow_button(frm) {
+  if (frm.is_new() || !frm.doc.name || frm.doc.status === "封存") {
+    return;
+  }
+
+  frm.add_custom_button(
+    "新增購車付款",
+    () => {
+      if (!used_car_erp.guided_purchase_payment || !used_car_erp.guided_purchase_payment.open) {
+        frappe.msgprint("新增購車付款元件尚未載入，請重新整理後再試。");
+        return;
+      }
+
+      used_car_erp.guided_purchase_payment.open(frm);
     },
     "車輛作業"
   );

@@ -140,6 +140,7 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 - P1-MVP-OPS Step 3A-4B：已完成保留 / 成交流程同步 Used Car Vehicle 售車摘要欄位。收訂金並保留後，車輛頁會同步 customer、sold_price、reserved_date、sales_staff、sales_note；取消保留回上架中時，會清除 active reservation 的售車摘要欄位，避免留下誤導資料；確認成交時會補 sold_date，但不自動填 delivery_date。本階段未修改 Dialog、DocType schema、Money Flow 寫入、會計 runtime。
 - 取消保留清除售車摘要時，sold_price 以 0 回復，避免 DB not-null 欄位寫入 NULL。
 - P1-MVP-OPS Step 3B-1：已完成購車付款 Money Flow service foundation。`Used Car Money Flow.flow_type` 已支援 `購車付款`，`VehicleMoneyFlowService.create_purchase_payment_money_flow` 可建立支出方向、待審核、已付款 / 待付款 / 部分付款的購車付款紀錄，並保留 `purchase_price` 作為管理毛利成本基礎。本階段未新增 JS Dialog、車輛頁按鈕、Voucher Draft 或正式會計文件。
+- P1-MVP-OPS Step 3B-2：已完成 Guided Purchase Payment Dialog。車輛頁新增「新增購車付款」任務卡，接線至 `create_purchase_payment_money_flow`，可建立購車付款 Money Flow，成功後刷新車輛頁收支摘要。本階段未新增 Dashboard 餘額、未新增購車付款摘要統計、未建立 Voucher Draft、未改正式會計流程。
 
 ## 5. 目前 UX 邊界
 
@@ -178,24 +179,25 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 下一步建議：
 
 ```text
-P1-MVP-OPS Step 3B-2：Guided Purchase Payment Dialog
+P1-MVP-OPS Step 3B-3：Vehicle purchase payment summary polish
 ```
 
 原因：
 
 ```text
-P1-MVP-OPS Step 3B-1 已完成購車付款 Money Flow service foundation。
-下一步可在業務端補「新增購車付款」guided Dialog，接線到既有 service。
-仍不改 Journal Entry / Sales Invoice / Payment Entry，不處理 advance account warning，不把購車付款重複算入管理毛利成本。
+P1-MVP-OPS Step 3B-2 已完成車輛頁「新增購車付款」guided Dialog。
+下一步可補單車購車付款摘要 polish，例如已付 / 待付顯示與 UX 細節。
+仍不改 Journal Entry / Sales Invoice / Payment Entry，不處理 advance account warning，不新增 Dashboard 餘額。
 ```
 
-已完成 Step 3B-1 範圍：
+已完成 Step 3B-2 範圍：
 
 ```text
-新增購車付款 Money Flow flow_type 與 service method
-新增 controlled write action 與 action permission
-確認購車付款不走一般支出 validation，且不影響管理毛利 purchase_price 成本基礎
-不做 JS Dialog、不做車輛頁按鈕、不做 Voucher Draft、不做正式會計重構
+車輛頁新增「新增購車付款」任務卡
+新增 shared guided purchase payment Dialog
+接線至 create_purchase_payment_money_flow
+成功後刷新車輛頁收支摘要
+不做 Dashboard 餘額、不做購車付款摘要統計、不做 Voucher Draft、不做正式會計重構
 ```
 
 Step 3A 不應：
@@ -216,7 +218,7 @@ Step 3A 不應：
 建議 commit message：
 
 ```text
-feat: add purchase payment money flow service
+feat: add guided purchase payment dialog
 ```
 
 ## 7. Historical docs 注意事項
