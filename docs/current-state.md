@@ -23,13 +23,13 @@ f9c45e5 fix: move purchase payment summary to purchase section
 目前 docs 收尾穩定點：
 
 ```text
-docs: close purchase payment summary smoke
+docs: define cash account balance foundation
 ```
 
-目前最新 smoke 文件：
+目前最新 spec 文件：
 
 ```text
-P1-MVP-OPS Step 3B-3C：Purchase Payment Summary Browser Smoke Close
+P1-MVP-OPS Step 3C-0：Cash Account Balance Foundation Spec
 ```
 
 目前已知會計 polish 記錄：
@@ -124,6 +124,7 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 - P1-MVP-OPS Step 3B-3：已完成 Vehicle purchase payment summary polish。車輛頁收支摘要新增「購車付款摘要」，顯示購車價、已記錄購車付款、待付購車款與付款狀態。本階段只做單車摘要，不新增 Dashboard 總餘額、不建立正式會計文件、不改管理毛利成本計算。
 - P1-MVP-OPS Step 3B-3B：已完成購車付款摘要位置修正。購車付款摘要由收支摘要上方移至採購 / 買入資料區附近；收支摘要恢復為近 20 筆收支紀錄明細。本階段只調整 UI 掛載位置，不改購車付款計算邏輯、不改 Money Flow service、不新增 Dashboard 總餘額、不改正式會計流程。
 - P1-MVP-OPS Step 3B-3C：已完成 Purchase payment summary browser smoke close。購車付款摘要確認位於採購 / 買入資料區附近；購車付款摘要不再出現在收支摘要上方；收支摘要維持尚無收支紀錄或近 20 筆收支紀錄明細；新增購車付款後採購區摘要與收支摘要可更新。本階段不改 runtime、不改 schema、不改正式會計流程。
+- P1-MVP-OPS Step 3C-0：已完成 Cash account balance foundation spec。定義資金帳戶餘額 read-only foundation、Money Flow 納入 / 排除規則、部分付款 / 部分收款暫定語意、期初餘額、與單車損益 / 正式會計邊界。本階段 docs-only，不改 runtime、不改 schema、不新增 Dashboard。
 
 ---
 
@@ -204,28 +205,23 @@ bench restart
 下一步建議：
 
 ```text
-P1-MVP-OPS Step 3C：Cash account balance foundation
+P1-MVP-OPS Step 3C-1：Cash Account balance schema gap review
 ```
 
 原因：
 
 ```text
-P1-MVP-OPS Step 3B 採購付款輸入、單車摘要與位置修正已完成 browser smoke close。
-下一步可進入資金帳餘額 foundation，但建議先做文件規格，不直接新增 Dashboard runtime。
-需先定義期初餘額、已付款 / 部分付款 / 待付款對資金餘額的影響、哪些金流類型進餘額、哪些狀態不進餘額。
+P1-MVP-OPS Step 3C-0 已完成資金帳戶餘額 foundation spec。
+下一步需確認 Used Car Cash Account 現有 opening_balance / opening_balance_date / is_active 是否足夠。
+也需確認 Used Car Money Flow 現有 direction / settlement_status / status options 是否足夠支撐 read-only balance service。
+若無缺口，Step 3C-1 可以 docs-only close；若有缺口，再另開 schema 小步。
 仍不改 Journal Entry / Sales Invoice / Payment Entry，不處理 advance account warning，不新增正式會計流程。
-```
-
-Step 3C 第一小步建議：
-
-```text
-P1-MVP-OPS Step 3C-0：Cash account balance foundation spec
 ```
 
 建議 commit message：
 
 ```text
-docs: define cash account balance foundation
+docs: review cash account balance schema gap
 ```
 
 ---
