@@ -5,6 +5,7 @@ frappe.ui.form.on("Used Car Vehicle", {
 
   onload_post_render(frm) {
     schedule_vehicle_cashflow_inline_summary_render(frm);
+    schedule_vehicle_purchase_payment_inline_summary_render(frm);
   },
 
   after_save(frm) {
@@ -91,6 +92,7 @@ function apply_vehicle_form_mode(frm) {
   set_vehicle_intake_intro(frm);
   apply_vehicle_cashflow_section_label(frm);
   schedule_vehicle_cashflow_inline_summary_render(frm);
+  schedule_vehicle_purchase_payment_inline_summary_render(frm);
   apply_tax_fields_visibility(frm);
   apply_purchase_fields_visibility(frm);
   apply_registration_flags_visibility(frm);
@@ -270,12 +272,7 @@ function render_vehicle_cashflow_inline_summary(frm) {
         return;
       }
       const records = response.message || [];
-      load_vehicle_purchase_payment_records(frm, renderSeq, records, (purchasePaymentRecords) => {
-        if (!is_latest_vehicle_cashflow_summary_render(frm, renderSeq)) {
-          return;
-        }
-        summary.replaceWith(render_vehicle_cashflow_summary(records, frm, purchasePaymentRecords));
-      });
+      summary.replaceWith(render_vehicle_cashflow_summary(records));
     },
     error() {
       if (!is_latest_vehicle_cashflow_summary_render(frm, renderSeq)) {
@@ -299,6 +296,104 @@ function schedule_vehicle_cashflow_inline_summary_render(frm) {
     frm._vehicle_cashflow_summary_timer = null;
     render_vehicle_cashflow_inline_summary(frm);
   }, 100);
+}
+
+function render_vehicle_purchase_payment_inline_summary(frm) {
+  clear_vehicle_purchase_payment_inline_summary(frm);
+
+  if (!frm || frm.is_new() || !frm.doc.name) {
+    return;
+  }
+
+  const anchor = get_purchase_payment_summary_anchor(frm);
+  if (!anchor) {
+    return;
+  }
+
+  const renderSeq = bump_vehicle_purchase_payment_summary_render_seq(frm);
+  const host = $(render_vehicle_purchase_payment_summary_loading());
+  anchor.after(host);
+
+  load_vehicle_purchase_payment_records(
+    frm,
+    renderSeq,
+    [],
+    (purchasePaymentRecords) => {
+      if (!is_latest_vehicle_purchase_payment_summary_render(frm, renderSeq)) {
+        return;
+      }
+
+      host.replaceWith(render_vehicle_purchase_payment_inline_summary_card(frm, purchasePaymentRecords));
+    },
+    is_latest_vehicle_purchase_payment_summary_render
+  );
+}
+
+function schedule_vehicle_purchase_payment_inline_summary_render(frm) {
+  if (!frm || frm.is_new()) {
+    clear_vehicle_purchase_payment_inline_summary(frm);
+    return;
+  }
+
+  if (frm._vehicle_purchase_payment_summary_timer) {
+    clearTimeout(frm._vehicle_purchase_payment_summary_timer);
+  }
+
+  frm._vehicle_purchase_payment_summary_timer = setTimeout(() => {
+    frm._vehicle_purchase_payment_summary_timer = null;
+    render_vehicle_purchase_payment_inline_summary(frm);
+  }, 100);
+}
+
+function bump_vehicle_purchase_payment_summary_render_seq(frm) {
+  frm._vehicle_purchase_payment_summary_render_seq = (frm._vehicle_purchase_payment_summary_render_seq || 0) + 1;
+  return frm._vehicle_purchase_payment_summary_render_seq;
+}
+
+function is_latest_vehicle_purchase_payment_summary_render(frm, renderSeq) {
+  return renderSeq === frm._vehicle_purchase_payment_summary_render_seq;
+}
+
+function clear_vehicle_purchase_payment_inline_summary(frm) {
+  const root = frm && frm.wrapper ? $(frm.wrapper) : $(document);
+  root.find(".used-car-purchase-payment-inline-summary").remove();
+}
+
+function get_purchase_payment_summary_anchor(frm) {
+  const fieldnames = [
+    "purchase_price",
+    "purchase_source_type",
+    "purchase_source",
+    "purchase_date",
+    "purchase_staff",
+  ];
+
+  for (const fieldname of fieldnames) {
+    const field = frm.fields_dict[fieldname];
+    if (field && field.wrapper) {
+      const wrapper = $(field.wrapper);
+      const control = wrapper.closest(".frappe-control").first();
+      return control.length ? control : wrapper;
+    }
+  }
+
+  return null;
+}
+
+function render_vehicle_purchase_payment_summary_loading() {
+  return `
+    <div class="used-car-purchase-payment-inline-summary" style="margin: 10px 0 14px; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;">
+      <div class="text-muted">正在讀取購車付款摘要...</div>
+    </div>
+  `;
+}
+
+function render_vehicle_purchase_payment_inline_summary_card(frm, purchasePaymentRecords) {
+  return `
+    <div class="used-car-purchase-payment-inline-summary" style="margin: 10px 0 14px;">
+      ${render_vehicle_purchase_payment_summary(get_vehicle_purchase_payment_summary(frm, purchasePaymentRecords))}
+    </div>
+  `;
 }
 
 function bump_vehicle_cashflow_summary_render_seq(frm) {
@@ -362,7 +457,8 @@ function render_vehicle_cashflow_summary_error() {
   `;
 }
 
-function load_vehicle_purchase_payment_records(frm, renderSeq, fallbackRecords, callback) {
+function load_vehicle_purchase_payment_records(frm, renderSeq, fallbackRecords, callback, isLatestRender) {
+  const isLatest = isLatestRender || is_latest_vehicle_cashflow_summary_render;
   frappe.call({
     method: "frappe.client.get_list",
     args: {
@@ -376,13 +472,13 @@ function load_vehicle_purchase_payment_records(frm, renderSeq, fallbackRecords, 
       limit_page_length: 500,
     },
     callback(response) {
-      if (!is_latest_vehicle_cashflow_summary_render(frm, renderSeq)) {
+      if (!isLatest(frm, renderSeq)) {
         return;
       }
       callback(response.message || []);
     },
     error() {
-      if (!is_latest_vehicle_cashflow_summary_render(frm, renderSeq)) {
+      if (!isLatest(frm, renderSeq)) {
         return;
       }
       callback(get_purchase_payment_records(fallbackRecords));
@@ -390,15 +486,10 @@ function load_vehicle_purchase_payment_records(frm, renderSeq, fallbackRecords, 
   });
 }
 
-function render_vehicle_cashflow_summary(records, frm, purchasePaymentRecords) {
-  const purchasePaymentSummary = render_vehicle_purchase_payment_summary(
-    get_vehicle_purchase_payment_summary(frm, purchasePaymentRecords || records)
-  );
-
+function render_vehicle_cashflow_summary(records) {
   if (!records.length) {
     return `
       <div class="used-car-cashflow-inline-summary" style="margin: 10px 0 14px; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;">
-        ${purchasePaymentSummary}
         <div class="text-muted">尚無收支紀錄</div>
       </div>
     `;
@@ -407,7 +498,6 @@ function render_vehicle_cashflow_summary(records, frm, purchasePaymentRecords) {
   const rows = records.map(render_vehicle_cashflow_summary_row).join("");
   return `
     <div class="used-car-cashflow-inline-summary" style="margin: 10px 0 14px; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden;">
-      <div style="padding: 12px; border-bottom: 1px solid var(--border-color);">${purchasePaymentSummary}</div>
       <div style="padding: 10px 12px; font-weight: 600; border-bottom: 1px solid var(--border-color);">近 20 筆收支紀錄</div>
       <div style="overflow-x: auto;">
         <table class="table table-bordered" style="margin: 0; min-width: 920px;">
@@ -639,6 +729,7 @@ function set_vehicle_fields_read_only(frm, read_only) {
 
   frm.refresh_fields();
   schedule_vehicle_cashflow_inline_summary_render(frm);
+  schedule_vehicle_purchase_payment_inline_summary_render(frm);
 }
 
 function allow_sold_vehicle_tax_metadata_edit(frm) {

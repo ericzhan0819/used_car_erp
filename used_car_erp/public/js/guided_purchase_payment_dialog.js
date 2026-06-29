@@ -141,6 +141,9 @@ frappe.provide("used_car_erp.guided_purchase_payment");
 
         if (typeof render_vehicle_cashflow_inline_summary === "function") {
           render_vehicle_cashflow_inline_summary(frm);
+          if (typeof render_vehicle_purchase_payment_inline_summary === "function") {
+            render_vehicle_purchase_payment_inline_summary(frm);
+          }
           return;
         }
 
