@@ -121,6 +121,7 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 - P1-MVP-OPS Step 3B-1：已完成購車付款 Money Flow service foundation。`Used Car Money Flow.flow_type` 已支援 `購車付款`，`VehicleMoneyFlowService.create_purchase_payment_money_flow` 可建立支出方向、待審核、已付款 / 待付款 / 部分付款的購車付款紀錄，並保留 `purchase_price` 作為管理毛利成本基礎。本階段未新增 JS Dialog、車輛頁按鈕、Voucher Draft 或正式會計文件。
 - P1-MVP-OPS Step 3B-2：已完成 Guided Purchase Payment Dialog。車輛頁新增「新增購車付款」任務卡，接線至 `create_purchase_payment_money_flow`，可建立購車付款 Money Flow，成功後刷新車輛頁收支摘要。本階段未新增 Dashboard 餘額、未新增購車付款摘要統計、未建立 Voucher Draft、未改正式會計流程。
 - P1-MVP-OPS Step 3B-2A：已完成 Guided Purchase Payment Dialog browser smoke close。首次測試遇到 `Used Car Money Flow.flow_type` Select options metadata 尚未同步，執行 migrate / reload-doc 類操作後通過。購車付款可成功建立並顯示於車輛頁收支摘要。
+- P1-MVP-OPS Step 3B-3：已完成 Vehicle purchase payment summary polish。車輛頁收支摘要新增「購車付款摘要」，顯示購車價、已記錄購車付款、待付購車款與付款狀態。本階段只做單車摘要，不新增 Dashboard 總餘額、不建立正式會計文件、不改管理毛利成本計算。
 
 ---
 
@@ -200,15 +201,14 @@ bench restart
 下一步建議：
 
 ```text
-P1-MVP-OPS Step 3B-3：Vehicle purchase payment summary polish
+P1-MVP-OPS Step 3B-3A：Vehicle purchase payment summary browser smoke
 ```
 
 原因：
 
 ```text
-P1-MVP-OPS Step 3B-2A 已完成 browser smoke close。
-購車付款可建立並出現在車輛頁收支摘要。
-下一步可補單車購車付款摘要 polish，例如購車價、已記錄購車付款、待付款差額。
+P1-MVP-OPS Step 3B-3 已完成單車購車付款摘要 polish。
+下一步可用 browser smoke 確認車輛頁顯示、付款新增後刷新、待付差額與超付提醒。
 仍不改 Journal Entry / Sales Invoice / Payment Entry，不處理 advance account warning，不新增 Dashboard 餘額。
 ```
 

@@ -108,21 +108,28 @@ P1-MVP-OPS Step 3B-2A 已完成：
 Guided Purchase Payment Dialog browser smoke close
 ```
 
+P1-MVP-OPS Step 3B-3 已完成：
+
+```text
+Vehicle purchase payment summary polish
+```
+
 結論：
 
 ```text
 新增購車付款 Dialog runtime 可用。
 購車付款可建立為 Used Car Money Flow。
+車輛頁收支摘要已新增「購車付款摘要」，顯示購車價、已記錄購車付款、待付購車款與付款狀態。
 Used Car Money Flow.flow_type Select options 有 metadata 變更時，需要 migrate 或 reload-doc 同步 site DB metadata。
 ```
 
 下一步建議：
 
 ```text
-P1-MVP-OPS Step 3B-3：Vehicle purchase payment summary polish
+P1-MVP-OPS Step 3B-3A：Vehicle purchase payment summary browser smoke
 ```
 
-Step 3B-3 應聚焦單車購車付款摘要，例如購車價、已記錄購車付款、待付款差額。仍不做 Dashboard 總餘額、正式會計文件、Payment Entry、Journal Entry 或 Purchase Invoice。
+Step 3B-3 已聚焦單車購車付款摘要。本階段只做單車摘要，不新增 Dashboard 總餘額、不建立正式會計文件、不改管理毛利成本計算。
 
 ---
 

@@ -269,7 +269,13 @@ function render_vehicle_cashflow_inline_summary(frm) {
       if (!is_latest_vehicle_cashflow_summary_render(frm, renderSeq)) {
         return;
       }
-      summary.replaceWith(render_vehicle_cashflow_summary(response.message || []));
+      const records = response.message || [];
+      load_vehicle_purchase_payment_records(frm, renderSeq, records, (purchasePaymentRecords) => {
+        if (!is_latest_vehicle_cashflow_summary_render(frm, renderSeq)) {
+          return;
+        }
+        summary.replaceWith(render_vehicle_cashflow_summary(records, frm, purchasePaymentRecords));
+      });
     },
     error() {
       if (!is_latest_vehicle_cashflow_summary_render(frm, renderSeq)) {
@@ -356,10 +362,43 @@ function render_vehicle_cashflow_summary_error() {
   `;
 }
 
-function render_vehicle_cashflow_summary(records) {
+function load_vehicle_purchase_payment_records(frm, renderSeq, fallbackRecords, callback) {
+  frappe.call({
+    method: "frappe.client.get_list",
+    args: {
+      doctype: "Used Car Money Flow",
+      filters: {
+        vehicle: frm.doc.name,
+        flow_type: "購車付款",
+        status: ["!=", "已作廢"],
+      },
+      fields: ["name", "flow_type", "amount", "settlement_status", "status"],
+      limit_page_length: 500,
+    },
+    callback(response) {
+      if (!is_latest_vehicle_cashflow_summary_render(frm, renderSeq)) {
+        return;
+      }
+      callback(response.message || []);
+    },
+    error() {
+      if (!is_latest_vehicle_cashflow_summary_render(frm, renderSeq)) {
+        return;
+      }
+      callback(get_purchase_payment_records(fallbackRecords));
+    },
+  });
+}
+
+function render_vehicle_cashflow_summary(records, frm, purchasePaymentRecords) {
+  const purchasePaymentSummary = render_vehicle_purchase_payment_summary(
+    get_vehicle_purchase_payment_summary(frm, purchasePaymentRecords || records)
+  );
+
   if (!records.length) {
     return `
       <div class="used-car-cashflow-inline-summary" style="margin: 10px 0 14px; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;">
+        ${purchasePaymentSummary}
         <div class="text-muted">尚無收支紀錄</div>
       </div>
     `;
@@ -368,6 +407,7 @@ function render_vehicle_cashflow_summary(records) {
   const rows = records.map(render_vehicle_cashflow_summary_row).join("");
   return `
     <div class="used-car-cashflow-inline-summary" style="margin: 10px 0 14px; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden;">
+      <div style="padding: 12px; border-bottom: 1px solid var(--border-color);">${purchasePaymentSummary}</div>
       <div style="padding: 10px 12px; font-weight: 600; border-bottom: 1px solid var(--border-color);">近 20 筆收支紀錄</div>
       <div style="overflow-x: auto;">
         <table class="table table-bordered" style="margin: 0; min-width: 920px;">
@@ -388,6 +428,74 @@ function render_vehicle_cashflow_summary(records) {
       </div>
     </div>
   `;
+}
+
+function get_vehicle_purchase_payment_summary(frm, records) {
+  const purchasePaymentRecords = get_purchase_payment_records(records);
+  const purchasePrice = flt((frm && frm.doc && frm.doc.purchase_price) || 0);
+  const purchasePaymentTotal = purchasePaymentRecords.reduce((total, record) => total + flt(record.amount || 0), 0);
+  const remainingPurchasePayable = Math.max(purchasePrice - purchasePaymentTotal, 0);
+  const overpaidPurchasePayment = Math.max(purchasePaymentTotal - purchasePrice, 0);
+
+  return {
+    purchase_price: purchasePrice,
+    purchase_payment_total: purchasePaymentTotal,
+    remaining_purchase_payable: remainingPurchasePayable,
+    overpaid_purchase_payment: overpaidPurchasePayment,
+    paid_total: sum_purchase_payment_records_by_settlement_status(purchasePaymentRecords, "已付款"),
+    partial_total: sum_purchase_payment_records_by_settlement_status(purchasePaymentRecords, "部分付款"),
+    pending_total: sum_purchase_payment_records_by_settlement_status(purchasePaymentRecords, "待付款"),
+  };
+}
+
+function render_vehicle_purchase_payment_summary(summary) {
+  const status = get_vehicle_purchase_payment_status(summary);
+  return `
+    <div style="border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 12px; background: var(--fg-color);">
+      <div style="font-weight: 600; margin-bottom: 8px;">購車付款摘要</div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">
+        ${render_vehicle_purchase_payment_summary_item("購車價", format_vehicle_currency(summary.purchase_price))}
+        ${render_vehicle_purchase_payment_summary_item("已記錄購車付款", format_vehicle_currency(summary.purchase_payment_total))}
+        ${render_vehicle_purchase_payment_summary_item("待付購車款", format_vehicle_currency(summary.remaining_purchase_payable))}
+        ${render_vehicle_purchase_payment_summary_item("付款狀態", status)}
+      </div>
+    </div>
+  `;
+}
+
+function render_vehicle_purchase_payment_summary_item(label, value) {
+  return `
+    <div>
+      <div class="text-muted" style="font-size: 12px; margin-bottom: 2px;">${escape_vehicle_dashboard_html(label)}</div>
+      <div style="font-weight: 500;">${escape_vehicle_dashboard_html(value)}</div>
+    </div>
+  `;
+}
+
+function get_vehicle_purchase_payment_status(summary) {
+  if (summary.purchase_price <= 0) {
+    return "購車價未填，請確認車輛資料";
+  }
+  if (summary.purchase_payment_total <= 0) {
+    return "尚未記錄購車付款";
+  }
+  if (summary.overpaid_purchase_payment > 0) {
+    return "購車付款超過購車價，請確認資料";
+  }
+  if (summary.remaining_purchase_payable > 0) {
+    return "尚有待付購車款";
+  }
+  return "購車付款已記錄完成";
+}
+
+function get_purchase_payment_records(records) {
+  return (records || []).filter((record) => record.flow_type === "購車付款" && record.status !== "已作廢");
+}
+
+function sum_purchase_payment_records_by_settlement_status(records, settlementStatus) {
+  return records
+    .filter((record) => record.settlement_status === settlementStatus)
+    .reduce((total, record) => total + flt(record.amount || 0), 0);
 }
 
 function render_vehicle_cashflow_summary_row(record) {
