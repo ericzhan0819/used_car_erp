@@ -11,6 +11,7 @@ from used_car_erp.used_car_erp.services.vehicle_voucher_service import VehicleVo
 
 VALID_PAYMENT_METHODS = ("現金", "匯款", "信用卡", "其他")
 GENERAL_EXPENSE_FLOW_TYPES = ("整備支出", "維修支出", "美容支出", "代辦支出", "拍場支出", "其他支出")
+PURCHASE_PAYMENT_SETTLEMENT_STATUSES = ("已付款", "待付款", "部分付款")
 RESTRICTED_ACCOUNTING_DOCTYPES = (
 	"Stock Entry",
 	"Purchase Invoice",
@@ -78,6 +79,62 @@ class VehicleMoneyFlowService:
 			"amount": flt(money_flow.amount),
 			"status": money_flow.status,
 			"message": "已建立一般支出金流紀錄與傳票草稿。",
+		}
+
+	def create_purchase_payment_money_flow(
+		self,
+		vehicle: str,
+		amount,
+		payment_date=None,
+		payment_method: str | None = None,
+		payment_reference: str | None = None,
+		notes: str | None = None,
+		evidence_attachment: str | None = None,
+		cash_account: str | None = None,
+		settlement_status: str | None = None,
+		counterparty_name: str | None = None,
+	):
+		assert_can_perform_used_car_action(
+			"used_car_money_flow.purchase_payment.create",
+			message="你沒有建立中古車購車付款金流的權限。",
+		)
+		settlement_status = settlement_status or self._default_settlement_status("支出")
+		self._validate_purchase_payment_money_flow(vehicle, amount, payment_method, settlement_status, counterparty_name)
+		vehicle_doc = frappe.get_doc("Used Car Vehicle", vehicle)
+		vehicle_doc.check_permission("read")
+
+		money_flow_values = {
+			"doctype": "Used Car Money Flow",
+			"flow_type": "購車付款",
+			"direction": "支出",
+			"status": "待審核",
+			"vehicle": vehicle_doc.name,
+			"stock_no": vehicle_doc.stock_no,
+			"amount": amount,
+			"payment_date": payment_date or nowdate(),
+			"payment_method": payment_method,
+			"cash_account": self._resolve_purchase_payment_cash_account(cash_account, payment_method, settlement_status),
+			"settlement_status": settlement_status,
+			"payment_reference": payment_reference,
+			"counterparty_name": counterparty_name,
+			"evidence_attachment": evidence_attachment,
+			"notes": notes,
+			"created_by_service": 1,
+		}
+		money_flow = insert_service_controlled_doc(
+			frappe.get_doc(money_flow_values),
+			action="used_car_money_flow.purchase_payment.create",
+			allowed_doctype="Used Car Money Flow",
+			fieldnames=money_flow_values.keys(),
+		)
+
+		return {
+			"money_flow": money_flow.name,
+			"voucher_draft": None,
+			"amount": flt(money_flow.amount),
+			"status": money_flow.status,
+			"settlement_status": money_flow.settlement_status,
+			"message": "已建立購車付款金流紀錄。",
 		}
 
 	def create_deposit_money_flow_from_reservation(
@@ -298,6 +355,25 @@ class VehicleMoneyFlowService:
 		if payment_method not in VALID_PAYMENT_METHODS:
 			frappe.throw("付款方式必須是：現金、匯款、信用卡、其他。")
 
+	def _validate_purchase_payment_money_flow(
+		self,
+		vehicle,
+		amount,
+		payment_method: str | None,
+		settlement_status: str | None,
+		counterparty_name: str | None,
+	):
+		if not vehicle:
+			frappe.throw("車輛為必填。")
+		if flt(amount) <= 0:
+			frappe.throw("購車付款金額必須大於 0。")
+		if payment_method not in VALID_PAYMENT_METHODS:
+			frappe.throw("付款方式必須是：現金、匯款、信用卡、其他。")
+		if settlement_status not in PURCHASE_PAYMENT_SETTLEMENT_STATUSES:
+			frappe.throw("購車付款收付狀態必須是：已付款、待付款、部分付款。")
+		if not counterparty_name:
+			frappe.throw("購車付款交易對象為必填。")
+
 	def _validate_reservation_for_final_payment_money_flow(self, reservation, amount, payment_method: str):
 		if reservation.status != "有效":
 			frappe.throw("只有有效保留紀錄可以建立尾款金流。")
@@ -346,6 +422,13 @@ class VehicleMoneyFlowService:
 			{"account_name": account_name, "is_active": 1},
 			"name",
 		)
+
+	def _resolve_purchase_payment_cash_account(self, cash_account: str | None, payment_method: str | None, settlement_status: str | None):
+		if cash_account:
+			return cash_account
+		if settlement_status == "待付款":
+			return None
+		return self._infer_cash_account_from_payment_method(payment_method)
 
 	def _default_settlement_status(self, direction: str | None):
 		if direction == "收入":
@@ -677,6 +760,34 @@ def create_general_expense_money_flow(
 		payment_date=payment_date,
 		flow_type=flow_type,
 		amount=amount,
+		payment_method=payment_method,
+		payment_reference=payment_reference,
+		notes=notes,
+		evidence_attachment=evidence_attachment,
+		cash_account=cash_account,
+		settlement_status=settlement_status,
+		counterparty_name=counterparty_name,
+	)
+
+
+@frappe.whitelist()
+def create_purchase_payment_money_flow(
+	vehicle: str,
+	amount,
+	payment_date=None,
+	payment_method: str | None = None,
+	payment_reference: str | None = None,
+	notes: str | None = None,
+	evidence_attachment: str | None = None,
+	cash_account: str | None = None,
+	settlement_status: str | None = None,
+	counterparty_name: str | None = None,
+):
+	service = VehicleMoneyFlowService()
+	return service.create_purchase_payment_money_flow(
+		vehicle=vehicle,
+		amount=amount,
+		payment_date=payment_date,
 		payment_method=payment_method,
 		payment_reference=payment_reference,
 		notes=notes,

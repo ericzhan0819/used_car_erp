@@ -113,6 +113,7 @@ def _base_docs():
 			"MF-DEPOSIT": _money_flow(name="MF-DEPOSIT", flow_type="訂金收款", amount=50000),
 			"MF-FINAL": _money_flow(name="MF-FINAL", flow_type="尾款收款", amount=328000),
 			"MF-INCOME": _money_flow(name="MF-INCOME", flow_type="其他收入", amount=2000),
+			"MF-PURCHASE": _money_flow(name="MF-PURCHASE", flow_type="購車付款", direction="支出", amount=315000),
 		},
 	}
 
@@ -257,6 +258,16 @@ def test_deposit_and_final_payment_not_double_counted(monkeypatch):
 	report = _run()
 	assert report["other_direct_income"] == 2000
 	assert [row["name"] for row in report["other_direct_income_rows"]] == ["MF-INCOME"]
+
+
+def test_purchase_payment_not_double_counted_in_management_profit(monkeypatch):
+	_fake_environment(monkeypatch)
+	report = _run()
+	assert report["purchase_price"] == 315000
+	assert report["direct_cost_total"] == 21000
+	assert report["management_gross_profit"] == 44000
+	assert all(row["name"] != "MF-PURCHASE" for row in report["direct_cost_rows"])
+	assert all(row["name"] != "MF-PURCHASE" for row in report["other_direct_income_rows"])
 
 
 def test_other_direct_income_adds_back(monkeypatch):

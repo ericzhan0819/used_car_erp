@@ -30,6 +30,7 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		self.created_journal_entries = []
 		self.created_sales_invoices = []
 		self.created_customers = []
+		self.created_cash_accounts = []
 
 	def tearDown(self):
 		for reservation_name in reversed(self.created_reservations):
@@ -128,6 +129,9 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 					frappe.delete_doc("Customer", customer_name, force=True)
 				except Exception:
 					pass
+		for cash_account_name in reversed(self.created_cash_accounts):
+			if frappe.db.exists("Used Car Cash Account", cash_account_name):
+				frappe.delete_doc("Used Car Cash Account", cash_account_name, force=True)
 		frappe.db.commit()
 
 	def test_create_reservation_creates_money_flow(self):
@@ -414,6 +418,183 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		self.assertEqual(calls[0]["allowed_doctype"], "Used Car Money Flow")
 		self.assertIn("evidence_attachment", calls[0]["fieldnames"])
 
+	def test_create_purchase_payment_creates_money_flow(self):
+		self._ensure_cash_account("現金", "現金")
+		vehicle = self._make_listed_vehicle()
+		result = self.money_flow_service.create_purchase_payment_money_flow(
+			vehicle=vehicle.name,
+			amount=315000,
+			payment_method="現金",
+			payment_reference="TEST PURCHASE",
+			counterparty_name="測試賣方",
+			evidence_attachment="/files/test-purchase.pdf",
+		)
+		self.created_money_flows.append(result.get("money_flow"))
+		money_flow = frappe.get_doc("Used Car Money Flow", result.get("money_flow"))
+
+		self.assertEqual(money_flow.flow_type, "購車付款")
+		self.assertEqual(money_flow.direction, "支出")
+		self.assertEqual(money_flow.status, "待審核")
+		self.assertEqual(money_flow.settlement_status, "已付款")
+		self.assertEqual(money_flow.cash_account, "現金")
+		self.assertEqual(money_flow.counterparty_name, "測試賣方")
+		self.assertEqual(money_flow.evidence_attachment, "/files/test-purchase.pdf")
+		self.assertIsNone(result.get("voucher_draft"))
+
+	def test_create_purchase_payment_pending_allows_empty_cash_account(self):
+		vehicle = self._make_listed_vehicle()
+		result = self.money_flow_service.create_purchase_payment_money_flow(
+			vehicle=vehicle.name,
+			amount=315000,
+			payment_method="匯款",
+			settlement_status="待付款",
+			counterparty_name="測試賣方",
+		)
+		self.created_money_flows.append(result.get("money_flow"))
+		money_flow = frappe.get_doc("Used Car Money Flow", result.get("money_flow"))
+
+		self.assertEqual(money_flow.settlement_status, "待付款")
+		self.assertFalse(money_flow.cash_account)
+
+	def test_create_purchase_payment_does_not_create_restricted_documents(self):
+		vehicle = self._make_listed_vehicle()
+		before_counts = self._restricted_doc_counts()
+		result = self.money_flow_service.create_purchase_payment_money_flow(
+			vehicle=vehicle.name,
+			amount=315000,
+			payment_method="現金",
+			counterparty_name="測試賣方",
+		)
+		self.created_money_flows.append(result.get("money_flow"))
+		after_counts = self._restricted_doc_counts()
+
+		self.assertEqual(after_counts["Journal Entry"], before_counts["Journal Entry"])
+		self.assertEqual(after_counts["Purchase Invoice"], before_counts["Purchase Invoice"])
+		self.assertEqual(after_counts["Payment Entry"], before_counts["Payment Entry"])
+		self.assertEqual(after_counts["Sales Invoice"], before_counts["Sales Invoice"])
+		self.assertEqual(after_counts["Delivery Note"], before_counts["Delivery Note"])
+		self.assertEqual(after_counts["Stock Entry"], before_counts["Stock Entry"])
+
+	def test_create_purchase_payment_rejects_non_positive_amount(self):
+		vehicle = self._make_listed_vehicle()
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.money_flow_service.create_purchase_payment_money_flow(
+				vehicle=vehicle.name,
+				amount=0,
+				payment_method="現金",
+				counterparty_name="測試賣方",
+			)
+		self.assertIn("購車付款金額必須大於 0", str(failure.exception))
+
+	def test_create_purchase_payment_rejects_invalid_payment_method(self):
+		vehicle = self._make_listed_vehicle()
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.money_flow_service.create_purchase_payment_money_flow(
+				vehicle=vehicle.name,
+				amount=315000,
+				payment_method="支票",
+				counterparty_name="測試賣方",
+			)
+		self.assertIn("付款方式必須是", str(failure.exception))
+
+	def test_create_purchase_payment_rejects_invalid_settlement_status(self):
+		vehicle = self._make_listed_vehicle()
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.money_flow_service.create_purchase_payment_money_flow(
+				vehicle=vehicle.name,
+				amount=315000,
+				payment_method="現金",
+				settlement_status="已收款",
+				counterparty_name="測試賣方",
+			)
+		self.assertIn("購車付款收付狀態必須是", str(failure.exception))
+
+	def test_create_purchase_payment_requires_counterparty_name(self):
+		vehicle = self._make_listed_vehicle()
+
+		with self.assertRaises(frappe.ValidationError) as failure:
+			self.money_flow_service.create_purchase_payment_money_flow(
+				vehicle=vehicle.name,
+				amount=315000,
+				payment_method="現金",
+			)
+		self.assertIn("購車付款交易對象為必填", str(failure.exception))
+
+	def test_purchase_payment_does_not_use_general_expense_validation(self):
+		vehicle = self._make_listed_vehicle()
+		result = self.money_flow_service.create_purchase_payment_money_flow(
+			vehicle=vehicle.name,
+			amount=315000,
+			payment_method="現金",
+			counterparty_name="測試賣方",
+		)
+		self.created_money_flows.append(result.get("money_flow"))
+
+		self.assertTrue(frappe.db.exists("Used Car Money Flow", result.get("money_flow")))
+
+	def test_create_purchase_payment_uses_controlled_write(self):
+		calls = []
+
+		class FakeVehicle:
+			name = "UC-TEST-001"
+			stock_no = "STOCK-001"
+
+			def check_permission(self, permission_type):
+				self.permission_type = permission_type
+
+		class FakeMoneyFlow:
+			doctype = "Used Car Money Flow"
+			name = "MF-PURCHASE-001"
+			amount = 315000
+			status = "待審核"
+			settlement_status = "已付款"
+
+		def fake_get_doc(*args):
+			if args == ("Used Car Vehicle", "UC-TEST-001"):
+				return FakeVehicle()
+			if len(args) == 1 and args[0].get("doctype") == "Used Car Money Flow":
+				return FakeMoneyFlow()
+			raise AssertionError(args)
+
+		def fake_insert_service_controlled_doc(doc, *, action, allowed_doctype, fieldnames):
+			calls.append(
+				{
+					"action": action,
+					"allowed_doctype": allowed_doctype,
+					"fieldnames": set(fieldnames),
+				}
+			)
+			return doc
+
+		original_get_doc = vehicle_money_flow_service.frappe.get_doc
+		original_insert = vehicle_money_flow_service.insert_service_controlled_doc
+		try:
+			vehicle_money_flow_service.frappe.get_doc = fake_get_doc
+			vehicle_money_flow_service.insert_service_controlled_doc = fake_insert_service_controlled_doc
+
+			result = self.money_flow_service.create_purchase_payment_money_flow(
+				vehicle="UC-TEST-001",
+				payment_date="2026-06-29",
+				amount=315000,
+				payment_method="現金",
+				cash_account="現金",
+				payment_reference="TEST PURCHASE",
+				counterparty_name="測試賣方",
+				evidence_attachment="/files/test-purchase.pdf",
+			)
+		finally:
+			vehicle_money_flow_service.frappe.get_doc = original_get_doc
+			vehicle_money_flow_service.insert_service_controlled_doc = original_insert
+
+		self.assertEqual(result.get("money_flow"), "MF-PURCHASE-001")
+		self.assertIsNone(result.get("voucher_draft"))
+		self.assertEqual(calls[0]["action"], "used_car_money_flow.purchase_payment.create")
+		self.assertEqual(calls[0]["allowed_doctype"], "Used Car Money Flow")
+		self.assertIn("evidence_attachment", calls[0]["fieldnames"])
+
 	def test_money_flow_validation_accepts_general_expense_flow_type(self):
 		money_flow = UsedCarMoneyFlow(
 			{
@@ -424,6 +605,23 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 				"payment_date": "2026-06-12",
 				"payment_method": "現金",
 				"amount": 1200,
+			}
+		)
+
+		money_flow.validate()
+
+	def test_money_flow_validation_accepts_purchase_payment_flow_type(self):
+		money_flow = UsedCarMoneyFlow(
+			{
+				"doctype": "Used Car Money Flow",
+				"status": "待審核",
+				"flow_type": "購車付款",
+				"direction": "支出",
+				"vehicle": "UC-TEST-001",
+				"payment_date": "2026-06-29",
+				"payment_method": "現金",
+				"settlement_status": "已付款",
+				"amount": 315000,
 			}
 		)
 
@@ -925,6 +1123,20 @@ class TestVehicleMoneyFlowService(FrappeTestCase):
 		self.created_money_flows.append(result.get("money_flow"))
 		self.created_voucher_drafts.append(result.get("voucher_draft"))
 		return result
+
+	def _ensure_cash_account(self, account_name, account_type):
+		if frappe.db.exists("Used Car Cash Account", account_name):
+			return account_name
+		cash_account = frappe.get_doc(
+			{
+				"doctype": "Used Car Cash Account",
+				"account_name": account_name,
+				"account_type": account_type,
+				"is_active": 1,
+			}
+		).insert(ignore_permissions=True)
+		self.created_cash_accounts.append(cash_account.name)
+		return cash_account.name
 
 	def _create_fully_posted_reservation(self):
 		result = self._create_reservation_for_listed_vehicle()

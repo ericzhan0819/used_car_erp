@@ -40,6 +40,7 @@ class TestUsedCarControlledWriteService(FrappeTestCase):
 		cash_account_fields = {"cash_account", "settlement_status", "counterparty_name"}
 		for action in (
 			"used_car_money_flow.general_expense.create",
+			"used_car_money_flow.purchase_payment.create",
 			"used_car_money_flow.deposit.create",
 			"used_car_money_flow.final_payment.create",
 			"used_car_money_flow.deposit_refund.create",
@@ -49,6 +50,7 @@ class TestUsedCarControlledWriteService(FrappeTestCase):
 	def test_money_flow_create_actions_reject_unapproved_money_flow_field(self):
 		for action in (
 			"used_car_money_flow.general_expense.create",
+			"used_car_money_flow.purchase_payment.create",
 			"used_car_money_flow.deposit.create",
 			"used_car_money_flow.final_payment.create",
 			"used_car_money_flow.deposit_refund.create",
@@ -92,6 +94,39 @@ class TestUsedCarControlledWriteService(FrappeTestCase):
 				"used_car_money_flow.general_expense.create",
 				"Used Car Vehicle",
 				{"status"},
+			)
+
+	def test_purchase_payment_money_flow_allows_money_flow_fields(self):
+		assert_controlled_write_policy(
+			"used_car_money_flow.purchase_payment.create",
+			"Used Car Money Flow",
+			{
+				"doctype",
+				"flow_type",
+				"direction",
+				"status",
+				"vehicle",
+				"stock_no",
+				"amount",
+				"payment_date",
+				"payment_method",
+				"cash_account",
+				"settlement_status",
+				"payment_reference",
+				"counterparty_name",
+				"evidence_attachment",
+				"notes",
+				"created_by_service",
+				"voucher_draft",
+			},
+		)
+
+	def test_purchase_payment_money_flow_rejects_unapproved_doctype(self):
+		with self.assertRaises(UsedCarControlledWriteError):
+			assert_controlled_write_policy(
+				"used_car_money_flow.purchase_payment.create",
+				"Used Car Voucher Draft",
+				{"doctype"},
 			)
 
 	def test_cancel_allows_reservation_cancellation_fields(self):
