@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"uco_overview_entry_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>總覽入口</b></span>\",\"col\":12}},{\"id\":\"uco_open_overview\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"前往總覽\",\"col\":3}}]",
+ "content": "[{\"id\":\"uco_overview_entry_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>總覽</b></span>\",\"col\":12}},{\"id\":\"uco_overview_entry_description\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"text-muted\\\">中古車業務操作面板</span>\",\"col\":12}},{\"id\":\"uco_new_purchase_vehicle\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"新增買入車輛\",\"col\":3}},{\"id\":\"uco_vehicle_list\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"車輛列表\",\"col\":3}},{\"id\":\"uco_vehicle_management\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"車輛管理\",\"col\":3}},{\"id\":\"uco_accounting_operations\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"會計作業\",\"col\":3}},{\"id\":\"uco_full_overview\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"完整總覽頁\",\"col\":3}}]",
  "creation": "2026-06-30 23:20:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -10,7 +10,7 @@
  "icon": "home",
  "idx": 0,
  "is_hidden": 0,
- "label": "總覽入口",
+ "label": "總覽",
  "links": [],
  "modified": "2026-06-30 23:20:00.000000",
  "modified_by": "Administrator",
@@ -25,11 +25,32 @@
  "roles": [],
  "sequence_id": 0.5,
  "shortcuts": [
-  {
-   "label": "前往總覽",
-   "link_to": "總覽",
-   "type": "Page"
-  }
- ],
- "title": "總覽入口"
+   {
+    "label": "新增買入車輛",
+    "link_to": "總覽",
+    "type": "Page"
+   },
+   {
+    "doc_view": "List",
+    "label": "車輛列表",
+    "link_to": "Used Car Vehicle",
+    "type": "DocType"
+   },
+   {
+    "label": "車輛管理",
+    "type": "URL",
+    "url": "/app/workspace/車輛管理"
+   },
+   {
+    "label": "會計作業",
+    "type": "URL",
+    "url": "/app/workspace/會計作業"
+   },
+   {
+    "label": "完整總覽頁",
+    "link_to": "總覽",
+    "type": "Page"
+   }
+  ],
+  "title": "總覽入口"
 }

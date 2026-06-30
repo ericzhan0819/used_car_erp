@@ -85,12 +85,15 @@ Money Flow = MVP 主帳 / 營運事實紀錄
 
 ```text
 /app/總覽 → custom Page
-Home / Sidebar → 總覽入口 → 前往總覽 → /app/總覽
+Home / Sidebar → 總覽 → 直接可用的總覽 Workspace panel
+Workspace name / route / title 仍為 總覽入口，避免覆蓋 /app/總覽 custom Page
 ```
 
-總覽作為中古車業務操作面板，提供庫存狀態卡與常用作業，並直接呼叫 shared guided intake Dialog 開啟「新增買入車輛」。後續 Dashboard 指標應逐步往老闆可用的營運總覽收斂，例如現金 / 銀行餘額、待收款、缺憑證與本月成交台數。
+總覽作為中古車業務操作面板，提供庫存狀態卡與常用作業，並直接呼叫 shared guided intake Dialog 開啟「新增買入車輛」。`總覽入口` Workspace 是 sidebar-friendly shell，Workspace 內容標題顯示為「總覽」，提供新增買入車輛、車輛列表、車輛管理、會計作業與完整總覽頁入口，降低 Home → 總覽入口 → /app/總覽 的二次跳轉感。因 Frappe 會用 Workspace title 檢查 route conflict，Workspace title 仍維持 `總覽入口` 以避開既有 `Page = 總覽`；標準 import-doc 會讓 DB label 跟隨 title，因此 Sidebar 仍可能顯示可理解的 `總覽入口`。後續 Dashboard 指標應逐步往老闆可用的營運總覽收斂，例如現金 / 銀行餘額、待收款、缺憑證與本月成交台數。
 
 P1-MVP-DASH-NAV-1 已修復 Home / Sidebar 導覽入口。`/app/總覽` custom Page 一直存在，本次只新增非衝突 Workspace `總覽入口` 與 `前往總覽` Page shortcut，不建立 `Workspace = 總覽`，因此不覆蓋 custom Page route。本次不改總覽 runtime、不新增 Dashboard 指標、不改 Cash Account balance service。
+
+P1-MVP-DASH-NAV-2 已將 Workspace `總覽入口` 調整為可直接使用的總覽導覽面板，Workspace 內容標題顯示為 `總覽`，並保留 `/app/總覽` custom Page 作為完整總覽頁與 guided runtime。Workspace title 仍維持 `總覽入口` 以通過 Frappe route conflict 檢查。本階段不建立 `Workspace = 總覽`、不新增 cash balance dashboard card、不改 Cash Account balance service。
 
 ---
 
@@ -131,6 +134,7 @@ P1-MVP-DASH-NAV-1 已修復 Home / Sidebar 導覽入口。`/app/總覽` custom P
 - P1-MVP-OPS Step 3C-1：已完成 Cash Account balance schema gap review。結論為 no schema change required；現有 `Used Car Cash Account` 的 `opening_balance` / `opening_balance_date` / `is_active` 與 `Used Car Money Flow` 的 `direction` / `settlement_status` / `status` 已足夠支撐下一步 read-only balance service。本階段 docs-only，不改 runtime、不改 schema、不新增 Dashboard。
 - P1-MVP-OPS Step 3C-2：已完成 Cash Account balance read-only service。新增 `cash_account_balance_service`，可依 `Used Car Cash Account.opening_balance` 與符合條件的 `Used Car Money Flow` 計算各資金帳戶收入、支出與餘額；`as_of_date` 有值時，付款日期空白的 Money Flow 會保守排除並記錄於 `excluded_summary.missing_payment_date`。本階段只新增 read-only service 與 tests，不新增 Dashboard、不改 schema、不改正式會計流程。
 - P1-MVP-DASH-NAV-1：已完成 Restore overview navigation entry。新增 `總覽入口` Workspace 作為 Home / Sidebar 可見入口，內含 `前往總覽` shortcut 指向既有 custom Page `總覽`。本階段只修導覽入口，不改 `/app/總覽` runtime、不新增 Dashboard 指標、不改 Cash Account balance service。
+- P1-MVP-DASH-NAV-2：已完成 Turn overview entry workspace into direct overview panel。`總覽入口` Workspace 的內容標題顯示為 `總覽`，Workspace 本身提供新增買入車輛、車輛列表、車輛管理、會計作業與完整總覽頁入口；`/app/總覽` custom Page 保留，不建立 `Workspace = 總覽`，不新增 cash balance dashboard card，不改 Cash Account balance service。
 
 ---
 
